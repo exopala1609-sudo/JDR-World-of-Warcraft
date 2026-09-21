@@ -1,0 +1,16 @@
+# Dépendances
+node_modules/
+
+# Build du client
+client/dist/
+
+# Configuration locale du MJ (contient des chemins Windows personnels)
+config.json
+
+# Données de partie sauvegardées localement
+sauvegardes/
+
+# Divers
+.DS_Store
+*.log
+.env

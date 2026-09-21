@@ -1,0 +1,22 @@
+{
+  "name": "vtt-wow-dnd5e",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Virtual Tabletop D&D 5e a l'interface de World of Warcraft, heberge en local par le Maitre du Jeu.",
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/creer-config.js",
+    "dev": "concurrently -n SERVEUR,CLIENT -c magenta,cyan \"npm:dev:serveur\" \"npm:dev:client\"",
+    "dev:serveur": "node --watch server/src/index.js",
+    "dev:client": "npm run dev --workspace client",
+    "build": "npm run build --workspace client",
+    "start": "node server/src/index.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

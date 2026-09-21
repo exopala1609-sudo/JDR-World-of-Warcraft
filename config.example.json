@@ -1,0 +1,11 @@
+{
+  "nomDeLaPartie": "Ma campagne",
+  "port": 3000,
+  "motDePasseMJ": "change-moi",
+  "dossiers": {
+    "cartes": "./donnees-mj/cartes",
+    "jetons": "./donnees-mj/jetons",
+    "portraits": "./donnees-mj/portraits",
+    "compendium": "./donnees-mj/compendium"
+  }
+}
