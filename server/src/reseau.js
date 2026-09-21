@@ -8,11 +8,11 @@ export function adressesLocales() {
     .map((carte) => carte.address);
 }
 
-export function afficherBanniere({ port, nomDeLaPartie }) {
+export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }) {
   const lignes = [
     "",
     "  ============================================================",
-    `   VTT  -  ${nomDeLaPartie}`,
+    `   VTT  -  ${nomDeLaPartie}   (poste : ${nomDuPoste})`,
     "  ============================================================",
     `   Ecran du MJ    : http://localhost:${port}/mj`,
     `   Lien joueurs   : http://localhost:${port}/`,

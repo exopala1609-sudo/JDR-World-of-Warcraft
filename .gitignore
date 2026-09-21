@@ -1,16 +1,15 @@
-# Dépendances
+# Dependances
 node_modules/
 
 # Build du client
 client/dist/
 
-# Configuration locale du MJ (contient des chemins Windows personnels)
-config.json
+# Configuration propre a chaque poste (chemins du dossier cloud, mot de passe)
+.env
 
-# Données de partie sauvegardées localement
-sauvegardes/
+# Donnees de jeu locales (quand VTT_ASSETS pointe dans le projet)
+donnees-mj/
 
 # Divers
 .DS_Store
 *.log
-.env

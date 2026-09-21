@@ -25,6 +25,7 @@ Possible (redirection du port 3000 vers ton PC) mais deconseille : ton PC devien
 joignable depuis tout Internet, et l'adresse change a chaque redemarrage de box.
 
 ## Securite
-Le mot de passe MJ de `config.json` protege l'ecran du Maitre du Jeu. Les joueurs
-n'ont acces qu'a ce que le serveur leur envoie : les zones cachees par le
-brouillard de guerre ne quittent jamais ton PC.
+Le mot de passe MJ (`VTT_MOTDEPASSE_MJ` dans le `.env`) protege l'ecran du
+Maitre du Jeu. Les dossiers exposes aux navigateurs se limitent aux cartes,
+jetons et portraits : ton compendium et tes sauvegardes ne sont jamais servis
+directement, ils passeront par l'API que le MJ controle.
