@@ -13,3 +13,6 @@ donnees-mj/
 # Divers
 .DS_Store
 *.log
+
+# Cache de compilation TypeScript
+*.tsbuildinfo

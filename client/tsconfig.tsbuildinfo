@@ -1,1 +1,0 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/core/protocole.ts","./src/core/socket.ts","./src/core/useEchelle1440p.ts","./src/ui/CadreOr.tsx","./src/ui/Scene1440p.tsx","./vite.config.ts","../shared/protocole.js"],"version":"5.9.3"}
