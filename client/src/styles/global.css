@@ -53,20 +53,19 @@ body {
   height: 100%;
 }
 
-/* La scene est TOUJOURS de 2560x1440 px : seul son zoom change. */
-.scene-1440p {
+/* La scene remplit toute la fenetre ; ses dimensions sont fixees en JS. */
+.scene-jeu {
   position: absolute;
   top: 0;
   left: 0;
-  width: 2560px;
-  height: 1440px;
+  overflow: hidden;
   transform-origin: top left;
   background:
     radial-gradient(circle at 50% 42%, rgba(120, 90, 40, 0.14), transparent 60%),
     linear-gradient(180deg, #14100b 0%, var(--wow-pierre) 100%);
 }
 
-.scene-1440p::after {
+.scene-jeu::after {
   /* Vignettage facon interface de jeu */
   content: "";
   position: absolute;

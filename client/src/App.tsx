@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Scene1440p } from "@/ui/Scene1440p";
+import { useEffect, useState, type CSSProperties } from "react";
+import { SceneJeu } from "@/ui/SceneJeu";
 import { CadreOr } from "@/ui/CadreOr";
 import { socket } from "@/core/socket";
 import { EVENEMENTS, ROLES } from "@/core/protocole";
-import { useEchelle1440p } from "@/core/useEchelle1440p";
+import { useEchelleInterface } from "@/core/useEchelleInterface";
 
 type Participant = { id: string; nom: string; role: string };
 
@@ -11,7 +11,7 @@ export default function App() {
   const [connecte, setConnecte] = useState(socket.connected);
   const [nomDeLaPartie, setNomDeLaPartie] = useState("...");
   const [connectes, setConnectes] = useState<Participant[]>([]);
-  const { echelle } = useEchelle1440p();
+  const { echelle, largeur, hauteur } = useEchelleInterface();
 
   useEffect(() => {
     const auBranchement = () => {
@@ -39,7 +39,15 @@ export default function App() {
   }, []);
 
   return (
-    <Scene1440p>
+    <SceneJeu>
+      {/* Emplacements prevus par le cahier des charges, accroches aux bords. */}
+      <ZoneReservee nom="Portraits du groupe" style={{ top: 24, left: 24, width: 360, height: 440 }} />
+      <ZoneReservee nom="Minicarte" style={{ top: 24, right: 24, width: 280, height: 280 }} />
+      <ZoneReservee
+        nom="Barres d'action"
+        style={{ bottom: 24, left: "50%", transform: "translateX(-50%)", width: 1040, height: 136 }}
+      />
+
       <CadreOr
         titre={nomDeLaPartie}
         style={{
@@ -60,14 +68,14 @@ export default function App() {
           valeur={connecte ? "etablie" : "en attente du serveur..."}
           couleur={connecte ? "var(--rarete-peu-commun)" : "var(--ressource-rage)"}
         />
-        <Ligne etiquette="Resolution de travail" valeur="2560 x 1440 (paysage verrouille)" />
-        <Ligne etiquette="Zoom applique" valeur={`${(echelle * 100).toFixed(0)} %`} />
+        <Ligne etiquette="Surface de jeu" valeur={`${largeur} x ${hauteur}`} />
+        <Ligne etiquette="Echelle de l'interface" valeur={`${Math.round(echelle * 100)} %`} />
         <Ligne
           etiquette="Connectes"
           valeur={connectes.length ? connectes.map((p) => p.nom).join(", ") : "aucun"}
         />
       </CadreOr>
-    </Scene1440p>
+    </SceneJeu>
   );
 }
 
@@ -92,6 +100,26 @@ function Ligne({
     >
       <span style={{ opacity: 0.7 }}>{etiquette}</span>
       <strong style={{ color: couleur, fontFamily: "var(--police-chiffres)" }}>{valeur}</strong>
+    </div>
+  );
+}
+
+function ZoneReservee({ nom, style }: { nom: string; style: CSSProperties }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        display: "grid",
+        placeItems: "center",
+        border: "2px dashed rgba(212,175,55,0.35)",
+        borderRadius: 6,
+        color: "rgba(232,217,181,0.45)",
+        fontSize: 18,
+        letterSpacing: 1,
+        ...style,
+      }}
+    >
+      {nom}
     </div>
   );
 }
