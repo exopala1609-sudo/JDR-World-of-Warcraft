@@ -12,7 +12,7 @@
     "postinstall": "node scripts/preparer-env.js",
     "detecter-assets": "node scripts/detecter-assets.js",
     "dev": "concurrently -n SERVEUR,CLIENT -c magenta,cyan \"npm:dev:serveur\" \"npm:dev:client\"",
-    "dev:serveur": "node --watch server/src/index.js",
+    "dev:serveur": "node --watch server/src/index.js --dev",
     "dev:client": "npm run dev --workspace client",
     "build": "npm run build --workspace client",
     "start": "node server/src/index.js"

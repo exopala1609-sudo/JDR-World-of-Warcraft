@@ -12,6 +12,7 @@ import { poserVerrou } from "./verrou.js";
 import { VERSION_PROTOCOLE } from "../../shared/protocole.js";
 
 const config = chargerConfig();
+const modeDev = process.argv.includes("--dev");
 const rapportDossiers = diagnostiquerDossiers(config);
 const app = express();
 const serveurHttp = createServer(app);
@@ -62,8 +63,9 @@ if (existsSync(CLIENT_COMPILE)) {
       .status(200)
       .type("html")
       .send(
-        "<p style='font-family:sans-serif'>Client non compile. " +
-          "En developpement, ouvre <a href='http://localhost:5173'>http://localhost:5173</a>.</p>",
+        "<p style='font-family:sans-serif'>Interface non compilee. " +
+          "En developpement, ouvre <a href='http://localhost:5173'>http://localhost:5173</a>, " +
+          "ou lance <code>npm run build</code> puis <code>npm start</code>.</p>",
       );
   });
 }
@@ -71,7 +73,7 @@ if (existsSync(CLIENT_COMPILE)) {
 installerTempsReel(serveurHttp, config);
 
 serveurHttp.listen(config.port, "0.0.0.0", () => {
-  afficherBanniere(config);
+  afficherBanniere(config, { modeDev });
   afficherDiagnostic(config, rapportDossiers);
   try {
     mkdirSync(config.dossiers.parties, { recursive: true });

@@ -8,18 +8,23 @@ export function adressesLocales() {
     .map((carte) => carte.address);
 }
 
-export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }) {
+// En developpement, l'interface est servie par Vite (port 5173) et non par le
+// serveur de jeu : le bandeau doit donner l'adresse que l'on ouvre vraiment.
+export const PORT_VITE = 5173;
+
+export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }, { modeDev = false } = {}) {
+  const portInterface = modeDev ? PORT_VITE : port;
   const lignes = [
     "",
     "  ============================================================",
     `   VTT  -  ${nomDeLaPartie}   (poste : ${nomDuPoste})`,
+    modeDev ? "   Mode developpement" : "   Mode partie",
     "  ============================================================",
-    `   Ecran du MJ    : http://localhost:${port}/mj`,
-    `   Lien joueurs   : http://localhost:${port}/`,
+    `   Sur ce PC      : http://localhost:${portInterface}/`,
   ];
 
   for (const ip of adressesLocales()) {
-    lignes.push(`   Reseau local   : http://${ip}:${port}/`);
+    lignes.push(`   Lien joueurs   : http://${ip}:${portInterface}/   (meme reseau)`);
   }
 
   lignes.push(
