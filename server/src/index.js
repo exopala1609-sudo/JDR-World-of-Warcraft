@@ -88,7 +88,10 @@ if (existsSync(CLIENT_COMPILE)) {
   app.get("*", (_requete, reponse) => {
     reponse
       .type("html")
-      .send("<p>Interface non compilee. Page de test du sprint 1 : <a href='/test/'>/test/</a></p>");
+      .send(
+        "<p>Interface de jeu non compilee : lance <code>npm run partie</code> (ou <code>npm run build</code>). " +
+          "Outils du MJ : <a href='/test/'>/test/</a></p>",
+      );
   });
 }
 

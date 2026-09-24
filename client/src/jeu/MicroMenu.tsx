@@ -23,7 +23,7 @@ export function MicroMenu() {
     <div className="menu cadre">
       {bouton("C", "Personnage (C)", () => basculer("personnage"), fenetres.personnage)}
       {bouton("B", "Sacs (B)", () => basculer("sacs"), fenetres.sacs)}
-      {estMJ && bouton("MJ", "Outils du MJ (page de test)", () => window.open("/test/", "_blank"))}
+      {estMJ && bouton("MJ", "Outils du MJ : ouvre la page de test dans un nouvel onglet", () => window.open("/test/", "_blank"))}
       {bouton("X", "Quitter la partie", () => jeu.deconnecter())}
     </div>
   );

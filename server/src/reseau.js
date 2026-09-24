@@ -20,17 +20,14 @@ export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }, { modeDev 
     `   VTT  -  ${nomDeLaPartie}   (poste : ${nomDuPoste})`,
     modeDev ? "   Mode developpement" : "   Mode partie",
     "  ============================================================",
-    `   Sur ce PC      : http://localhost:${portInterface}/`,
+    `   Interface de jeu (WoW) : http://localhost:${portInterface}/`,
   ];
 
   for (const ip of adressesLocales()) {
-    lignes.push(`   Lien joueurs   : http://${ip}:${portInterface}/   (meme reseau)`);
+    lignes.push(`   Lien joueurs (reseau)  : http://${ip}:${portInterface}/`);
   }
 
-  lignes.push("", `   Page de test   : http://localhost:${port}/test/`);
-  for (const ip of adressesLocales()) {
-    lignes.push(`                    http://${ip}:${port}/test/`);
-  }
+  lignes.push("", `   Outils du MJ           : http://localhost:${portInterface}/test/`);
 
   lignes.push(
     "",
