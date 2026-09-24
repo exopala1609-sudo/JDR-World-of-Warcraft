@@ -41,3 +41,23 @@ export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }, { modeDev 
 
   console.log(lignes.join("\n"));
 }
+
+/** Encadre bien visible avec le lien a coller dans Discord. */
+export function afficherLienDistant(lien, { copie }) {
+  const lignes = [
+    "",
+    "  ************************************************************",
+    "   LIEN A ENVOYER A TES JOUEURS :",
+    "",
+    `     ${lien}`,
+    "",
+    copie
+      ? "   Deja copie ! Colle-le dans Discord avec Ctrl + V."
+      : "   Selectionne-le a la souris, puis Clic droit > Copier.",
+    "   Ce lien change a chaque partie et cesse de fonctionner",
+    "   des que tu fermes cette fenetre.",
+    "  ************************************************************",
+    "",
+  ];
+  console.log(lignes.join("\n"));
+}

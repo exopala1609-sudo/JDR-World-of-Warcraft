@@ -8,38 +8,50 @@ Donne l'adresse affichee au demarrage, par exemple `http://192.168.1.30:3000/tes
 Rien a installer. Au premier lancement, autorise Node.js dans le pare-feu
 Windows (case **Reseaux prives**).
 
-## 2. A distance, sans rien installer chez les joueurs : un tunnel
-Un tunnel est un intermediaire sur Internet : il donne une adresse publique en
-`https://` et fait suivre le trafic jusqu'a ton PC. Ta box n'est pas modifiee.
-**Le tunnel doit viser le port 3000**, meme pendant `npm run dev`.
+## 2. A distance : `npm run partie` (recommande)
 
-### ngrok (recommande pour commencer)
-1. Cree un compte gratuit sur https://ngrok.com et installe ngrok.
-2. Une seule fois, colle ta cle (visible sur ton tableau de bord ngrok) :
-   ```
-   ngrok config add-authtoken <ta-cle>
-   ```
-3. A chaque partie, dans une **deuxieme** fenetre de commandes :
-   ```
-   ngrok http 3000
-   ```
-4. Copie l'adresse `https://....ngrok-free.app` affichee, ajoute `/test/`, et
-   envoie-la sur Discord.
-
-La version gratuite affiche une page d'avertissement ngrok a la premiere visite :
-les joueurs cliquent sur **Visit Site**, c'est normal.
-
-### Cloudflare (sans compte, adresse jetable)
+Une seule commande, a la place de `npm run dev` :
 ```
-cloudflared tunnel --url http://localhost:3000
+npm run partie
 ```
-Donne une adresse `https://xxx.trycloudflare.com`, qui change a chaque lancement.
+Le serveur demarre, ouvre tout seul un acces distant via Cloudflare, puis
+affiche un encadre :
+
+```
+  ************************************************************
+   LIEN A ENVOYER A TES JOUEURS :
+
+     https://mots-au-hasard.trycloudflare.com/test/
+
+   Deja copie ! Colle-le dans Discord avec Ctrl + V.
+  ************************************************************
+```
+
+Le lien est deja dans ton presse-papiers : **Ctrl + V dans Discord**, c'est tout.
+Les joueurs cliquent et arrivent directement sur la page, sans compte, sans
+installation et sans page d'avertissement.
+
+A savoir :
+- **Premier lancement** : l'outil Cloudflare (~40 Mo) se telecharge tout seul,
+  une fois pour toutes (sur chaque PC).
+- **Rien a regler** : ni la box, ni le pare-feu (la connexion part de ton PC).
+- **Le lien change a chaque partie**, et cesse de fonctionner des que tu fermes
+  la fenetre du serveur. C'est aussi une protection : un ancien lien qui
+  traine sur Discord ne donne plus acces a rien.
+- Service gratuit sans garantie de disponibilite. S'il est en panne, le serveur
+  le signale, reste jouable en local, et tu peux passer au plan B.
+
+### Plan B : ngrok
+Si Cloudflare est indisponible : cree un compte gratuit sur https://ngrok.com,
+installe ngrok, colle une fois ta cle (`ngrok config add-authtoken <ta-cle>`),
+puis lance `npm run dev` et, dans une deuxieme fenetre, `ngrok http 3000`.
+Inconvenient : la version gratuite affiche une page d'avertissement aux joueurs
+(ils doivent cliquer sur **Visit Site**).
 
 ### Et Tailscale ?
 Tailscale cree un reseau prive entre machines, mais **chaque joueur devrait
-installer Tailscale**, ce qui contredit ton cahier des charges. Seule exception :
-`tailscale funnel 3000`, qui publie une adresse accessible sans installation,
-comme ngrok.
+installer Tailscale**, ce qui contredit le cahier des charges. Seule exception :
+`tailscale funnel 3000`, qui publie une adresse accessible sans installation.
 
 ## 3. Ouverture de port sur la box
 Possible, mais deconseille : ton PC devient joignable en permanence depuis tout

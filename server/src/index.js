@@ -10,14 +10,16 @@ import { creerGestionnaireSessions } from "./auth/sessions.js";
 import { CATEGORIES_PUBLIQUES, chargerConfig, RACINE } from "./config.js";
 import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers } from "./diagnostic.js";
 import { creerDepot } from "./donnees/depot.js";
-import { afficherBanniere } from "./reseau.js";
+import { afficherBanniere, afficherLienDistant } from "./reseau.js";
 import { installerTempsReel } from "./temps-reel.js";
+import { copierDansPressePapiers, ouvrirTunnel } from "./tunnel.js";
 import { poserVerrou } from "./verrou.js";
 import { VERSION_PROTOCOLE } from "../../shared/protocole.js";
 
 // --- 1. Configuration du poste (.env) ---------------------------------------
 const config = chargerConfig();
 const modeDev = process.argv.includes("--dev");
+const avecTunnel = process.argv.includes("--tunnel"); // npm run partie
 const dossiersCrees = creerSousDossiersManquants(config);
 const rapportDossiers = diagnostiquerDossiers(config);
 
@@ -91,6 +93,10 @@ installerTempsReel(serveurHttp, { depot, sessions });
 
 // --- 6. Demarrage ------------------------------------------------------------------
 let libererVerrou = () => {};
+let fermerTunnel = () => {};
+
+// Page d'arrivee des joueurs. Sprint 1 : le banc de test.
+const CHEMIN_JOUEURS = "/test/";
 
 serveurHttp.listen(config.port, "0.0.0.0", () => {
   afficherBanniere(config, { modeDev });
@@ -103,6 +109,20 @@ serveurHttp.listen(config.port, "0.0.0.0", () => {
   }
   console.log("");
   libererVerrou = poserVerrou(config);
+
+  if (avecTunnel) {
+    ouvrirTunnel(config.port)
+      .then(({ adresse, fermer }) => {
+        fermerTunnel = fermer;
+        const lien = `${adresse}${CHEMIN_JOUEURS}`;
+        afficherLienDistant(lien, { copie: copierDansPressePapiers(lien) });
+      })
+      .catch((erreur) => {
+        console.warn(`\n  !! Acces distant impossible : ${erreur.message}.`);
+        console.warn("     La partie reste jouable sur ton reseau local. Verifie ta connexion Internet,");
+        console.warn("     puis relance : npm run partie\n");
+      });
+  }
 });
 
 serveurHttp.on("error", (erreur) => {
@@ -117,6 +137,7 @@ serveurHttp.on("error", (erreur) => {
 function arreter() {
   console.log("\n  Arret : sauvegarde des donnees en attente...");
   depot.vider();
+  fermerTunnel();
   libererVerrou();
   process.exit(0);
 }

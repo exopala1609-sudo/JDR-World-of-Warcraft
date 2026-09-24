@@ -20,9 +20,9 @@ entre ton PC fixe et ton portable : voir [docs/CONFIGURATION.md](docs/CONFIGURAT
 npm run dev      # developpement : interface rechargee a chaque modification
 ```
 ```bash
-npm run build && npm start   # partie reelle : tout est servi par le port 3000
+npm run partie   # joueurs a distance : affiche (et copie) le lien a leur envoyer
 ```
-Les adresses a partager s'affichent dans la console au demarrage.
+Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
 ## Sprint 1 : banc de test
 Une page brute (sans mise en forme) permet de tout verifier : connexion MJ /

@@ -27,6 +27,7 @@ JDR-World-of-Warcraft/
 │   │   ├── config.js         Lit le .env et calcule les chemins des dossiers
 │   │   ├── diagnostic.js     Verifie les dossiers au demarrage
 │   │   ├── reseau.js         Affiche les adresses de connexion
+│   │   ├── tunnel.js         Acces distant en un lien (tunnel rapide Cloudflare)
 │   │   ├── verrou.js         Empeche deux PC d'ouvrir la partie en meme temps
 │   │   ├── fichiers.js       Ecriture "atomique" des JSON (sure avec un cloud)
 │   │   ├── temps-reel.js     Moteur Socket.IO : salons, droits, arbitrage
