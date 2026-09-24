@@ -1,0 +1,65 @@
+{
+  "objets": [
+    {
+      "id": "chope-ebrechee",
+      "nom": "Chope ebrechee",
+      "type": "tresor",
+      "rarete": "mediocre",
+      "poids": 0.5,
+      "valeur": 0.01,
+      "description": "Donnee de test. Un objet gris : a revendre au premier marchand venu."
+    },
+    {
+      "id": "epee-longue",
+      "nom": "Epee longue",
+      "type": "arme",
+      "rarete": "classique",
+      "icone": "inv_sword_04",
+      "poids": 1.5,
+      "valeur": 15,
+      "description": "Donnee de test. L'arme de base de tout aventurier.",
+      "arme": { "degats": "1d8", "typeDegats": "tranchant", "proprietes": ["polyvalente (1d10)"] }
+    },
+    {
+      "id": "potion-de-soins",
+      "nom": "Potion de soins",
+      "type": "consommable",
+      "rarete": "inhabituel",
+      "poids": 0.25,
+      "valeur": 50,
+      "empilable": true,
+      "description": "Donnee de test. Rend 2d4+2 points de vie a qui la boit.",
+      "soins": "2d4+2"
+    },
+    {
+      "id": "cape-du-veilleur",
+      "nom": "Cape du Veilleur",
+      "type": "armure",
+      "rarete": "rare",
+      "poids": 0.5,
+      "valeur": 500,
+      "description": "Donnee de test. Une cape sombre qui semble absorber la lumiere.",
+      "armure": { "classeArmure": 1, "categorie": "legere" }
+    },
+    {
+      "id": "baton-du-givre-ancien",
+      "nom": "Baton du givre ancien",
+      "type": "arme",
+      "rarete": "epique",
+      "poids": 2,
+      "valeur": 5000,
+      "description": "Donnee de test. Le bois est couvert d'un givre qui ne fond jamais.",
+      "arme": { "degats": "1d6+1d8", "typeDegats": "froid", "proprietes": ["polyvalente (1d8)", "focaliseur arcanique"] }
+    },
+    {
+      "id": "lame-des-cendres",
+      "nom": "Lame des Cendres",
+      "type": "arme",
+      "rarete": "legendaire",
+      "poids": 3,
+      "valeur": 50000,
+      "description": "Donnee de test. Des braises dansent le long du tranchant.",
+      "arme": { "degats": "2d6+1d6", "typeDegats": "feu", "proprietes": ["lourde", "a deux mains"] }
+    }
+  ]
+}

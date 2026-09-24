@@ -24,9 +24,10 @@ npm run partie   # joueurs a distance : affiche (et copie) le lien a leur envoye
 ```
 Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
-## Sprint 1 : banc de test
+## Banc de test
 Une page brute (sans mise en forme) permet de tout verifier : connexion MJ /
-joueur, tables, creation de personnages, points de vie et des en temps reel.
+joueur, tables, personnages, points de vie, ressources, repos, compendium,
+inventaire, etats et combat, en temps reel.
 ```
 http://localhost:3000/test/
 ```
@@ -35,6 +36,7 @@ Les tests automatiques des regles se lancent avec :
 npm test
 ```
 Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Ecrire ses objets, sorts et auras : [docs/COMPENDIUM.md](docs/COMPENDIUM.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
 ## Ou je mets mes fichiers ?
@@ -56,5 +58,6 @@ chaque dossier et signale tout chemin errone.
 | `server/` | Serveur local : acces, donnees JSON, regles D&D, temps reel |
 | `client/` | Interface WoW (React + TypeScript), en pause pendant le sprint 1 |
 | `shared/` | Vocabulaire temps reel et regles D&D 5e communs aux deux cotes |
+| `exemples/` | Donnees de test (compendium), copiees au premier lancement |
 | `donnees-mj/` | Dossier de secours quand `VTT_ASSETS` n'est pas configure |
 | `docs/` | Notes d'utilisation |

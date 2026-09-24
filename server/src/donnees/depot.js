@@ -5,6 +5,7 @@
 //   parties/
 //   └── t-3f9a0c1b2d/              <- une table (session de jeu)
 //       ├── table.json             <- nom, date de creation
+//       ├── combat.json            <- present seulement pendant un combat
 //       ├── personnages/
 //       │   ├── p-8e21aa04c7.json  <- UN fichier par personnage
 //       │   └── p-51c0d9e3f2.json
@@ -17,9 +18,11 @@
 // Fonctionnement : au demarrage, tout est lu en memoire (c'est instantane
 // a l'echelle d'une campagne). Ensuite le jeu travaille en memoire, et chaque
 // modification est recopiee sur le disque ~1/4 de seconde plus tard.
-import { existsSync, mkdirSync, readdirSync, renameSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { ecrireJsonAtomique, lireJson } from "../fichiers.js";
+import { SchemaCombat } from "../modeles/combat.js";
+import { migrerPersonnage } from "../modeles/migrations.js";
 import { SchemaPersonnage } from "../modeles/personnage.js";
 import { SchemaTable } from "../modeles/table.js";
 
@@ -28,12 +31,22 @@ const DELAI_ECRITURE_MS = 250;
 export function creerDepot(dossierParties) {
   /** @type {Map<string, object>} */ const tables = new Map();
   /** @type {Map<string, object>} */ const personnages = new Map();
+  /** @type {Map<string, object>} */ const combats = new Map(); // idTable -> combat
   /** @type {Map<string, {minuterie: NodeJS.Timeout, donnees: object}>} */
   const ecrituresEnAttente = new Map();
 
   const cheminTable = (idTable) => join(dossierParties, idTable);
   const cheminFicheTable = (idTable) => join(cheminTable(idTable), "table.json");
   const cheminPersonnage = (p) => join(cheminTable(p.idTable), "personnages", `${p.id}.json`);
+  const cheminCombat = (idTable) => join(cheminTable(idTable), "combat.json");
+
+  function annulerEcriture(chemin) {
+    const attente = ecrituresEnAttente.get(chemin);
+    if (attente) {
+      clearTimeout(attente.minuterie);
+      ecrituresEnAttente.delete(chemin);
+    }
+  }
 
   // Regroupe les ecritures rapprochees (ex. 5 degats en 1 seconde = 1 ecriture).
   function planifierEcriture(chemin, donnees) {
@@ -63,6 +76,7 @@ export function creerDepot(dossierParties) {
     charger() {
       mkdirSync(dossierParties, { recursive: true });
       const ignores = [];
+      let migrees = 0;
 
       for (const entree of lireDossier(dossierParties)) {
         if (!entree.isDirectory()) continue;
@@ -78,19 +92,39 @@ export function creerDepot(dossierParties) {
         for (const fichier of lireDossier(dossierPersos)) {
           if (!fichier.isFile() || !fichier.name.endsWith(".json")) continue;
           const chemin = join(dossierPersos, fichier.name);
-          const perso = SchemaPersonnage.safeParse(lireJson(chemin));
+          // Une fiche d'un ancien format est d'abord mise a niveau.
+          const { fiche, migree } = migrerPersonnage(lireJson(chemin));
+          const perso = SchemaPersonnage.safeParse(fiche);
           if (perso.success && perso.data.idTable === table.data.id) {
             personnages.set(perso.data.id, perso.data);
+            if (migree) {
+              migrees += 1;
+              planifierEcriture(chemin, perso.data); // on enregistre la version a jour
+            }
           } else {
             ignores.push(chemin);
           }
+        }
+
+        // Combat en cours au moment de l'arret ? On le reprend.
+        const brutCombat = lireJson(cheminCombat(table.data.id));
+        if (brutCombat) {
+          const combat = SchemaCombat.safeParse(brutCombat);
+          if (combat.success && combat.data.idTable === table.data.id) combats.set(table.data.id, combat.data);
+          else ignores.push(cheminCombat(table.data.id));
         }
       }
 
       // Un fichier abime (conflit cloud, edition manuelle ratee) est ignore,
       // jamais supprime : on le signale pour que le MJ puisse le reparer.
       for (const chemin of ignores) console.warn(`[depot] Fichier invalide ignore : ${chemin}`);
-      return { tables: tables.size, personnages: personnages.size, ignores: ignores.length };
+      return {
+        tables: tables.size,
+        personnages: personnages.size,
+        combats: combats.size,
+        migrees,
+        ignores: ignores.length,
+      };
     },
 
     // --- Tables ------------------------------------------------------------
@@ -127,17 +161,35 @@ export function creerDepot(dossierParties) {
       personnages.delete(idPersonnage);
 
       const chemin = cheminPersonnage(personnage);
-      const attente = ecrituresEnAttente.get(chemin);
-      if (attente) {
-        clearTimeout(attente.minuterie);
-        ecrituresEnAttente.delete(chemin);
-      }
+      annulerEcriture(chemin);
       const corbeille = join(cheminTable(personnage.idTable), "corbeille");
       mkdirSync(corbeille, { recursive: true });
       const destination = join(corbeille, `${personnage.id}-${Date.now()}.json`);
       if (existsSync(chemin)) renameSync(chemin, destination);
       else ecrireJsonAtomique(destination, personnage);
       return personnage;
+    },
+
+    // --- Combats ------------------------------------------------------------
+    obtenirCombat(idTable) {
+      return combats.get(idTable) ?? null;
+    },
+    enregistrerCombat(combat) {
+      const valide = SchemaCombat.parse(combat);
+      combats.set(valide.idTable, valide);
+      planifierEcriture(cheminCombat(valide.idTable), valide);
+      return valide;
+    },
+    /** Fin du combat : le fichier combat.json disparait. */
+    supprimerCombat(idTable) {
+      combats.delete(idTable);
+      const chemin = cheminCombat(idTable);
+      annulerEcriture(chemin);
+      try {
+        unlinkSync(chemin);
+      } catch {
+        /* pas encore ecrit sur le disque : rien a effacer */
+      }
     },
 
     /** Ecrit immediatement tout ce qui est en attente (a l'arret du serveur). */

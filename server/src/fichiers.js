@@ -6,10 +6,19 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 
+/**
+ * Lit un fichier JSON. Retire le "BOM" : un caractere invisible que le
+ * Bloc-notes de Windows ajoute parfois en debut de fichier, et qui fait
+ * echouer la lecture du JSON.
+ */
+export function lireTexteJson(chemin) {
+  return JSON.parse(readFileSync(chemin, "utf8").replace(/^\uFEFF/, ""));
+}
+
 export function lireJson(chemin, valeurParDefaut = null) {
   if (!existsSync(chemin)) return valeurParDefaut;
   try {
-    return JSON.parse(readFileSync(chemin, "utf8"));
+    return lireTexteJson(chemin);
   } catch (erreur) {
     console.error(`[fichiers] ${chemin} illisible : ${erreur.message}`);
     return valeurParDefaut;

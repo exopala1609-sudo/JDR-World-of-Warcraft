@@ -1,30 +1,38 @@
-// Banc de test du sprint 1. Volontairement brut : aucun style, aucun framework.
+// Banc de test. Volontairement brut : aucun style, aucun framework.
 // Ce navigateur ne calcule RIEN : il envoie des demandes et affiche ce que le
-// serveur lui renvoie. Si deux navigateurs affichent la meme chose, le temps
-// reel et l'autorite du serveur fonctionnent.
+// serveur renvoie. Si deux navigateurs affichent la meme chose, le temps reel
+// et l'autorite du serveur fonctionnent.
 import { EVENEMENTS, ROLES, TYPES_PV } from "/partage/protocole.js";
 import { CARACTERISTIQUES, CLASSES } from "/partage/dnd5e.js";
+import { ETATS_DE_BASE } from "/partage/etats.js";
+import { RARETES } from "/partage/raretes.js";
+import { MODELES_RESSOURCES } from "/partage/ressources.js";
 
 const $ = (id) => document.getElementById(id);
 const CLE_JETON = "vtt-jeton";
 const CLE_TABLE = "vtt-table";
+const CLE_MOI = "vtt-moi";
 
 let socket = null;
 let moi = null;
+let combat = null;
+let compendium = { objets: [], sorts: [], etats: [] };
 const personnages = new Map();
+const saisies = new Map(); // valeurs tapees, conservees entre deux affichages
 
-// --- Memoire de l'onglet ------------------------------------------------------
-// sessionStorage = propre a CET onglet : tu peux ouvrir un onglet MJ et un
-// onglet joueur dans le meme navigateur pour tester.
+const estMJ = () => moi?.role === ROLES.MJ;
+const monPersonnage = (p) => p?.proprietaire?.toLocaleLowerCase("fr") === moi?.pseudo?.toLocaleLowerCase("fr");
+
+// --- Memoire de l'onglet (sessionStorage : propre a CET onglet) --------------------
 const memoire = {
-  lire: (cle) => {
+  lire(cle) {
     try {
       return sessionStorage.getItem(cle);
     } catch {
       return null;
     }
   },
-  ecrire: (cle, valeur) => {
+  ecrire(cle, valeur) {
     try {
       if (valeur === null) sessionStorage.removeItem(cle);
       else sessionStorage.setItem(cle, valeur);
@@ -34,18 +42,60 @@ const memoire = {
   },
 };
 
-// --- Affichage ---------------------------------------------------------------------
-// On n'utilise jamais innerHTML avec des textes venant des joueurs : un pseudo
-// comme "<script>..." s'afficherait tel quel au lieu de s'executer (securite).
-function element(balise, texte) {
+// --- Petits outils d'affichage ------------------------------------------------------
+// Jamais d'innerHTML avec des textes venant des joueurs : un pseudo comme
+// "<script>..." s'affiche tel quel au lieu de s'executer.
+function el(balise, ...enfants) {
   const noeud = document.createElement(balise);
-  if (texte !== undefined) noeud.textContent = texte;
+  for (const enfant of enfants) if (enfant !== null && enfant !== undefined) noeud.append(enfant);
   return noeud;
 }
 
+function bouton(texte, action) {
+  const b = el("button", texte);
+  b.type = "button";
+  b.addEventListener("click", action);
+  return b;
+}
+
+/** Champ dont la valeur survit aux rafraichissements de l'affichage. */
+function champ(cle, type, defaut, taille = 4) {
+  const input = el("input");
+  input.type = type;
+  input.size = taille;
+  input.value = saisies.get(cle) ?? defaut;
+  input.addEventListener("input", () => saisies.set(cle, input.value));
+  return input;
+}
+
+function liste(cle, options, defaut) {
+  const select = el("select");
+  for (const [valeur, texte] of options) {
+    const option = el("option", texte);
+    option.value = valeur;
+    select.append(option);
+  }
+  select.value = saisies.get(cle) ?? defaut ?? options[0]?.[0] ?? "";
+  select.addEventListener("change", () => saisies.set(cle, select.value));
+  return select;
+}
+
+// Petite image d'icone : le serveur renvoie un carre gris si le fichier manque.
+function icone(nom, taille = 20) {
+  const img = el("img");
+  img.src = `/medias/icones/${encodeURIComponent(nom)}`;
+  img.width = taille;
+  img.height = taille;
+  img.alt = "";
+  return img;
+}
+
+const signe = (n) => (n >= 0 ? `+${n}` : `${n}`);
+const nomRarete = (cle) => `${RARETES[cle]?.nom ?? cle} - ${RARETES[cle]?.teinte ?? "?"}`;
+const regleRepos = (r) => (typeof r === "object" ? `+${r.ajouter}` : r);
+
 function journal(texte) {
-  const ligne = element("li", `[${new Date().toLocaleTimeString("fr-FR")}] ${texte}`);
-  $("journal").prepend(ligne);
+  $("journal").prepend(el("li", `[${new Date().toLocaleTimeString("fr-FR")}] ${texte}`));
 }
 
 function afficherZone(zone) {
@@ -55,82 +105,340 @@ function afficherZone(zone) {
 }
 
 function afficherElementsMJ() {
-  for (const noeud of document.querySelectorAll("[data-mj-seulement]")) {
-    noeud.hidden = moi?.role !== ROLES.MJ;
-  }
+  for (const noeud of document.querySelectorAll("[data-mj-seulement]")) noeud.hidden = !estMJ();
 }
 
-function signe(n) {
-  return n >= 0 ? `+${n}` : `${n}`;
+// --- Fiches de personnage ---------------------------------------------------------------
+
+function blocRessources(p) {
+  const bloc = el("div", el("b", "Ressources : "));
+  if (p.ressources.length === 0) bloc.append("aucune");
+  const ul = el("ul");
+  for (const r of p.ressources) {
+    const modifier = (variation) => () =>
+      demander(EVENEMENTS.RESSOURCE_MODIFIER, { idPersonnage: p.id, cle: r.cle, variation });
+    ul.append(
+      el(
+        "li",
+        `${r.nom} ${r.actuel}/${r.max} (${r.type}, repos court : ${regleRepos(r.reposCourt)}, ` +
+          `repos long : ${regleRepos(r.reposLong)}) `,
+        bouton("-1", modifier(-1)),
+        bouton("+1", modifier(1)),
+        r.max >= 20 ? bouton("-10", modifier(-10)) : null,
+        r.max >= 20 ? bouton("+10", modifier(10)) : null,
+        estMJ()
+          ? bouton("Retirer", () => demander(EVENEMENTS.RESSOURCE_RETIRER, { idPersonnage: p.id, cle: r.cle }))
+          : null,
+      ),
+    );
+  }
+  bloc.append(ul);
+
+  if (estMJ()) {
+    const modele = liste(
+      `${p.id}:modele`,
+      Object.entries(MODELES_RESSOURCES).map(([cle, m]) => [cle, `${m.nom} (${m.type})`]),
+    );
+    const max = champ(`${p.id}:max`, "number", "");
+    max.placeholder = "max";
+    bloc.append(
+      "Ajouter une jauge WoW : ",
+      modele,
+      " max ",
+      max,
+      " ",
+      bouton("Ajouter", () =>
+        demander(EVENEMENTS.RESSOURCE_AJOUTER, {
+          idPersonnage: p.id,
+          modele: modele.value,
+          ...(max.value ? { max: Number(max.value) } : {}),
+        }),
+      ),
+    );
+  }
+  return bloc;
+}
+
+function blocRepos(p) {
+  const des = champ(`${p.id}:des`, "number", "1", 3);
+  return el(
+    "p",
+    el("b", "Repos : "),
+    `Des de vie a depenser `,
+    des,
+    " ",
+    bouton("Repos court", () =>
+      demander(EVENEMENTS.REPOS_COURT, { idPersonnage: p.id, desDeVie: Number(des.value) }),
+    ),
+    estMJ() ? " " : null,
+    estMJ() ? bouton("Faire un repos long", () => demander(EVENEMENTS.REPOS_LONG, { idPersonnage: p.id })) : null,
+  );
+}
+
+function blocEtats(p) {
+  const bloc = el("div", el("b", "Etats : "));
+  if (p.etats.length === 0) bloc.append("aucun");
+  const ul = el("ul");
+  for (const e of p.etats) {
+    ul.append(
+      el(
+        "li",
+        icone(e.icone),
+        ` ${e.nom} [${e.nature}] ${e.roundsRestants ? `- ${e.roundsRestants} round(s)` : "- sans limite"} ` +
+          `(icone : "${e.icone}", pose par ${e.posePar}) `,
+        bouton("Retirer", () => demander(EVENEMENTS.ETAT_RETIRER, { idPersonnage: p.id, idEtat: e.id })),
+      ),
+    );
+  }
+  bloc.append(ul);
+
+  // Le MJ voit aussi les auras de son compendium ; les joueurs, les etats officiels.
+  const definitions = estMJ() && compendium.etats.length
+    ? compendium.etats
+    : Object.entries(ETATS_DE_BASE).map(([cle, d]) => ({ cle, ...d }));
+  const choix = liste(
+    `${p.id}:etat`,
+    definitions.map((d) => [d.cle, `${d.nom} (${d.nature}${d.dureeParDefaut ? `, ${d.dureeParDefaut} rounds` : ""})`]),
+  );
+  const rounds = champ(`${p.id}:rounds`, "number", "", 3);
+  rounds.placeholder = "rounds";
+  bloc.append(
+    "Poser : ",
+    choix,
+    " duree ",
+    rounds,
+    " ",
+    bouton("Poser", () =>
+      demander(EVENEMENTS.ETAT_POSER, {
+        idPersonnage: p.id,
+        cle: choix.value,
+        ...(rounds.value ? { rounds: Number(rounds.value) } : {}),
+      }),
+    ),
+    " (duree vide = duree par defaut de l'etat, ou sans limite)",
+  );
+  return bloc;
+}
+
+function blocInventaire(p) {
+  const bloc = el("div", el("b", `Inventaire (${p.inventaire.length}) : `));
+  if (p.inventaire.length === 0) bloc.append("sac vide");
+  const ul = el("ul");
+  for (const o of p.inventaire) {
+    const details = [
+      o.type,
+      o.arme ? `${o.arme.degats} ${o.arme.typeDegats}` : null,
+      o.armure ? `CA +${o.armure.classeArmure}` : null,
+      o.soins ? `soigne ${o.soins}` : null,
+    ].filter(Boolean);
+    ul.append(
+      el(
+        "li",
+        icone(o.icone ?? o.source ?? "objet"),
+        ` ${o.nom} x${o.quantite} [${nomRarete(o.rarete)}] (${details.join(", ")}) `,
+        bouton("Jeter 1", () => demander(EVENEMENTS.INVENTAIRE_RETIRER, { idPersonnage: p.id, idObjet: o.id, quantite: 1 })),
+      ),
+    );
+  }
+  bloc.append(ul);
+  return bloc;
+}
+
+function blocGrimoire(p) {
+  const bloc = el("div", el("b", `Grimoire (${p.grimoire.length}) : `));
+  if (p.grimoire.length === 0) bloc.append("aucun sort");
+  const ul = el("ul");
+  for (const s of p.grimoire) {
+    const effet = s.degats ? `${s.degats.formule} ${s.degats.type}` : s.soins ? `soigne ${s.soins}` : "";
+    ul.append(
+      el(
+        "li",
+        icone(s.icone ?? s.source ?? "sort"),
+        ` ${s.nom} (niv. ${s.niveau}, ${s.ecole}${effet ? `, ${effet}` : ""}` +
+          `${s.cout ? `, cout ${s.cout.quantite} ${s.cout.ressource}` : ""}) `,
+        bouton("Oublier", () => demander(EVENEMENTS.GRIMOIRE_OUBLIER, { idPersonnage: p.id, idSort: s.id })),
+      ),
+    );
+  }
+  bloc.append(ul);
+  return bloc;
 }
 
 function afficherPersonnages() {
-  const liste = $("liste-personnages");
-  liste.replaceChildren();
-
-  if (personnages.size === 0) liste.append(element("li", "(aucun personnage)"));
+  const conteneur = $("liste-personnages");
+  conteneur.replaceChildren();
+  if (personnages.size === 0) conteneur.append(el("p", "(aucun personnage)"));
 
   for (const p of personnages.values()) {
     const pv = p.pointsDeVie;
-    const caracs = CARACTERISTIQUES.map(
-      (c) => `${c.slice(0, 3).toUpperCase()} ${p.caracteristiques[c]} (${signe(p.derives.modificateurs[c])})`,
-    ).join(", ");
-    const ressources = p.ressources.map((r) => `${r.nom} ${r.actuel}/${r.max}`).join(", ") || "aucune";
+    const montant = champ(`${p.id}:montant`, "number", "5");
+    const modifierPv = (type) => () =>
+      demander(EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: p.id, type, montant: Number(montant.value) });
 
-    const ligne = element("li");
-    ligne.append(
-      element("strong", p.nom),
-      ` - ${CLASSES[p.classe].nom} niv. ${p.niveau} - joueur : ${p.proprietaire ?? "PNJ (cache)"}`,
-      element("br"),
-      `PV ${pv.actuels}/${pv.max}${pv.temporaires ? ` (+${pv.temporaires} temp.)` : ""} - CA ${p.classeArmure}` +
-        ` - Maitrise ${signe(p.derives.bonusDeMaitrise)} - Des de vie ${p.desDeVie.restants}d${p.desDeVie.faces}`,
-      element("br"),
-      caracs,
-      element("br"),
-      `Ressources : ${ressources} - Inventaire : ${p.inventaire.length} objet(s)`,
-      element("br"),
+    const resume = el(
+      "summary",
+      el("strong", p.nom),
+      ` - ${CLASSES[p.classe].nom} niv. ${p.niveau} - ${p.proprietaire ?? "PNJ (cache)"} - ` +
+        `PV ${pv.actuels}/${pv.max}${pv.temporaires ? ` (+${pv.temporaires} temp.)` : ""}` +
+        (p.etats.length ? ` - etats : ${p.etats.map((e) => e.nom).join(", ")}` : ""),
     );
 
-    // Controles des PV : visibles pour tous, mais le SERVEUR refusera si ce
-    // n'est pas ton personnage. C'est voulu : essaie, pour verifier !
-    const montant = element("input");
-    montant.type = "number";
-    montant.min = "0";
-    montant.value = "5";
-    montant.size = 4;
-    const bouton = (texte, type) => {
-      const b = element("button", texte);
-      b.addEventListener("click", () => {
-        demander(EVENEMENTS.PERSONNAGE_MODIFIER_PV, {
-          idPersonnage: p.id,
-          type,
-          montant: Number(montant.value),
-        });
-      });
-      return b;
-    };
-    const supprimer = element("button", "Supprimer");
-    supprimer.addEventListener("click", () => {
-      if (confirm(`Supprimer ${p.nom} ? (la fiche part dans la corbeille)`)) {
-        demander(EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: p.id });
-      }
-    });
-
-    ligne.append(
-      "Montant : ",
-      montant,
-      " ",
-      bouton("Degats", TYPES_PV.DEGATS),
-      bouton("Soins", TYPES_PV.SOINS),
-      bouton("PV temporaires", TYPES_PV.TEMPORAIRES),
-      " ",
-      supprimer,
+    const fiche = el(
+      "details",
+      resume,
+      el(
+        "p",
+        `CA ${p.classeArmure} - Maitrise ${signe(p.derives.bonusDeMaitrise)} - Initiative ${signe(p.derives.bonusInitiative)} - ` +
+          `Des de vie ${p.desDeVie.restants}/${p.niveau} (d${p.desDeVie.faces})`,
+        el("br"),
+        CARACTERISTIQUES.map(
+          (c) => `${c.slice(0, 3).toUpperCase()} ${p.caracteristiques[c]} (${signe(p.derives.modificateurs[c])})`,
+        ).join(", "),
+      ),
+      el(
+        "p",
+        el("b", "Points de vie : "),
+        montant,
+        " ",
+        bouton("Degats", modifierPv(TYPES_PV.DEGATS)),
+        bouton("Soins", modifierPv(TYPES_PV.SOINS)),
+        bouton("PV temporaires", modifierPv(TYPES_PV.TEMPORAIRES)),
+      ),
+      blocRepos(p),
+      blocRessources(p),
+      blocEtats(p),
+      blocInventaire(p),
+      blocGrimoire(p),
+      el(
+        "p",
+        bouton("Supprimer le personnage", () => {
+          if (confirm(`Supprimer ${p.nom} ? (la fiche part dans la corbeille)`)) {
+            demander(EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: p.id });
+          }
+        }),
+      ),
     );
-    liste.append(ligne);
+    fiche.open = saisies.get(`${p.id}:ouvert`) !== "non";
+    fiche.addEventListener("toggle", () => saisies.set(`${p.id}:ouvert`, fiche.open ? "oui" : "non"));
+    conteneur.append(fiche, el("hr"));
+  }
+  afficherListesDePersonnages();
+}
+
+// Menus deroulants qui listent les personnages (destinataire du compendium, ajout au combat).
+function afficherListesDePersonnages() {
+  const options = [...personnages.values()].map((p) => [p.id, `${p.nom} (${p.proprietaire ?? "PNJ"})`]);
+  const destinataire = $("choix-destinataire");
+  const precedent = destinataire.value;
+  destinataire.replaceChildren(...options.map(([v, t]) => Object.assign(el("option", t), { value: v })));
+  if (precedent) destinataire.value = precedent;
+
+  const horsCombat = options.filter(([id]) => !combat?.participants.some((c) => c.idPersonnage === id));
+  $("choix-ajout-combat").replaceChildren(...horsCombat.map(([v, t]) => Object.assign(el("option", t), { value: v })));
+}
+
+// --- Combat -------------------------------------------------------------------------------
+
+function afficherCombat() {
+  const ol = $("liste-combat");
+  ol.replaceChildren();
+  if (!combat) {
+    $("combat-statut").textContent = "Pas de combat en cours.";
+    afficherListesDePersonnages();
+    return;
+  }
+  const actif = combat.participants[combat.indexActif];
+  $("combat-statut").textContent = `Round ${combat.round} - c'est au tour de : ${actif.nom}`;
+
+  combat.participants.forEach((c, index) => {
+    const ligne = el(
+      "li",
+      index === combat.indexActif ? ">>> " : "",
+      `${c.nom} : initiative ${c.initiative} (d20 ${c.jet} ${signe(c.bonus)}) `,
+    );
+    if (estMJ()) {
+      const valeur = champ(`${c.id}:init`, "number", String(c.initiative), 3);
+      ligne.append(
+        valeur,
+        bouton("Fixer", () =>
+          demander(EVENEMENTS.COMBAT_FIXER_INITIATIVE, { idParticipant: c.id, valeur: Number(valeur.value) }),
+        ),
+        bouton("Retirer", () => demander(EVENEMENTS.COMBAT_RETIRER, { idParticipant: c.id })),
+      );
+    }
+    ol.append(ligne);
+  });
+  afficherListesDePersonnages();
+}
+
+// --- Compendium et cartes (MJ) ---------------------------------------------------------------
+
+async function chargerCompendium() {
+  if (!estMJ()) return;
+  const reponse = await demander(EVENEMENTS.COMPENDIUM_LISTER, {});
+  if (!reponse.ok) return;
+  compendium = reponse;
+  const destinataire = () => $("choix-destinataire").value;
+
+  $("liste-objets").replaceChildren(
+    ...compendium.objets.map((o) => {
+      const quantite = champ(`compendium:${o.id}`, "number", "1", 3);
+      return el(
+        "li",
+        icone(o.icone ?? o.id),
+        ` ${o.nom} [${nomRarete(o.rarete)}] - ${o.type} `,
+        quantite,
+        " ",
+        bouton(`Ajouter "${o.nom}" a l'inventaire`, () =>
+          demander(EVENEMENTS.INVENTAIRE_AJOUTER, {
+            idPersonnage: destinataire(),
+            idObjet: o.id,
+            quantite: Number(quantite.value),
+          }),
+        ),
+      );
+    }),
+  );
+  $("liste-sorts").replaceChildren(
+    ...compendium.sorts.map((s) =>
+      el(
+        "li",
+        icone(s.icone ?? s.id),
+        ` ${s.nom} (niv. ${s.niveau}, ${s.ecole}${s.cout ? `, ${s.cout.quantite} ${s.cout.ressource}` : ""}) `,
+        bouton("Apprendre", () => demander(EVENEMENTS.GRIMOIRE_APPRENDRE, { idPersonnage: destinataire(), idSort: s.id })),
+      ),
+    ),
+  );
+  $("liste-auras").replaceChildren(
+    ...compendium.etats
+      .filter((e) => !e.officiel)
+      .map((e) => el("li", icone(e.icone), ` ${e.nom} [${e.nature}] - icone "${e.icone}" - ${e.description}`)),
+  );
+  afficherPersonnages();
+}
+
+function afficherErreursCompendium(rapport) {
+  $("erreurs-compendium").replaceChildren(
+    ...rapport.erreurs.map((e) => el("li", `ERREUR compendium/${e.fichier} > ${e.emplacement} : ${e.message}`)),
+  );
+}
+
+async function chargerCartes() {
+  const reponse = await demander(EVENEMENTS.MEDIAS_LISTER, { categorie: "cartes" });
+  if (!reponse.ok) return;
+  const ul = $("liste-cartes");
+  ul.replaceChildren();
+  if (reponse.fichiers.length === 0) {
+    ul.append(el("li", "Aucune image pour l'instant : l'apercu montre l'image de remplacement."));
+  }
+  for (const nom of reponse.fichiers) {
+    ul.append(
+      el("li", `${nom} `, bouton("Afficher", () => ($("apercu-carte").src = `/medias/cartes/${encodeURIComponent(nom)}`))),
+    );
   }
 }
 
-// --- Communication avec le serveur ---------------------------------------------------
+// --- Communication avec le serveur -------------------------------------------------------------
 
 /** Envoie une demande et attend la reponse (l'"accuse de reception"). */
 function demander(evenement, donnees) {
@@ -158,14 +466,8 @@ async function listerTables() {
 function remplirTables(tables) {
   const choix = $("liste-tables");
   const precedent = choix.value;
-  choix.replaceChildren(
-    ...tables.map((t) => {
-      const option = element("option", t.nom);
-      option.value = t.id;
-      return option;
-    }),
-  );
-  if (tables.length === 0) choix.append(element("option", "(aucune table : le MJ doit en creer une)"));
+  choix.replaceChildren(...tables.map((t) => Object.assign(el("option", t.nom), { value: t.id })));
+  if (tables.length === 0) choix.append(el("option", "(aucune table : le MJ doit en creer une)"));
   if (precedent) choix.value = precedent;
 }
 
@@ -179,23 +481,102 @@ async function rejoindre(idTable) {
   $("nom-table").textContent = reponse.table.nom;
   personnages.clear();
   for (const p of reponse.personnages) personnages.set(p.id, p);
-  afficherPersonnages();
+  combat = reponse.combat;
   afficherZone("jeu");
+  afficherPersonnages();
+  afficherCombat();
   journal(`Table "${reponse.table.nom}" rejointe (${reponse.personnages.length} personnage(s) visible(s)).`);
+  if (estMJ()) {
+    await chargerCompendium();
+    await chargerCartes();
+  }
+}
+
+// Traduit la "cause" d'une mise a jour de fiche en phrase lisible.
+function decrireCause(p, cause) {
+  const pv = p.pointsDeVie;
+  const ressources = (liste) => liste.map((r) => `${r.nom} ${r.avant}->${r.apres}`).join(", ");
+  switch (cause.action) {
+    case "creation":
+      return `${cause.par} a cree ${p.nom}.`;
+    case "points-de-vie": {
+      const absorbes = cause.absorbesParTemporaires ? ` (${cause.absorbesParTemporaires} absorbes)` : "";
+      return `${cause.par} : ${cause.type} ${cause.montant} sur ${p.nom}${absorbes} -> PV ${pv.actuels}/${pv.max}${cause.aTerre ? " - A TERRE !" : ""}`;
+    }
+    case "repos":
+      if (cause.repos === "court") {
+        const jets = cause.jets.map((j) => `${j.de}${signe(cause.modificateurConstitution)}`).join(", ");
+        return (
+          `${p.nom} : REPOS COURT, ${cause.desDepenses} de(s) de vie${jets ? ` [${jets}]` : ""} -> +${cause.pvRecuperes} PV ` +
+          `(${pv.actuels}/${pv.max})${cause.ressources.length ? ` ; ${ressources(cause.ressources)}` : ""}`
+        );
+      }
+      return (
+        `${p.nom} : REPOS LONG -> +${cause.pvRecuperes} PV, ${cause.pvTemporairesPerdus} PV temp. perdus, ` +
+        `+${cause.desDeVieRecuperes} de(s) de vie${cause.ressources.length ? ` ; ${ressources(cause.ressources)}` : ""}`
+      );
+    case "ressource":
+      return `${cause.par} : ${cause.nom} de ${p.nom} ${cause.avant} -> ${cause.apres}`;
+    case "ressource-ajoutee":
+      return `${cause.par} ajoute la ressource ${cause.nom} a ${p.nom}.`;
+    case "ressource-retiree":
+      return `${cause.par} retire la ressource ${cause.nom} de ${p.nom}.`;
+    case "etat-pose":
+      return (
+        `${cause.par} ${cause.rafraichi ? "rafraichit" : "pose"} ${cause.etat.nom} [${cause.etat.nature}, icone "${cause.etat.icone}"] ` +
+        `sur ${p.nom}${cause.etat.roundsRestants ? ` pour ${cause.etat.roundsRestants} round(s)` : ""}.`
+      );
+    case "etat-retire":
+      return `${cause.par} retire ${cause.etat.nom} de ${p.nom}.`;
+    case "etats-ecoules":
+      return cause.expires.length
+        ? `Fin du tour de ${p.nom} : ${cause.expires.map((e) => e.nom).join(", ")} expire(nt).`
+        : `Fin du tour de ${p.nom} : les durees des etats diminuent.`;
+    case "objet-recu":
+      return `${p.nom} recoit ${cause.quantite}x ${cause.nom} [${nomRarete(cause.rarete)}].`;
+    case "objet-retire":
+      return `${p.nom} se debarrasse de ${cause.quantite}x ${cause.nom}.`;
+    case "sort-appris":
+      return `${p.nom} apprend ${cause.nom}.`;
+    case "sort-oublie":
+      return `${p.nom} oublie ${cause.nom}.`;
+    default:
+      return `${p.nom} mis a jour (${cause.action}).`;
+  }
+}
+
+function decrireCombat(cause) {
+  const jets = (liste) => liste.map((j) => `${j.nom} ${j.initiative} (d20 ${j.jet} ${signe(j.bonus)})`).join(", ");
+  switch (cause.action) {
+    case "debut":
+      return `COMBAT ! Initiative : ${jets(cause.jets)}`;
+    case "tour":
+      return `${cause.nouveauRound ? `--- Round ${cause.round} --- ` : ""}Fin du tour de ${cause.finDeTour}, au tour de ${cause.actif}.`;
+    case "retour":
+      return `${cause.par} revient au tour de ${cause.actif} (round ${cause.round}).`;
+    case "arrivee":
+      return `Arrivee en combat : ${jets(cause.jets)}`;
+    case "retrait":
+      return `${cause.nom} quitte le combat.`;
+    case "initiative-fixee":
+      return `${cause.par} fixe l'initiative de ${cause.nom} a ${cause.valeur}.`;
+    case "fin":
+      return `Fin du combat (${cause.rounds} round(s)).`;
+    default:
+      return `Combat mis a jour (${cause.action}).`;
+  }
 }
 
 function brancherSocket(jeton) {
-  // io() se connecte au serveur qui a servi cette page : ton PC, en direct ou
-  // a travers le tunnel. Le jeton est presente a l'entree.
+  // io() se connecte au serveur qui a servi cette page (en direct ou via le tunnel).
   socket = io({ auth: { jeton } });
 
   socket.on("connect", async () => {
     $("statut").textContent = "connecte";
     journal("Liaison temps reel etablie.");
     await listerTables();
-    // Apres une coupure (wifi, tunnel...), on revient automatiquement a sa table.
     const table = memoire.lire(CLE_TABLE);
-    if (table) await rejoindre(table);
+    if (table) await rejoindre(table); // retour automatique apres une coupure
   });
 
   socket.on("disconnect", (raison) => {
@@ -205,7 +586,6 @@ function brancherSocket(jeton) {
 
   socket.on("connect_error", (erreur) => {
     if (erreur.message === "non-authentifie") {
-      // Jeton inconnu (serveur redemarre, jeton expire) : retour a l'entree.
       journal("Session expiree : reconnecte-toi.");
       deconnecter();
     } else {
@@ -217,24 +597,13 @@ function brancherSocket(jeton) {
   socket.on(EVENEMENTS.TABLES_LISTE, ({ tables }) => remplirTables(tables));
 
   socket.on(EVENEMENTS.TABLE_PRESENCE, ({ connectes }) => {
-    $("liste-presence").replaceChildren(
-      ...connectes.map((c) => element("li", `${c.pseudo}${c.role === ROLES.MJ ? " (MJ)" : ""}`)),
-    );
+    $("liste-presence").textContent = connectes.map((c) => `${c.pseudo}${c.role === ROLES.MJ ? " (MJ)" : ""}`).join(", ");
   });
 
   socket.on(EVENEMENTS.PERSONNAGE_MAJ, ({ personnage, cause }) => {
     personnages.set(personnage.id, personnage);
     afficherPersonnages();
-    if (cause.action === "creation") {
-      journal(`${cause.par} a cree ${personnage.nom}.`);
-    } else if (cause.action === "points-de-vie") {
-      const pv = personnage.pointsDeVie;
-      const absorbes = cause.absorbesParTemporaires ? ` (${cause.absorbesParTemporaires} absorbes par les PV temp.)` : "";
-      journal(
-        `${cause.par} : ${cause.type} ${cause.montant} sur ${personnage.nom}${absorbes} -> PV ${pv.actuels}/${pv.max}` +
-          (cause.aTerre ? " - A TERRE !" : ""),
-      );
-    }
+    journal(decrireCause(personnage, cause));
   });
 
   socket.on(EVENEMENTS.PERSONNAGE_SUPPRIME, ({ idPersonnage, par }) => {
@@ -242,6 +611,18 @@ function brancherSocket(jeton) {
     personnages.delete(idPersonnage);
     afficherPersonnages();
     journal(`${par} a supprime ${nom}.`);
+  });
+
+  socket.on(EVENEMENTS.COMBAT_ETAT, ({ combat: nouveau, cause }) => {
+    combat = nouveau;
+    afficherCombat();
+    journal(decrireCombat(cause));
+  });
+
+  socket.on(EVENEMENTS.COMPENDIUM_MAJ, async ({ rapport }) => {
+    journal(`Compendium recharge : ${rapport.objets} objets, ${rapport.sorts} sorts, ${rapport.etats} auras, ${rapport.erreurs.length} erreur(s).`);
+    afficherErreursCompendium(rapport);
+    await chargerCompendium();
   });
 
   socket.on(EVENEMENTS.DES_RESULTAT, (r) => {
@@ -252,10 +633,7 @@ function brancherSocket(jeton) {
           : t.expression,
       )
       .join(" ");
-    journal(
-      `${r.secret ? "(SECRET) " : ""}${r.par} lance ${r.formule}${r.raison ? ` (${r.raison})` : ""} : ` +
-        `${detail} = ${r.total}`,
-    );
+    journal(`${r.secret ? "(SECRET) " : ""}${r.par} lance ${r.formule}${r.raison ? ` (${r.raison})` : ""} : ${detail} = ${r.total}`);
   });
 }
 
@@ -263,9 +641,8 @@ function deconnecter() {
   socket?.disconnect();
   socket = null;
   moi = null;
-  memoire.ecrire(CLE_JETON, null);
-  memoire.ecrire(CLE_TABLE, null);
-  memoire.ecrire("vtt-moi", null);
+  combat = null;
+  for (const cle of [CLE_JETON, CLE_TABLE, CLE_MOI]) memoire.ecrire(cle, null);
   $("statut").textContent = "deconnecte";
   personnages.clear();
   afficherZone("connexion");
@@ -274,14 +651,14 @@ function deconnecter() {
 function demarrerSession(jeton, profil) {
   moi = profil;
   memoire.ecrire(CLE_JETON, jeton);
-  memoire.ecrire("vtt-moi", JSON.stringify(profil));
-  $("moi").textContent = `${profil.pseudo} (${profil.role === ROLES.MJ ? "Maitre du Jeu" : "Joueur"})`;
+  memoire.ecrire(CLE_MOI, JSON.stringify(profil));
+  $("moi").textContent = `${profil.pseudo} (${estMJ() ? "Maitre du Jeu" : "Joueur"})`;
   afficherElementsMJ();
   afficherZone("tables");
   brancherSocket(jeton);
 }
 
-// --- Formulaires ------------------------------------------------------------------------
+// --- Boutons et formulaires fixes ------------------------------------------------------------
 
 $("form-connexion").addEventListener("submit", async (evenement) => {
   evenement.preventDefault();
@@ -290,11 +667,7 @@ $("form-connexion").addEventListener("submit", async (evenement) => {
     const reponse = await fetch("/api/connexion", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        role: champs.get("role"),
-        pseudo: champs.get("pseudo"),
-        motDePasse: champs.get("motDePasse"),
-      }),
+      body: JSON.stringify({ role: champs.get("role"), pseudo: champs.get("pseudo"), motDePasse: champs.get("motDePasse") }),
     });
     const donnees = await reponse.json();
     if (!reponse.ok) return journal(`Connexion refusee : ${donnees.erreur}`);
@@ -307,20 +680,14 @@ $("form-connexion").addEventListener("submit", async (evenement) => {
 });
 
 $("bouton-deconnexion").addEventListener("click", deconnecter);
-
 $("bouton-rejoindre").addEventListener("click", () => {
-  const idTable = $("liste-tables").value;
-  if (idTable) rejoindre(idTable);
+  if ($("liste-tables").value) rejoindre($("liste-tables").value);
 });
 
 $("form-table").addEventListener("submit", async (evenement) => {
   evenement.preventDefault();
-  const nom = new FormData(evenement.target).get("nom");
-  const reponse = await demander(EVENEMENTS.TABLE_CREER, { nom });
-  if (reponse.ok) {
-    evenement.target.reset();
-    journal(`Table "${reponse.table.nom}" creee.`);
-  }
+  const reponse = await demander(EVENEMENTS.TABLE_CREER, { nom: new FormData(evenement.target).get("nom") });
+  if (reponse.ok) evenement.target.reset();
 });
 
 $("form-personnage").addEventListener("submit", async (evenement) => {
@@ -331,9 +698,7 @@ $("form-personnage").addEventListener("submit", async (evenement) => {
     classe: champs.get("classe"),
     caracteristiques: Object.fromEntries(CARACTERISTIQUES.map((c) => [c, Number(champs.get(c))])),
   };
-  const proprietaire = champs.get("proprietaire");
-  if (moi?.role === ROLES.MJ && proprietaire) donnees.proprietaire = proprietaire;
-
+  if (estMJ() && champs.get("proprietaire")) donnees.proprietaire = champs.get("proprietaire");
   const reponse = await demander(EVENEMENTS.PERSONNAGE_CREER, { donnees });
   if (reponse.ok) evenement.target.elements.nom.value = "";
 });
@@ -342,25 +707,37 @@ $("form-des").addEventListener("submit", (evenement) => {
   evenement.preventDefault();
   const champs = new FormData(evenement.target);
   const demande = { formule: champs.get("formule"), raison: champs.get("raison") || undefined };
-  if (moi?.role === ROLES.MJ) demande.secret = champs.get("secret") === "on";
+  if (estMJ()) demande.secret = champs.get("secret") === "on";
   demander(EVENEMENTS.DES_LANCER, demande);
 });
 
-// --- Demarrage de la page --------------------------------------------------------------
+$("bouton-initiative").addEventListener("click", () => demander(EVENEMENTS.COMBAT_DEMARRER, {}));
+$("bouton-tour-suivant").addEventListener("click", () => {
+  if (!combat) return journal("Pas de combat en cours.");
+  // On precise qui on croit actif : protege contre les doubles clics simultanes.
+  demander(EVENEMENTS.COMBAT_TOUR_SUIVANT, { idActif: combat.participants[combat.indexActif].id });
+});
+$("bouton-tour-precedent").addEventListener("click", () => demander(EVENEMENTS.COMBAT_TOUR_PRECEDENT, {}));
+$("bouton-fin-combat").addEventListener("click", () => demander(EVENEMENTS.COMBAT_TERMINER, {}));
+$("bouton-ajout-combat").addEventListener("click", () => {
+  if ($("choix-ajout-combat").value) demander(EVENEMENTS.COMBAT_AJOUTER, { idPersonnage: $("choix-ajout-combat").value });
+});
+$("bouton-repos-long-table").addEventListener("click", () => {
+  if (confirm("Accorder un repos long a TOUS les personnages de la table ?")) demander(EVENEMENTS.REPOS_LONG, {});
+});
+$("bouton-recharger-compendium").addEventListener("click", async () => {
+  const reponse = await demander(EVENEMENTS.COMPENDIUM_RECHARGER, {});
+  if (reponse.ok) afficherErreursCompendium(reponse.rapport);
+});
+$("bouton-cartes").addEventListener("click", chargerCartes);
+
+// --- Demarrage de la page ----------------------------------------------------------------------
 
 $("choix-classe").replaceChildren(
-  ...Object.entries(CLASSES).map(([cle, { nom, deDeVie }]) => {
-    const option = element("option", `${nom} (d${deDeVie})`);
-    option.value = cle;
-    return option;
-  }),
+  ...Object.entries(CLASSES).map(([cle, { nom, deDeVie }]) => Object.assign(el("option", `${nom} (d${deDeVie})`), { value: cle })),
 );
 
-// Rechargement de la page (F5) : on reprend la session de cet onglet.
 const jetonMemorise = memoire.lire(CLE_JETON);
-const profilMemorise = memoire.lire("vtt-moi");
-if (jetonMemorise && profilMemorise) {
-  demarrerSession(jetonMemorise, JSON.parse(profilMemorise));
-} else {
-  afficherZone("connexion");
-}
+const profilMemorise = memoire.lire(CLE_MOI);
+if (jetonMemorise && profilMemorise) demarrerSession(jetonMemorise, JSON.parse(profilMemorise));
+else afficherZone("connexion");

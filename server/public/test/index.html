@@ -2,13 +2,13 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>VTT - Banc de test du sprint 1</title>
+    <title>VTT - Banc de test</title>
   </head>
   <body>
-    <h1>Banc de test - Sprint 1</h1>
+    <h1>Banc de test</h1>
     <p>Etat de la liaison : <strong id="statut">deconnecte</strong></p>
 
-    <!-- ETAPE 1 : se presenter a l'entree ---------------------------------->
+    <!-- ETAPE 1 : se presenter a l'entree -------------------------------------->
     <section id="zone-connexion">
       <h2>1. Connexion</h2>
       <form id="form-connexion">
@@ -23,30 +23,43 @@
       </form>
     </section>
 
-    <!-- ETAPE 2 : choisir sa table ------------------------------------------>
+    <!-- ETAPE 2 : choisir sa table ------------------------------------------------>
     <section id="zone-tables" hidden>
       <h2>2. Tables de jeu</h2>
       <p>Connecte en tant que : <strong id="moi"></strong> <button id="bouton-deconnexion">Se deconnecter</button></p>
       <label>Table : <select id="liste-tables"></select></label>
       <button id="bouton-rejoindre">Rejoindre</button>
-
       <form id="form-table" data-mj-seulement hidden>
         <label>Nouvelle table (MJ) : <input name="nom" maxlength="60" /></label>
         <button type="submit">Creer</button>
       </form>
     </section>
 
-    <!-- ETAPE 3 : jouer ------------------------------------------------------>
+    <!-- ETAPE 3 : jouer --------------------------------------------------------------->
     <section id="zone-jeu" hidden>
       <h2>3. Table : <span id="nom-table"></span></h2>
+      <p>Connectes : <span id="liste-presence"></span></p>
 
-      <h3>Connectes a cette table</h3>
-      <ul id="liste-presence"></ul>
+      <hr />
+      <h3>Combat</h3>
+      <p id="combat-statut">Pas de combat en cours.</p>
+      <ol id="liste-combat"></ol>
+      <p>
+        <button id="bouton-initiative" data-mj-seulement hidden>Lancer l'initiative (tous les personnages)</button>
+        <button id="bouton-tour-suivant">Tour suivant / Fin de mon tour</button>
+        <button id="bouton-tour-precedent" data-mj-seulement hidden>Tour precedent</button>
+        <button id="bouton-fin-combat" data-mj-seulement hidden>Terminer le combat</button>
+      </p>
+      <p data-mj-seulement hidden>
+        Ajouter au combat : <select id="choix-ajout-combat"></select> <button id="bouton-ajout-combat">Ajouter</button>
+      </p>
 
+      <hr />
       <h3>Personnages</h3>
-      <ul id="liste-personnages"></ul>
+      <p data-mj-seulement hidden><button id="bouton-repos-long-table">Faire un repos long (toute la table)</button></p>
+      <div id="liste-personnages"></div>
 
-      <h3>Creer un personnage (niveau 1)</h3>
+      <h4>Creer un personnage (niveau 1)</h4>
       <form id="form-personnage">
         <label>Nom : <input name="nom" maxlength="60" required /></label>
         <label>Classe : <select name="classe" id="choix-classe"></select></label>
@@ -64,6 +77,30 @@
         <button type="submit">Creer</button>
       </form>
 
+      <section data-mj-seulement hidden>
+        <hr />
+        <h3>Compendium (MJ)</h3>
+        <p>
+          Destinataire : <select id="choix-destinataire"></select>
+          <button id="bouton-recharger-compendium">Recharger le compendium</button>
+        </p>
+        <ul id="erreurs-compendium"></ul>
+        <h4>Objets</h4>
+        <ul id="liste-objets"></ul>
+        <h4>Sorts</h4>
+        <ul id="liste-sorts"></ul>
+        <h4>Auras personnalisees</h4>
+        <ul id="liste-auras"></ul>
+
+        <hr />
+        <h3>Cartes (MJ)</h3>
+        <p>Images trouvees dans ton dossier <code>cartes/</code> :</p>
+        <ul id="liste-cartes"></ul>
+        <p><button id="bouton-cartes">Actualiser la liste</button></p>
+        <img id="apercu-carte" src="/medias/cartes/aucune-carte" width="480" alt="Apercu de la carte" />
+      </section>
+
+      <hr />
       <h3>Lancer des des</h3>
       <form id="form-des">
         <label>Formule : <input name="formule" value="1d20+5" maxlength="60" /></label>
@@ -71,7 +108,6 @@
         <label data-mj-seulement hidden><input type="checkbox" name="secret" /> Secret (MJ seul)</label>
         <button type="submit">Lancer</button>
       </form>
-      <p>Exemples : <code>1d20+3</code>, <code>2d20kh1</code> (avantage), <code>2d20kl1</code> (desavantage), <code>8d6</code>, <code>4d6kh3</code>.</p>
     </section>
 
     <h2>Journal (evenements recus du serveur)</h2>

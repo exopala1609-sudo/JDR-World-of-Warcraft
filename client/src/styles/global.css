@@ -12,10 +12,10 @@
   --wow-bronze: #6b5530;
   --wow-ombre: rgba(0, 0, 0, 0.75);
 
-  /* Couleurs de rarete (utilisees plus tard par les sacs et le compendium) */
-  --rarete-pauvre: #9d9d9d;
-  --rarete-commun: #ffffff;
-  --rarete-peu-commun: #1eff00;
+  /* Couleurs de rarete : memes cles que shared/raretes.js */
+  --rarete-mediocre: #9d9d9d;
+  --rarete-classique: #ffffff;
+  --rarete-inhabituel: #1eff00;
   --rarete-rare: #0070dd;
   --rarete-epique: #a335ee;
   --rarete-legendaire: #ff8000;

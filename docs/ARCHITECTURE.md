@@ -19,35 +19,49 @@ JDR-World-of-Warcraft/
 │
 ├── shared/                   Code PARTAGE entre le serveur et les navigateurs
 │   ├── protocole.js          Noms des messages temps reel (le "vocabulaire" commun)
-│   └── dnd5e.js              Regles de base : classes, modificateurs, bonus de maitrise
+│   ├── dnd5e.js              Regles de base : classes, modificateurs, ressources de depart
+│   ├── raretes.js            Les 6 raretes WoW et leurs couleurs
+│   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
+│   └── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
 │
 ├── server/                   Le serveur, qui tourne sur ton PC
 │   ├── src/
 │   │   ├── index.js          Chef d'orchestre : branche toutes les pieces et demarre
 │   │   ├── config.js         Lit le .env et calcule les chemins des dossiers
-│   │   ├── diagnostic.js     Verifie les dossiers au demarrage
+│   │   ├── diagnostic.js     Verifie (et cree au besoin) les dossiers au demarrage
 │   │   ├── reseau.js         Affiche les adresses de connexion
 │   │   ├── tunnel.js         Acces distant en un lien (tunnel rapide Cloudflare)
 │   │   ├── verrou.js         Empeche deux PC d'ouvrir la partie en meme temps
-│   │   ├── fichiers.js       Ecriture "atomique" des JSON (sure avec un cloud)
-│   │   ├── temps-reel.js     Moteur Socket.IO : salons, droits, arbitrage
-│   │   ├── auth/
-│   │   │   ├── sessions.js   Mot de passe MJ, pseudos, jetons d'acces, anti force brute
-│   │   │   └── routes.js     L'adresse POST /api/connexion
+│   │   ├── fichiers.js       Lecture/ecriture sures des JSON (atomique, BOM Windows)
+│   │   ├── medias.js         Images du dossier cloud + carre gris de remplacement
+│   │   ├── auth/             Mot de passe MJ, pseudos, jetons d'acces, anti force brute
 │   │   ├── donnees/
-│   │   │   └── depot.js      Memoire du jeu + sauvegarde des fichiers JSON
+│   │   │   ├── depot.js      Memoire du jeu + sauvegarde (fiches, tables, combats)
+│   │   │   └── compendium.js Lecture des fichiers du compendium, rapport d'erreurs
 │   │   ├── modeles/          La "forme" exacte des donnees (verifiee par Zod)
-│   │   │   ├── personnage.js Fiche D&D 5e complete + regles de creation
-│   │   │   ├── table.js      Une session de jeu
-│   │   │   ├── identifiants.js  Format des identifiants (surs comme noms de fichiers)
-│   │   │   └── zod.js        Reglage de Zod (messages en francais)
-│   │   └── regles/           Les arbitrages : fonctions pures, testees
-│   │       ├── des.js        Lancers de des ("2d20kh1+5")
-│   │       ├── points-de-vie.js  Degats, soins, PV temporaires
-│   │       └── erreurs.js    Distingue un refus normal d'un bug
-│   ├── public/test/          Banc de test brut du sprint 1 (HTML + JS, sans CSS)
+│   │   │   ├── personnage.js Fiche D&D 5e : ressources, inventaire, grimoire, etats
+│   │   │   ├── compendium.js Objets, sorts, auras tels qu'ecrits dans le compendium
+│   │   │   ├── combat.js     Ordre d'initiative et tour actif
+│   │   │   ├── migrations.js Mise a niveau des fiches d'un ancien format
+│   │   │   └── table.js, identifiants.js, zod.js
+│   │   ├── regles/           Les arbitrages : fonctions pures, testees
+│   │   │   ├── des.js        Lancers de des ("2d20kh1+5")
+│   │   │   ├── points-de-vie.js  Degats, soins, PV temporaires
+│   │   │   ├── ressources.js Depense / gain, regles de repos de chaque ressource
+│   │   │   ├── repos.js      Repos court (des de vie) et repos long
+│   │   │   ├── etats.js      Poser, retirer, faire expirer auras et debuffs
+│   │   │   ├── combat.js     Initiative, ordre, tours et rounds
+│   │   │   └── erreurs.js    Distingue un refus normal d'un bug
+│   │   └── temps-reel/       Moteur Socket.IO, un fichier par domaine
+│   │       ├── index.js      Controle d'acces, salons, guichet, droits
+│   │       ├── tables.js, personnages.js, repos.js
+│   │       ├── compendium.js Inventaire, grimoire, liste des images
+│   │       ├── combat.js     Initiative et tours (protection double clic)
+│   │       └── des.js
+│   ├── public/test/          Banc de test brut (HTML + JS, sans CSS)
 │   └── test/                 Tests automatiques (npm test)
 │
+├── exemples/compendium/      Donnees de test, copiees dans un compendium vide
 ├── client/                   Future interface WoW (React), en pause pendant le sprint 1
 ├── scripts/                  Utilitaires (creation du .env, detection du dossier cloud)
 └── docs/                     Documentation
@@ -57,11 +71,13 @@ JDR-World-of-Warcraft/
 
 ```
 <VTT_ASSETS>/                 ex. G:\Mon Drive\JDR
-├── cartes/  jetons/  portraits/  compendium/
+├── cartes/  jetons/  portraits/  icones/
+├── compendium/               Tes objets, sorts et auras (voir docs/COMPENDIUM.md)
 └── parties/
     ├── partie-en-cours.verrou.json   Present seulement quand un serveur tourne
     └── t-3f9a0c1b2d/                 Une table de jeu
         ├── table.json
+        ├── combat.json               Present seulement pendant un combat
         ├── personnages/
         │   └── p-8e21aa04c7.json     Un fichier par personnage
         └── corbeille/                Fiches supprimees, recuperables a la main

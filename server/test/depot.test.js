@@ -21,7 +21,7 @@ test("ce qui est enregistre est relu a l'identique apres un redemarrage", () => 
     depot.vider(); // simule Ctrl + C : tout est ecrit sur le disque
 
     const relu = creerDepot(dossier);
-    assert.deepEqual(relu.charger(), { tables: 1, personnages: 1, ignores: 0 });
+    assert.deepEqual(relu.charger(), { tables: 1, personnages: 1, combats: 0, migrees: 0, ignores: 0 });
     assert.deepEqual(relu.obtenirPersonnage(perso.id), perso);
   } finally {
     rmSync(dossier, { recursive: true, force: true });
@@ -63,6 +63,41 @@ test("supprimer un personnage le deplace dans la corbeille", () => {
     assert.equal(depot.obtenirPersonnage(perso.id), null);
     assert.equal(readdirSync(join(dossier, table.id, "personnages")).length, 0);
     assert.equal(readdirSync(join(dossier, table.id, "corbeille")).length, 1);
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test("une fiche du sprint 1 est convertie au nouveau format, sans perte", () => {
+  const dossier = mkdtempSync(join(tmpdir(), "vtt-depot-"));
+  try {
+    const depot = creerDepot(dossier);
+    depot.charger();
+    const table = depot.enregistrerTable(fabriquerTable({ nom: "Test" }));
+    depot.vider();
+    // Une vraie fiche telle que le sprint 1 l'ecrivait (sans versionSchema).
+    const ancienne = {
+      id: "p-1111111111", idTable: table.id, proprietaire: "Hadrien", nom: "Thrall", classe: "barbare", niveau: 1,
+      caracteristiques: { ...caracs, force: 16 }, classeArmure: 14,
+      pointsDeVie: { max: 15, actuels: 9, temporaires: 0 }, desDeVie: { faces: 12, restants: 1 },
+      ressources: [{ cle: "rage", nom: "Rage", actuel: 1, max: 2, recuperation: "repos-long" }],
+      inventaire: [{ id: "o-2222222222", nom: "Hache", quantite: 1, rarete: "peu-commun", poids: 3, description: "" }],
+      creeLe: "2026-09-24T10:00:00.000Z", modifieLe: "2026-09-24T10:00:00.000Z",
+    };
+    mkdirSync(join(dossier, table.id, "personnages"), { recursive: true });
+    writeFileSync(join(dossier, table.id, "personnages", "p-1111111111.json"), "\uFEFF" + JSON.stringify(ancienne));
+
+    const relu = creerDepot(dossier);
+    assert.equal(relu.charger().migrees, 1);
+    const fiche = relu.obtenirPersonnage("p-1111111111");
+    assert.equal(fiche.versionSchema, 2);
+    assert.equal(fiche.pointsDeVie.actuels, 9);
+    assert.deepEqual(
+      { cle: fiche.ressources[0].cle, actuel: fiche.ressources[0].actuel, court: fiche.ressources[0].reposCourt, long: fiche.ressources[0].reposLong },
+      { cle: "rage-barbare", actuel: 1, court: "aucun", long: "remplir" }, // libere le nom "rage" pour la jauge WoW
+    );
+    assert.equal(fiche.inventaire[0].rarete, "inhabituel");
+    assert.deepEqual([fiche.grimoire, fiche.etats], [[], []]);
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }

@@ -1,0 +1,26 @@
+{
+  "etats": [
+    {
+      "id": "en-feu",
+      "nom": "En feu",
+      "nature": "debuff",
+      "description": "Donnee de test. Subit 1d4 degats de feu au debut de son tour.",
+      "dureeParDefaut": 3
+    },
+    {
+      "id": "saignement",
+      "nom": "Saignement",
+      "nature": "debuff",
+      "description": "Donnee de test. Perd 1d6 PV a chaque tour tant qu'on ne le soigne pas.",
+      "dureeParDefaut": 2
+    },
+    {
+      "id": "benediction",
+      "nom": "Benediction",
+      "nature": "buff",
+      "icone": "spell_holy_blessingofprotection",
+      "description": "Donnee de test. Ajoute 1d4 aux jets d'attaque et de sauvegarde.",
+      "dureeParDefaut": 10
+    }
+  ]
+}

@@ -6,18 +6,23 @@
 //                                pour creer un personnage (et rien de plus).
 // Le serveur calcule lui-meme le reste (PV max, CA, ressources...) : un
 // joueur ne peut pas s'attribuer 999 PV en trafiquant sa requete.
-import { z } from "./zod.js";
 import {
   CARACTERISTIQUES,
   CLASSES,
-  RARETES,
-  RECUPERATIONS,
   bonusDeMaitrise,
   classeArmureSansArmure,
   modificateur,
   ressourcesDeDepart,
 } from "../../../shared/dnd5e.js";
+import { NATURES_ETAT } from "../../../shared/etats.js";
+import { MODES_REPOS, TYPES_RESSOURCE } from "../../../shared/ressources.js";
+import { champsObjet, champsSort, schemaIdCompendium } from "./compendium.js";
 import { nouvelId, schemaId } from "./identifiants.js";
+import { z } from "./zod.js";
+
+// Version du format des fiches. Si elle change, modeles/migrations.js sait
+// convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
+export const VERSION_FICHE = 2;
 
 const entier = (min, max) => z.int().min(min).max(max);
 
@@ -35,44 +40,77 @@ export const SchemaPointsDeVie = z
   })
   .refine((pv) => pv.actuels <= pv.max, "Les PV actuels ne peuvent pas depasser le maximum.");
 
+// Ce qui arrive a une ressource lors d'un repos (voir shared/ressources.js).
+const schemaRegleRepos = z.union([z.enum(MODES_REPOS), z.strictObject({ ajouter: entier(1, 999) })]);
+
 export const SchemaRessource = z
   .strictObject({
     cle: z.string().regex(/^[a-z0-9-]{1,40}$/),
     nom: z.string().trim().min(1).max(60),
-    actuel: entier(0, 99),
-    max: entier(0, 99),
-    recuperation: z.enum(RECUPERATIONS),
+    type: z.enum(TYPES_RESSOURCE),
+    actuel: entier(0, 999),
+    max: entier(0, 999),
+    reposCourt: schemaRegleRepos,
+    reposLong: schemaRegleRepos,
+    apparence: z.string().regex(/^[a-z0-9-]{1,40}$/),
   })
   .refine((r) => r.actuel <= r.max, "Une ressource ne peut pas depasser son maximum.");
 
-export const SchemaObjet = z.strictObject({
+// Un objet dans un sac : une COPIE de l'entree du compendium, avec sa quantite.
+export const SchemaObjetInventaire = z.strictObject({
   id: schemaId("o"),
-  nom: z.string().trim().min(1).max(80),
+  source: schemaIdCompendium.nullable(), // l'entree du compendium d'origine
   quantite: entier(1, 9999),
-  rarete: z.enum(RARETES),
-  poids: z.number().min(0).max(10_000),
-  description: z.string().max(2000),
+  ...champsObjet,
+});
+
+// Un sort connu (le "grimoire"), copie depuis le compendium.
+export const SchemaSortConnu = z.strictObject({
+  id: schemaId("s"),
+  source: schemaIdCompendium.nullable(),
+  ...champsSort,
+});
+
+// Un etat pose sur le personnage (aura, debuff).
+export const SchemaEtatActif = z.strictObject({
+  id: schemaId("e"),
+  cle: z.string().regex(/^[a-z0-9-]{1,60}$/), // quel etat (ex. "empoisonne")
+  nom: z.string().trim().min(1).max(60),
+  nature: z.enum(NATURES_ETAT),
+  icone: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/), // identifiant visuel
+  description: z.string().max(1000),
+  roundsRestants: entier(1, 100).nullable(), // null = jusqu'a ce qu'on le retire
+  posePar: z.string().max(40),
 });
 
 // --- La fiche complete -------------------------------------------------------
 
-export const SchemaPersonnage = z.strictObject({
-  id: schemaId("p"),
-  idTable: schemaId("t"),
-  // Pseudo du joueur a qui appartient la fiche, ou null pour un PNJ du MJ.
-  proprietaire: z.string().nullable(),
-  nom: z.string().trim().min(1).max(60),
-  classe: z.enum(Object.keys(CLASSES)),
-  niveau: entier(1, 20),
-  caracteristiques: SchemaCaracteristiques,
-  classeArmure: entier(1, 40),
-  pointsDeVie: SchemaPointsDeVie,
-  desDeVie: z.strictObject({ faces: z.literal([6, 8, 10, 12]), restants: entier(0, 20) }),
-  ressources: z.array(SchemaRessource).max(30),
-  inventaire: z.array(SchemaObjet).max(500),
-  creeLe: z.iso.datetime(),
-  modifieLe: z.iso.datetime(),
-});
+export const SchemaPersonnage = z
+  .strictObject({
+    versionSchema: z.literal(VERSION_FICHE),
+    id: schemaId("p"),
+    idTable: schemaId("t"),
+    // Pseudo du joueur a qui appartient la fiche, ou null pour un PNJ du MJ.
+    proprietaire: z.string().nullable(),
+    nom: z.string().trim().min(1).max(60),
+    classe: z.enum(Object.keys(CLASSES)),
+    niveau: entier(1, 20),
+    caracteristiques: SchemaCaracteristiques,
+    classeArmure: entier(1, 40),
+    pointsDeVie: SchemaPointsDeVie,
+    desDeVie: z.strictObject({ faces: z.literal([6, 8, 10, 12]), restants: entier(0, 20) }),
+    ressources: z.array(SchemaRessource).max(30),
+    inventaire: z.array(SchemaObjetInventaire).max(500),
+    grimoire: z.array(SchemaSortConnu).max(300),
+    etats: z.array(SchemaEtatActif).max(40),
+    creeLe: z.iso.datetime(),
+    modifieLe: z.iso.datetime(),
+  })
+  .refine((p) => p.desDeVie.restants <= p.niveau, "Plus de des de vie restants que de niveaux.")
+  .refine(
+    (p) => new Set(p.ressources.map((r) => r.cle)).size === p.ressources.length,
+    "Deux ressources portent la meme cle.",
+  );
 
 // --- Ce que le navigateur peut envoyer a la creation -------------------------
 
@@ -109,6 +147,7 @@ export function fabriquerPersonnage(entree, { idTable, proprietaire }) {
   const maintenant = new Date().toISOString();
 
   return SchemaPersonnage.parse({
+    versionSchema: VERSION_FICHE,
     id: nouvelId("p"),
     idTable,
     proprietaire,
@@ -122,6 +161,8 @@ export function fabriquerPersonnage(entree, { idTable, proprietaire }) {
     desDeVie: { faces: CLASSES[classe].deDeVie, restants: niveau },
     ressources: niveau === 1 ? ressourcesDeDepart(classe, caracteristiques) : [],
     inventaire: [],
+    grimoire: [],
+    etats: [],
     creeLe: maintenant,
     modifieLe: maintenant,
   });
@@ -140,6 +181,7 @@ export function presenterPersonnage(personnage) {
         CARACTERISTIQUES.map((nom) => [nom, modificateur(personnage.caracteristiques[nom])]),
       ),
       bonusDeMaitrise: bonusDeMaitrise(personnage.niveau),
+      bonusInitiative: modificateur(personnage.caracteristiques.dexterite),
     },
   };
 }

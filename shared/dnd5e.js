@@ -27,18 +27,6 @@ export const CLASSES = /** @type {const} */ ({
   roublard: { nom: "Roublard", deDeVie: 8 },
 });
 
-export const RARETES = /** @type {const} */ ([
-  "pauvre",
-  "commun",
-  "peu-commun",
-  "rare",
-  "epique",
-  "legendaire",
-]);
-
-// Quand une ressource se recharge.
-export const RECUPERATIONS = /** @type {const} */ (["repos-court", "repos-long", "aucune"]);
-
 /** Modificateur d'une caracteristique : 10-11 -> +0, 14 -> +2, 8 -> -1. */
 export function modificateur(valeur) {
   return Math.floor((valeur - 10) / 2);
@@ -61,39 +49,46 @@ export function classeArmureSansArmure(classe, caracteristiques) {
 }
 
 /**
- * Ressources de classe d'un personnage de NIVEAU 1.
+ * Ressources de classe d'un personnage de NIVEAU 1 (regles D&D 5e).
  * La progression par niveau arrivera avec la montee de niveau : on ne
  * pre-remplit donc rien pour un personnage cree directement a un niveau superieur.
+ * Les jauges facon WoW (Mana, Rage...) s'ajoutent ensuite depuis
+ * shared/ressources.js.
  */
 export function ressourcesDeDepart(classe, caracteristiques) {
-  const emplacements = (max, recuperation = "repos-long") => ({
-    cle: "emplacements-niveau-1",
-    nom: "Emplacements de sort (niv. 1)",
+  const compteur = (cle, nom, max, reposCourt, reposLong, apparence) => ({
+    cle,
+    nom,
+    type: "compteur",
     actuel: max,
     max,
-    recuperation,
+    reposCourt,
+    reposLong,
+    apparence,
   });
+  const emplacements = (max, reposCourt = "aucun") =>
+    compteur("emplacements-niveau-1", "Emplacements de sort (niv. 1)", max, reposCourt, "remplir", "emplacement-sort");
 
   switch (classe) {
     case "barbare":
-      return [{ cle: "rage", nom: "Rage", actuel: 2, max: 2, recuperation: "repos-long" }];
+      return [compteur("rage-barbare", "Rages (utilisations)", 2, "aucun", "remplir", "rage")];
     case "guerrier":
-      return [{ cle: "second-souffle", nom: "Second souffle", actuel: 1, max: 1, recuperation: "repos-court" }];
+      return [compteur("second-souffle", "Second souffle", 1, "remplir", "remplir", "second-souffle")];
     case "barde": {
       const max = Math.max(1, modificateur(caracteristiques.charisme));
       return [
-        { cle: "inspiration-bardique", nom: "Inspiration bardique", actuel: max, max, recuperation: "repos-long" },
+        compteur("inspiration-bardique", "Inspiration bardique", max, "aucun", "remplir", "inspiration"),
         emplacements(2),
       ];
     }
     case "clerc":
     case "druide":
     case "magicien":
-      return [emplacements(2)];
     case "ensorceleur":
       return [emplacements(2)];
     case "occultiste":
-      return [emplacements(1, "repos-court")];
+      // Particularite de l'Occultiste : ses emplacements reviennent au repos court.
+      return [emplacements(1, "remplir")];
     default:
       // Moine, Paladin, Rodeur, Roublard : pas de ressource au niveau 1.
       return [];

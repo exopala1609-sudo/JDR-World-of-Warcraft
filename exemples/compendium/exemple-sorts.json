@@ -1,0 +1,48 @@
+{
+  "sorts": [
+    {
+      "id": "trait-de-feu",
+      "nom": "Trait de feu",
+      "niveau": 0,
+      "ecole": "evocation",
+      "portee": "36 metres",
+      "composantes": "V, S",
+      "description": "Donnee de test. Un trait de feu frappe une creature ou un objet a portee.",
+      "degats": { "formule": "1d10", "type": "feu" }
+    },
+    {
+      "id": "projectile-magique",
+      "nom": "Projectile magique",
+      "niveau": 1,
+      "ecole": "evocation",
+      "portee": "36 metres",
+      "composantes": "V, S",
+      "description": "Donnee de test. Trois fleches de force touchent automatiquement leurs cibles.",
+      "degats": { "formule": "3d4+3", "type": "force" },
+      "cout": { "ressource": "mana", "quantite": 10 }
+    },
+    {
+      "id": "soins",
+      "nom": "Soins",
+      "niveau": 1,
+      "ecole": "evocation",
+      "portee": "Contact",
+      "composantes": "V, S",
+      "description": "Donnee de test. La creature touchee recupere des points de vie.",
+      "soins": "1d8+3",
+      "cout": { "ressource": "mana", "quantite": 15 }
+    },
+    {
+      "id": "boule-de-feu",
+      "nom": "Boule de feu",
+      "niveau": 3,
+      "ecole": "evocation",
+      "icone": "spell_fire_fireball02",
+      "portee": "45 metres",
+      "composantes": "V, S, M (une boulette de guano de chauve-souris et de soufre)",
+      "description": "Donnee de test. Une explosion de flammes de 6 metres de rayon.",
+      "degats": { "formule": "8d6", "type": "feu" },
+      "cout": { "ressource": "mana", "quantite": 40 }
+    }
+  ]
+}
