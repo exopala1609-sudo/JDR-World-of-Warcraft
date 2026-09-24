@@ -1,4 +1,5 @@
 // Moteur de carte : HTML5 Canvas 2D natif, sans aucune dependance.
+// Fichier PARTAGE entre la page de test et l'interface WoW (navigateur uniquement).
 //
 // Pourquoi un Canvas (et pas des elements HTML ou du SVG) ?
 //  - Le brouillard est une affaire de PIXELS : la gomme "creuse" un calque noir
@@ -15,7 +16,7 @@
 //
 // Coordonnees : tout est exprime en pixels DE L'IMAGE de la carte. La "vue"
 // (zoom, decalage) est propre a chaque ecran et n'est jamais partagee.
-import { aimanter, borner, caseDe, distanceEnCases, METRES_PAR_CASE } from "/partage/geometrie.js";
+import { aimanter, borner, caseDe, distanceEnCases, METRES_PAR_CASE } from "./geometrie.js";
 
 const TAILLE_MAX_BROUILLARD = 2048; // resolution max du calque de brouillard (memoire)
 const INTERVALLE_ENVOI_MS = 50; // ~20 positions par seconde pendant un glisser
@@ -32,6 +33,7 @@ export class MoteurCarte {
    *   surDeplacement(pion, x, y, final, aimanter) : Promise<{x, y} | null>
    *   surTrait(trait)            : un morceau de trait de gomme / pinceau a envoyer
    *   surInfo(texte)             : ligne d'information (case, distance...)
+   *   surChangement()            : (facultatif) la carte a change (pour la minicarte)
    */
   constructor(canvas, options) {
     this.canvas = canvas;
@@ -59,7 +61,10 @@ export class MoteurCarte {
     this.brancherEvenements();
     const boucle = () => {
       this.animer();
-      if (this.sale) this.dessiner();
+      if (this.sale) {
+        this.dessiner();
+        this.options.surChangement?.();
+      }
       requestAnimationFrame(boucle);
     };
     requestAnimationFrame(boucle);
@@ -129,6 +134,49 @@ export class MoteurCarte {
   choisirOutil(outil) {
     this.outil = outil;
     this.sale = true;
+  }
+
+  /** La surface d'affichage a change de taille (fenetre redimensionnee). */
+  redimensionner(largeur, hauteur) {
+    if (this.canvas.width === largeur && this.canvas.height === hauteur) return;
+    // On garde le meme point de la carte au centre de l'ecran.
+    const centre = {
+      x: this.vue.x + this.canvas.width / 2 / this.vue.zoom,
+      y: this.vue.y + this.canvas.height / 2 / this.vue.zoom,
+    };
+    this.canvas.width = largeur;
+    this.canvas.height = hauteur;
+    this.vue.x = centre.x - largeur / 2 / this.vue.zoom;
+    this.vue.y = centre.y - hauteur / 2 / this.vue.zoom;
+    this.sale = true;
+  }
+
+  /**
+   * Vue d'ensemble de toute la carte dans un autre canvas (la minicarte) :
+   * image, pions (des points) et brouillard, comme sur l'ecran principal.
+   */
+  dessinerApercu(cible) {
+    const c = cible.getContext("2d");
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.fillStyle = "#000";
+    c.fillRect(0, 0, cible.width, cible.height);
+    if (!this.scene) return;
+    const { largeur, hauteur } = this.scene.carte;
+    const echelle = Math.max(cible.width / largeur, cible.height / hauteur); // remplit le cercle
+    c.setTransform(echelle, 0, 0, echelle, (cible.width - largeur * echelle) / 2, (cible.height - hauteur * echelle) / 2);
+    if (this.image?.complete && this.image.naturalWidth) c.drawImage(this.image, 0, 0, largeur, hauteur);
+    for (const pion of this.scene.pions) {
+      const { x, y } = this.affichage.get(pion.id) ?? pion;
+      c.fillStyle = pion.couleur;
+      c.beginPath();
+      c.arc(x, y, Math.max(this.rayonPion(pion), 3 / echelle), 0, Math.PI * 2);
+      c.fill();
+    }
+    if (this.scene.brouillard.actif) {
+      c.globalAlpha = this.options.estMJ && this.voirAtravers ? 0.5 : 1;
+      c.drawImage(this.brouillard, 0, 0, largeur, hauteur);
+      c.globalAlpha = 1;
+    }
   }
 
   recentrer() {

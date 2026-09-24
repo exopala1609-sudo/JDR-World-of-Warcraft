@@ -23,7 +23,8 @@ JDR-World-of-Warcraft/
 │   ├── raretes.js            Les 6 raretes WoW et leurs couleurs
 │   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
 │   ├── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
-│   └── geometrie.js          Grille, aimantation, distances, test du brouillard
+│   ├── geometrie.js          Grille, aimantation, distances, test du brouillard
+│   └── moteur-carte.js       Moteur de carte Canvas (navigateur), utilise par l'interface et la page de test
 │
 ├── server/                   Le serveur, qui tourne sur ton PC
 │   ├── src/
@@ -62,12 +63,18 @@ JDR-World-of-Warcraft/
 │   │       ├── combat.js     Initiative et tours (protection double clic)
 │   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
 │   │       └── des.js
-│   ├── public/carte/         Moteur de carte Canvas, sans dependance (reutilisable)
 │   ├── public/test/          Banc de test brut (HTML + JS, sans CSS)
 │   └── test/                 Tests automatiques (npm test)
 │
 ├── exemples/compendium/      Donnees de test, copiees dans un compendium vide
-├── client/                   Future interface WoW (React), en pause pendant le sprint 1
+├── client/                   L'interface World of Warcraft (React + TypeScript)
+│   ├── public/interface/     Decors libres de droits (ailes de la barre d'actions)
+│   └── src/
+│       ├── styles/           theme.css (variables :root), base, composants, hud, fenetres, ecrans
+│       ├── core/             Magasin d'etat (jeu.ts), liaison serveur, adresses des images
+│       ├── ui/               Briques : surface 1440p, barre, fenetre, infobulle
+│       ├── jeu/              Carte, cadres du groupe, minicarte, barre d'actions, sacs, fiche...
+│       └── ecrans/           Connexion, choix de la table, ecran de jeu
 ├── scripts/                  Utilitaires (creation du .env, detection du dossier cloud)
 └── docs/                     Documentation
 ```
@@ -76,7 +83,7 @@ JDR-World-of-Warcraft/
 
 ```
 <VTT_ASSETS>/                 ex. G:\Mon Drive\JDR
-├── cartes/  jetons/  portraits/  icones/
+├── cartes/  jetons/  portraits/  icones/  polices/
 ├── compendium/               Tes objets, sorts et auras (voir docs/COMPENDIUM.md)
 └── parties/
     ├── partie-en-cours.verrou.json   Present seulement quand un serveur tourne
@@ -153,3 +160,18 @@ lacher -> position finale    ->  borne + aimante + enregistre
                                  diffuse a tous (lui compris) ------> position officielle
                                  libere le verrou
 ```
+
+## L'interface : des couches superposees
+
+```
+.scene-jeu (2560 x 1440, zoom automatique si la fenetre est plus petite)
+├── .monde       z-index 0   le Canvas de la carte, plein ecran
+├── .hud         z-index 10  cadres fixes, disposes par une grille CSS
+├── .fenetres    z-index 20  sacs, fiche de personnage (deplacables)
+└── .infobulle   z-index 30
+```
+
+`.hud` et `.fenetres` couvrent tout l'ecran mais sont transparents aux clics
+(`pointer-events: none`) ; seuls leurs cadres visibles les reactivent
+(`pointer-events: auto`). Un clic dans le vide atteint donc la carte, un clic
+sur un cadre n'y arrive jamais.

@@ -18,6 +18,6 @@ if (!existsSync(env)) {
 }
 
 // Dossiers de secours, utilises tant que VTT_ASSETS pointe dans le projet.
-for (const sous of ["cartes", "jetons", "portraits", "icones", "compendium", "parties"]) {
+for (const sous of ["cartes", "jetons", "portraits", "icones", "polices", "compendium", "parties"]) {
   mkdirSync(resolve(racine, "donnees-mj", sous), { recursive: true });
 }

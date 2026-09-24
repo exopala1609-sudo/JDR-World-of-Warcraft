@@ -1,0 +1,340 @@
+/* =============================================================================
+   HUD : les cadres fixes de l'ecran de jeu, poses PAR-DESSUS la carte.
+
+   Empilement (du fond vers l'avant) :
+     .monde      z-index --z-monde     le Canvas de la carte, plein ecran
+     .hud        z-index --z-hud       cadres fixes (groupe, minicarte, barres...)
+     .fenetres   z-index --z-fenetres  sacs, fiche de personnage
+     .infobulle  z-index --z-infobulle
+
+   L'astuce qui protege la carte : .hud et .fenetres couvrent tout l'ecran
+   mais sont "transparents aux clics" (pointer-events: none). Seuls leurs
+   cadres visibles reactivent les clics (pointer-events: auto). Un clic dans
+   le vide traverse donc jusqu'a la carte ; un clic sur un cadre s'arrete au
+   cadre et n'atteint jamais le Canvas.
+   ============================================================================= */
+
+.monde {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-monde);
+}
+.monde canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-hud);
+  pointer-events: none;
+  display: grid;
+  /* Colonnes laterales de meme largeur : la barre d'actions tombe pile au centre. */
+  grid-template-columns: 520px 1fr 520px;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "groupe      bandeau   minicarte"
+    ".           .         ."
+    "discussion  actions   menu";
+  gap: 16px;
+  padding: var(--marge-hud);
+}
+.hud > * {
+  pointer-events: auto;
+}
+
+.fenetres {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-fenetres);
+  pointer-events: none; /* seules les fenetres ouvertes captent les clics */
+}
+
+/* --- Haut gauche : cadres du groupe ----------------------------------------------- */
+.groupe {
+  grid-area: groupe;
+  align-self: start;
+  justify-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cadre-unite {
+  display: grid;
+  grid-template-columns: var(--taille-portrait) 1fr;
+  align-items: center;
+  gap: 10px;
+  width: var(--largeur-cadre);
+  padding: 8px 12px 8px 8px;
+  cursor: pointer;
+  --taille-portrait: 72px;
+  --largeur-cadre: 340px;
+}
+.cadre-unite--joueur {
+  --taille-portrait: 92px;
+  --largeur-cadre: 420px;
+}
+.cadre-unite--selection {
+  box-shadow: var(--bordure-metal), 0 0 0 6px rgba(255, 209, 0, 0.55), 0 0 18px rgba(255, 209, 0, 0.6);
+}
+.cadre-unite--hors-ligne {
+  filter: grayscale(1) brightness(0.65);
+}
+.portrait {
+  position: relative;
+  width: var(--taille-portrait);
+  height: var(--taille-portrait);
+  border-radius: 50%;
+  overflow: visible;
+  background: #000;
+  box-shadow: var(--bordure-or);
+}
+.portrait img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.portrait__initiales {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--or);
+  font-size: calc(var(--taille-portrait) * 0.38);
+  text-shadow: var(--ombre-texte);
+}
+.portrait__niveau {
+  position: absolute;
+  left: -6px;
+  bottom: -4px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a3a44, #0c0c10);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 15px;
+}
+.cadre-unite__infos {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.plaque-nom {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.85), rgba(40, 40, 50, 0.6));
+}
+.plaque-nom__nom {
+  overflow: hidden;
+  color: var(--or);
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: var(--ombre-texte);
+}
+.plaque-nom__detail {
+  flex: none;
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.barre--vie {
+  --couleur-barre: var(--vie);
+  height: 20px;
+}
+.barre--ressource {
+  height: 14px;
+}
+.barre--ressource .barre__texte {
+  font-size: 11px;
+}
+.cadre-unite__etats {
+  display: flex;
+  gap: 3px;
+  min-height: 0;
+}
+.cadre-unite__etats img {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+}
+.etat--debuff {
+  box-shadow: 0 0 0 1px var(--texte-rouge);
+}
+.etat--buff {
+  box-shadow: 0 0 0 1px #000;
+}
+
+/* --- Haut centre : bandeau de zone / combat -------------------------------------------- */
+.bandeau {
+  grid-area: bandeau;
+  align-self: start;
+  justify-self: center;
+  padding: 6px 28px;
+  font-size: 20px;
+  text-align: center;
+}
+
+/* --- Haut droite : minicarte ronde ------------------------------------------------------ */
+.minicarte {
+  grid-area: minicarte;
+  align-self: start;
+  justify-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.minicarte__zone {
+  padding: 3px 18px;
+  font-size: 16px;
+}
+.minicarte__rond {
+  position: relative;
+  width: var(--minicarte);
+  height: var(--minicarte);
+  border-radius: 50%;
+  /* Anneau metallique : plusieurs cercles d'ombre concentriques. */
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 0 7px var(--metal),
+    0 0 0 8px var(--metal-reflet),
+    0 0 0 11px var(--metal-sombre),
+    0 0 0 12px #000,
+    0 10px 26px rgba(0, 0, 0, 0.8);
+}
+.minicarte__rond canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%; /* le canvas carre est "decoupe" en rond */
+}
+.minicarte__rond::after {
+  /* Ombre interieure qui bombe le verre de la minicarte. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 18px 6px rgba(0, 0, 0, 0.85);
+  pointer-events: none;
+}
+
+/* --- Bas centre : barre d'actions + griffons ---------------------------------------------- */
+.actions {
+  grid-area: actions;
+  align-self: end;
+  justify-self: center;
+  position: relative;
+  padding: 0 120px; /* place pour les griffons */
+}
+.actions__barre {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  --taille-case: var(--case-action);
+}
+.actions__raccourci {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-family: var(--police-chiffres);
+  font-size: 13px;
+  text-shadow: var(--ombre-texte);
+}
+/* Griffons : ton image si elle existe dans icones/, sinon le dessin fourni. */
+.actions__embleme {
+  position: absolute;
+  bottom: -10px;
+  width: 170px;
+  height: 128px;
+  background-repeat: no-repeat;
+  background-position: bottom center;
+  background-size: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
+}
+.actions__embleme--gauche {
+  left: -40px;
+  background-image: url("/medias/icones/ui-griffon-gauche?remplacement=non"), url("/interface/aile.svg");
+}
+.actions__embleme--droite {
+  right: -40px;
+  transform: scaleX(-1); /* le meme dessin, en miroir */
+  background-image: url("/medias/icones/ui-griffon-droite?remplacement=non"), url("/interface/aile.svg");
+}
+
+/* --- Bas gauche : fenetre de discussion --------------------------------------------------- */
+.discussion {
+  grid-area: discussion;
+  align-self: end;
+  width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.discussion__lignes {
+  height: 230px;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  font-family: var(--police-chiffres);
+  font-size: 15px;
+  line-height: 1.35;
+  text-shadow: 1px 1px 0 #000;
+  user-select: text;
+}
+.discussion__ligne--systeme {
+  color: #ffff00;
+}
+.discussion__ligne--des {
+  color: #ffffff;
+}
+.discussion__ligne--combat {
+  color: #ff7f3f;
+}
+.discussion__ligne--butin {
+  color: #00aa00;
+}
+.discussion__ligne--erreur {
+  color: var(--texte-rouge);
+}
+
+/* --- Bas droite : micro-menu ---------------------------------------------------------------- */
+.menu {
+  grid-area: menu;
+  align-self: end;
+  justify-self: end;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+}
+.menu__bouton {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #4a4a55, #1a1a20);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-size: 18px;
+  cursor: pointer;
+  text-shadow: var(--ombre-texte);
+}
+.menu__bouton:hover,
+.menu__bouton--actif {
+  filter: brightness(1.4);
+}

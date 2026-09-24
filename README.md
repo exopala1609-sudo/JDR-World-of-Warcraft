@@ -17,7 +17,7 @@ entre ton PC fixe et ton portable : voir [docs/CONFIGURATION.md](docs/CONFIGURAT
 
 ## Lancer une partie
 ```bash
-npm run dev      # developpement : interface rechargee a chaque modification
+npm run dev      # developpement : interface WoW sur http://localhost:5173
 ```
 ```bash
 npm run partie   # joueurs a distance : affiche (et copie) le lien a leur envoyer
@@ -37,6 +37,7 @@ npm test
 ```
 Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Ecrire ses objets, sorts et auras : [docs/COMPENDIUM.md](docs/COMPENDIUM.md).
+Polices, portraits, icones : [docs/PERSONNALISER.md](docs/PERSONNALISER.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
 ## Ou je mets mes fichiers ?
@@ -56,7 +57,7 @@ chaque dossier et signale tout chemin errone.
 | Dossier | Role |
 | --- | --- |
 | `server/` | Serveur local : acces, donnees JSON, regles D&D, temps reel |
-| `client/` | Interface WoW (React + TypeScript), en pause pendant le sprint 1 |
+| `client/` | Interface World of Warcraft (React + TypeScript) |
 | `shared/` | Vocabulaire temps reel et regles D&D 5e communs aux deux cotes |
 | `exemples/` | Donnees de test (compendium), copiees au premier lancement |
 | `donnees-mj/` | Dossier de secours quand `VTT_ASSETS` n'est pas configure |

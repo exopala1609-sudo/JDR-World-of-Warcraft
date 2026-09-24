@@ -1,0 +1,136 @@
+/* =============================================================================
+   THEME : le seul fichier ou l'on decide des couleurs, bordures, textures,
+   polices et couches de l'interface. Tous les autres fichiers CSS n'utilisent
+   QUE ces variables (var(--...)) : changer une valeur ici la change partout.
+   ============================================================================= */
+
+/* --- Polices ----------------------------------------------------------------
+   Les fichiers sont lus dans le dossier polices/ de ton cloud (VTT_ASSETS), et
+   ne sont donc jamais publies sur GitHub. Le navigateur essaie chaque adresse
+   dans l'ordre ; si aucune n'existe, il passe a la police de substitution
+   indiquee dans les variables --police-* plus bas.
+   Noms acceptes : ceux du dossier Fonts de World of Warcraft (FRIZQT__.TTF,
+   MORPHEUS.TTF, ARIALN.TTF) ou des noms lisibles (FrizQuadrata.ttf...). */
+@font-face {
+  font-family: "Friz Quadrata WoW";
+  src:
+    url("/medias/polices/FRIZQT__.TTF") format("truetype"),
+    url("/medias/polices/FrizQuadrata.woff2") format("woff2"),
+    url("/medias/polices/FrizQuadrata.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Morpheus WoW";
+  src:
+    url("/medias/polices/MORPHEUS.TTF") format("truetype"),
+    url("/medias/polices/Morpheus.woff2") format("woff2"),
+    url("/medias/polices/Morpheus.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Arial Narrow WoW";
+  src:
+    url("/medias/polices/ARIALN.TTF") format("truetype"),
+    url("/medias/polices/ArialNarrow.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  /* Polices : la vraie d'abord, puis les substituts installes sur Windows. */
+  --police-ui: "Friz Quadrata WoW", "Friz Quadrata TT", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --police-texte: "Morpheus WoW", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  --police-chiffres: "Arial Narrow WoW", "Arial Narrow", Arial, sans-serif;
+
+  /* Textes */
+  --or: #ffd100; /* le jaune-or des titres de WoW */
+  --or-pale: #f5e6a8;
+  --texte: #ffffff;
+  --texte-doux: #c8c8c8;
+  --texte-gris: #808080;
+  --texte-vert: #1eff00; /* effets "Utiliser :" des infobulles */
+  --texte-rouge: #ff2020;
+  --ombre-texte: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+
+  /* Anthracite (fonds des cadres) */
+  --anthracite-950: #070708;
+  --anthracite-900: #0e0e11;
+  --anthracite-800: #17171b;
+  --anthracite-700: #222228;
+  --anthracite-600: #34343c;
+
+  /* Metal (bordures) */
+  --metal-reflet: #efe9d8;
+  --metal-clair: #bdb6a2;
+  --metal: #7d7667;
+  --metal-sombre: #34302a;
+  --or-bordure: #c9a441;
+  --or-bordure-sombre: #6e5518;
+
+  /* Parchemin */
+  --parchemin: #dcc594;
+  --parchemin-clair: #efe0b9;
+  --parchemin-sombre: #a88a55;
+  --encre: #2e1f0e;
+
+  /* Raretes : memes cles que shared/raretes.js */
+  --rarete-mediocre: #9d9d9d;
+  --rarete-classique: #ffffff;
+  --rarete-inhabituel: #1eff00;
+  --rarete-rare: #0070dd;
+  --rarete-epique: #a335ee;
+  --rarete-legendaire: #ff8000;
+
+  /* Barres : couleurs par defaut de WoW */
+  --vie: #00c800;
+  --vie-sombre: #005a00;
+  --ressource-mana: #0050ff;
+  --ressource-rage: #e60000;
+  --ressource-energie: #ffe600;
+  --ressource-focalisation: #ff8040;
+  --ressource-puissance-runique: #00d1ff;
+  --ressource-eclats-ame: #9b52c6;
+  --ressource-points-combo: #fff569;
+  --ressource-puissance-sacree: #f2e699;
+  --ressource-autre: #6a8fd8;
+
+  /* Textures fabriquees en CSS (aucune image de Blizzard n'est livree).
+     --texture-bruit : un grain aleatoire genere par le navigateur (filtre SVG). */
+  --texture-bruit: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.45 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  --texture-pierre: var(--texture-bruit), linear-gradient(180deg, #2b2b31 0%, #15151a 100%);
+  --texture-anthracite: var(--texture-bruit), linear-gradient(180deg, rgba(30, 30, 36, 0.96), rgba(10, 10, 12, 0.96));
+  --texture-parchemin:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 248, 225, 0.6), transparent 65%),
+    radial-gradient(ellipse at center, transparent 55%, rgba(95, 62, 20, 0.45) 100%), var(--texture-bruit),
+    var(--parchemin);
+  --texture-metal: linear-gradient(
+    180deg,
+    var(--metal-reflet) 0%,
+    var(--metal-clair) 18%,
+    var(--metal) 45%,
+    var(--metal-sombre) 55%,
+    var(--metal) 80%,
+    var(--metal-clair) 100%
+  );
+
+  /* Bordures : une bordure metallique = anneaux d'ombres superposes */
+  --bordure-metal:
+    0 0 0 1px #000, 0 0 0 3px var(--metal-sombre), 0 0 0 4px var(--metal-clair), 0 0 0 5px #000,
+    0 8px 24px rgba(0, 0, 0, 0.75);
+  --bordure-or: 0 0 0 1px #000, 0 0 0 3px var(--or-bordure), 0 0 0 4px var(--or-bordure-sombre), 0 0 0 5px #000;
+  --relief-creux: inset 0 2px 6px rgba(0, 0, 0, 0.9), inset 0 0 0 1px rgba(0, 0, 0, 0.8);
+
+  /* Dimensions (pensees pour 2560 x 1440) */
+  --marge-hud: 24px;
+  --case-action: 58px;
+  --case-sac: 54px;
+  --case-equipement: 58px;
+  --minicarte: 250px;
+
+  /* Couches (z-index) : du monde (la carte) vers l'avant */
+  --z-monde: 0; /* le Canvas de la carte */
+  --z-hud: 10; /* cadres fixes : groupe, minicarte, barres, discussion */
+  --z-fenetres: 20; /* sacs, fiche de personnage */
+  --z-infobulle: 30; /* toujours au-dessus de tout */
+
+  color-scheme: dark;
+}

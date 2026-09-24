@@ -14,6 +14,10 @@ import express from "express";
 import { CATEGORIES_PUBLIQUES } from "./config.js";
 
 const EXTENSIONS_IMAGE = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"];
+// Categories d'images : un fichier absent y est remplace par un carre gris.
+// (Les polices, elles, repondent "introuvable" : le navigateur passe alors a
+// la police de substitution.)
+const CATEGORIES_IMAGES = ["cartes", "jetons", "portraits", "icones"];
 
 const REMPLACEMENTS = {
   cartes: { largeur: 2000, hauteur: 2000, titre: "Carte introuvable" },
@@ -69,6 +73,8 @@ export function routesMedias(config) {
     // 1. Le fichier existe tel quel : on l'envoie.
     routeur.use(`/medias/${categorie}`, express.static(dossier, { maxAge: "1h", dotfiles: "ignore" }));
 
+    if (!CATEGORIES_IMAGES.includes(categorie)) continue;
+
     // 2. Sinon : recherche sans extension, puis image de remplacement.
     routeur.get(`/medias/${categorie}/:nom`, (requete, reponse) => {
       const { nom } = requete.params;
@@ -78,6 +84,10 @@ export function routesMedias(config) {
           if (existsSync(chemin)) return reponse.sendFile(chemin, { maxAge: "1h" });
         }
       }
+      // "?remplacement=non" : pour un decor facultatif (ex. griffons de la
+      // barre d'actions), on prefere "introuvable" : l'interface garde alors
+      // son dessin par defaut.
+      if (requete.query.remplacement === "non") return reponse.status(404).end();
       // "no-store" : le navigateur ne garde pas le carre gris en memoire,
       // pour afficher le vrai fichier des qu'il sera depose.
       reponse.set("Cache-Control", "no-store").type("image/svg+xml").send(imageDeRemplacement(categorie, nom));
@@ -89,7 +99,7 @@ export function routesMedias(config) {
 
 /** Liste les images d'une categorie (pour que le MJ choisisse une carte, etc.). */
 export function listerImages(config, categorie) {
-  if (!CATEGORIES_PUBLIQUES.includes(categorie)) return [];
+  if (!CATEGORIES_IMAGES.includes(categorie)) return [];
   try {
     return readdirSync(config.dossiers[categorie], { withFileTypes: true })
       .filter((e) => e.isFile() && EXTENSIONS_IMAGE.includes(extname(e.name).toLowerCase()))

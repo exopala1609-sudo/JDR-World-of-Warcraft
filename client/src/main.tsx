@@ -1,7 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "@/App";
-import "@/styles/global.css";
+// Ordre des feuilles de style : le theme (variables) d'abord, puis ce qui l'utilise.
+import "@/styles/theme.css";
+import "@/styles/base.css";
+import "@/styles/composants.css";
+import "@/styles/hud.css";
+import "@/styles/fenetres.css";
+import "@/styles/ecrans.css";
 
 const racine = document.getElementById("racine");
 if (!racine) throw new Error("Element #racine introuvable dans index.html");

@@ -8,7 +8,7 @@ import { ETATS_DE_BASE } from "/partage/etats.js";
 import { RARETES } from "/partage/raretes.js";
 import { MODELES_RESSOURCES } from "/partage/ressources.js";
 import { caseDe } from "/partage/geometrie.js";
-import { MoteurCarte } from "/carte/moteur-carte.js";
+import { MoteurCarte } from "/partage/moteur-carte.js";
 
 const $ = (id) => document.getElementById(id);
 const CLE_JETON = "vtt-jeton";

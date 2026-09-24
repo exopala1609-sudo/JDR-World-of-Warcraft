@@ -1,0 +1,143 @@
+/* =============================================================================
+   FENETRES : sacs (touche B) et fiche de personnage (touche C).
+   Comme dans WoW, elles ne bloquent pas le jeu : on peut encore cliquer sur la
+   carte a cote. Seule la surface de la fenetre capte la souris.
+   ============================================================================= */
+
+/* --- Sacs : grille de cases carrees -------------------------------------------------- */
+.sacs {
+  width: calc(var(--case-sac) * 5 + 6px * 4 + 28px);
+}
+.sacs__grille {
+  display: grid;
+  grid-template-columns: repeat(5, var(--case-sac)); /* 5 cases par ligne */
+  gap: 6px;
+}
+.sacs__pied {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  color: var(--texte-doux);
+  font-family: var(--police-chiffres);
+  font-size: 14px;
+}
+
+/* --- Fiche de personnage : "paper doll" + statistiques --------------------------------- */
+.fiche {
+  width: 820px;
+}
+.fiche__corps {
+  display: grid;
+  grid-template-columns: 500px 1fr; /* a gauche le mannequin, a droite les stats */
+  gap: 14px;
+  height: 600px;
+}
+.fiche__sous-titre {
+  margin: 0 0 4px;
+  color: var(--texte);
+  font-size: 15px;
+  text-align: center;
+}
+
+/* Le mannequin : colonne d'emplacements | portrait | colonne d'emplacements
+                  + une rangee d'armes en dessous. */
+.mannequin {
+  display: grid;
+  grid-template-columns: var(--case-equipement) 1fr var(--case-equipement);
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "gauche  modele  droite"
+    "armes   armes   armes";
+  gap: 10px;
+  padding: 12px;
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(90, 80, 60, 0.35), transparent 70%),
+    rgba(0, 0, 0, 0.55);
+  box-shadow: var(--relief-creux);
+  --taille-case: var(--case-equipement);
+}
+.mannequin__colonne {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.mannequin__colonne--gauche {
+  grid-area: gauche;
+}
+.mannequin__colonne--droite {
+  grid-area: droite;
+}
+.mannequin__modele {
+  grid-area: modele;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+  background: radial-gradient(ellipse at 50% 60%, rgba(120, 110, 90, 0.25), transparent 70%);
+}
+.mannequin__initiales {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 150px;
+  opacity: 0.18;
+}
+.mannequin__modele img {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.9;
+}
+.mannequin__armes {
+  grid-area: armes;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.case--vide .case__libelle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 10px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+/* Volet des statistiques : parchemin, defile verticalement si besoin. */
+.statistiques {
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: 4px;
+}
+.statistiques details {
+  margin-bottom: 10px;
+}
+.statistiques summary {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(46, 31, 14, 0.35);
+  color: #5a1d0a;
+  font-family: var(--police-ui);
+  font-size: 17px;
+  cursor: pointer;
+}
+.stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 2px;
+  font-size: 16px;
+}
+.stat__valeur {
+  font-family: var(--police-chiffres);
+  font-weight: bold;
+}
+.stat__valeur--bonus {
+  color: #1c6b12;
+}
+.stat__valeur--malus {
+  color: #9b1b0b;
+}

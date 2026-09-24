@@ -15,13 +15,14 @@ export const CATEGORIES = /** @type {const} */ ({
   jetons: "VTT_ASSETS_JETONS",
   portraits: "VTT_ASSETS_PORTRAITS",
   icones: "VTT_ASSETS_ICONES",
+  polices: "VTT_ASSETS_POLICES",
   compendium: "VTT_ASSETS_COMPENDIUM",
   parties: "VTT_ASSETS_PARTIES",
 });
 
 // Categories exposees telles quelles aux navigateurs. Le compendium et les
 // sauvegardes passeront par l'API (le MJ decide ce que les joueurs voient).
-export const CATEGORIES_PUBLIQUES = ["jetons", "portraits", "cartes", "icones"];
+export const CATEGORIES_PUBLIQUES = ["jetons", "portraits", "cartes", "icones", "polices"];
 
 const CLOUDS_CONNUS = [
   { motif: /onedrive/i, nom: "OneDrive" },
