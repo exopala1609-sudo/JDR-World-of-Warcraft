@@ -99,8 +99,9 @@ installerTempsReel(serveurHttp, { depot, sessions, compendium, config });
 let libererVerrou = () => {};
 let fermerTunnel = () => {};
 
-// Page d'arrivee des joueurs. Sprint 1 : le banc de test.
-const CHEMIN_JOUEURS = "/test/";
+// Page d'arrivee des joueurs : l'interface World of Warcraft.
+// (Le MJ garde ses outils sur /test/, accessibles depuis le micro-menu.)
+const CHEMIN_JOUEURS = "/";
 
 serveurHttp.listen(config.port, "0.0.0.0", () => {
   afficherBanniere(config, { modeDev });
