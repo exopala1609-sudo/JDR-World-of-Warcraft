@@ -72,6 +72,8 @@ app.get("/api/diagnostic", exigerMJ(sessions), (_requete, reponse) => {
 
 // Page de test brute du sprint 1 (HTML + JS, aucune compilation necessaire).
 app.use("/test", express.static(resolve(RACINE, "server", "public", "test")));
+// Moteur de carte (Canvas), reutilisable par toute interface.
+app.use("/carte", express.static(resolve(RACINE, "server", "public", "carte")));
 // Vocabulaire et regles partages, lisibles par les navigateurs.
 app.use("/partage", express.static(resolve(RACINE, "shared")));
 

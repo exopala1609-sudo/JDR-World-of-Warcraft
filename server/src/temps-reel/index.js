@@ -9,6 +9,7 @@
 // SALONS (rooms) - a qui envoyer quoi :
 //   table:<id>      tous les participants d'une table (MJ + joueurs)
 //   table:<id>:mj   le MJ de cette table (PNJ caches, lancers secrets)
+//   table:<id>:joueurs  les joueurs seuls (ce qu'ils voient de la carte)
 //   mj              tous les ecrans MJ, quelle que soit la table (compendium)
 //
 // Ce fichier prepare les outils communs ; chaque domaine du jeu a son fichier :
@@ -18,19 +19,22 @@ import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { presenterPersonnage } from "../modeles/personnage.js";
+import { pionVisibleParLesJoueurs } from "../regles/scene.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import * as combat from "./combat.js";
 import * as compendium from "./compendium.js";
 import * as des from "./des.js";
 import * as personnages from "./personnages.js";
 import * as repos from "./repos.js";
+import * as scene from "./scene.js";
 import * as tables from "./tables.js";
 
-const DOMAINES = [tables, personnages, repos, compendium, combat, des];
+const DOMAINES = [tables, personnages, repos, compendium, combat, scene, des];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
 export const salleMJ = (idTable) => `table:${idTable}:mj`;
+export const salleJoueurs = (idTable) => `table:${idTable}:joueurs`;
 
 export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, config }) {
   const io = new Server(serveurHttp, {
@@ -110,6 +114,30 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
 
     publierCombat(idTable, cause) {
       io.to(salleTable(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: depot.obtenirCombat(idTable), cause });
+    },
+
+    /** Un pion, complete du nom et du proprietaire de son personnage. */
+    presenterPion(pion) {
+      const personnage = depot.obtenirPersonnage(pion.idPersonnage);
+      return { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null };
+    },
+
+    /**
+     * La scene telle qu'un role a le droit de la voir. Le MJ voit tout ;
+     * les joueurs ne recoivent PAS les pions caches ni les monstres tapis
+     * dans le brouillard : ces pions ne quittent jamais le serveur.
+     */
+    vueDeLaScene(scene, pourMJ) {
+      const pions = pourMJ
+        ? scene.pions
+        : scene.pions.filter((p) => pionVisibleParLesJoueurs(scene, p, depot.obtenirPersonnage(p.idPersonnage)));
+      return { ...scene, pions: pions.map((p) => ctx.presenterPion(p)) };
+    },
+
+    publierScene(idTable, cause) {
+      const scene = depot.obtenirScene(idTable);
+      io.to(salleMJ(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, true), cause });
+      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, false), cause });
     },
 
     async diffuserPresence(idTable) {

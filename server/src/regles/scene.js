@@ -1,0 +1,95 @@
+// Regles de la scene : placer et deplacer les pions, regler la grille,
+// peindre le brouillard, et decider ce que les joueurs ont le droit de voir.
+import { aimanter, borner, estRevele, traitCouvre } from "../../../shared/geometrie.js";
+import { nouvelId } from "../modeles/identifiants.js";
+import { LIMITES_BROUILLARD } from "../modeles/scene.js";
+import { ErreurRegle } from "./erreurs.js";
+
+// Couleur stable par joueur (le meme pseudo donne toujours la meme couleur).
+const COULEURS_JOUEURS = ["#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#bcbd22", "#8c564b"];
+const COULEUR_PNJ = "#b22222";
+
+export function couleurPour(proprietaire) {
+  if (proprietaire === null) return COULEUR_PNJ;
+  let somme = 0;
+  for (const lettre of proprietaire.toLocaleLowerCase("fr")) somme = (somme * 31 + lettre.charCodeAt(0)) % 1_000_003;
+  return COULEURS_JOUEURS[somme % COULEURS_JOUEURS.length];
+}
+
+/** Position finale d'un pion : dans la carte, et aimantee a la grille si demande. */
+export function positionValide(scene, x, y, { aimanter: avecAimant = true, taille = 1 } = {}) {
+  const dansLaCarte = borner(x, y, scene.carte);
+  if (!avecAimant) return dansLaCarte;
+  const surLaGrille = aimanter(dansLaCarte.x, dansLaCarte.y, scene.grille, taille);
+  return borner(surLaGrille.x, surLaGrille.y, scene.carte);
+}
+
+export function placerPion(scene, personnage, position) {
+  if (scene.pions.some((p) => p.idPersonnage === personnage.id)) {
+    throw new ErreurRegle(`${personnage.nom} est deja sur la carte.`);
+  }
+  // Sans position precise : au centre de la carte.
+  const { x, y } = positionValide(scene, position?.x ?? scene.carte.largeur / 2, position?.y ?? scene.carte.hauteur / 2);
+  const pion = {
+    id: nouvelId("j"),
+    idPersonnage: personnage.id,
+    x,
+    y,
+    taille: 1,
+    couleur: couleurPour(personnage.proprietaire),
+    cache: false,
+  };
+  return { scene: { ...scene, pions: [...scene.pions, pion] }, pion };
+}
+
+export function deplacerPion(scene, idPion, x, y, options) {
+  const pion = scene.pions.find((p) => p.id === idPion);
+  if (!pion) throw new ErreurRegle("Ce pion n'est plus sur la carte.");
+  const position = positionValide(scene, x, y, { ...options, taille: pion.taille });
+  const deplace = { ...pion, ...position };
+  return { scene: { ...scene, pions: scene.pions.map((p) => (p.id === idPion ? deplace : p)) }, pion: deplace };
+}
+
+export function retirerPion(scene, idPion) {
+  if (!scene.pions.some((p) => p.id === idPion)) throw new ErreurRegle("Ce pion n'est plus sur la carte.");
+  return { ...scene, pions: scene.pions.filter((p) => p.id !== idPion) };
+}
+
+/** Nouvelle carte : la grille est conservee, le brouillard repart a zero (tout noir). */
+export function changerCarte(scene, carte) {
+  const pions = scene.pions.map((p) => ({ ...p, ...borner(p.x, p.y, carte) }));
+  return { ...scene, carte, pions, brouillard: { actif: scene.brouillard.actif, traits: [] } };
+}
+
+export function ajouterTrait(scene, trait) {
+  if (scene.brouillard.traits.length >= LIMITES_BROUILLARD.traits) {
+    throw new ErreurRegle("Brouillard trop detaille : utilise 'Tout cacher' ou 'Tout reveler' pour repartir de zero.");
+  }
+  return { ...scene, brouillard: { ...scene.brouillard, traits: [...scene.brouillard.traits, trait] } };
+}
+
+export function toutReveler(scene) {
+  return { ...scene, brouillard: { ...scene.brouillard, traits: [{ mode: "tout-reveler" }] } };
+}
+
+export function toutCacher(scene) {
+  return { ...scene, brouillard: { ...scene.brouillard, traits: [] } };
+}
+
+/**
+ * Un pion est-il visible par les joueurs ?
+ *  - un pion cache par le MJ : non ;
+ *  - le pion d'un joueur : oui, toujours (on sait ou sont ses compagnons) ;
+ *  - un PNJ / monstre : seulement s'il se trouve dans une zone revelee.
+ */
+export function pionVisibleParLesJoueurs(scene, pion, personnage) {
+  if (pion.cache || !personnage) return false;
+  if (personnage.proprietaire !== null) return true;
+  return estRevele(scene.brouillard, pion.x, pion.y);
+}
+
+/** Le trait touche-t-il un pion de PNJ ? (sa visibilite pour les joueurs peut alors changer) */
+export function traitTouchePnj(scene, trait, personnageDe) {
+  if (trait.mode === "tout-reveler") return true;
+  return scene.pions.some((p) => personnageDe(p.idPersonnage)?.proprietaire === null && traitCouvre(trait, p.x, p.y));
+}

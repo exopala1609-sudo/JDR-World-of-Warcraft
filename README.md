@@ -27,7 +27,7 @@ Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md)
 ## Banc de test
 Une page brute (sans mise en forme) permet de tout verifier : connexion MJ /
 joueur, tables, personnages, points de vie, ressources, repos, compendium,
-inventaire, etats et combat, en temps reel.
+inventaire, etats, combat, et la carte (grille, pions, brouillard), en temps reel.
 ```
 http://localhost:3000/test/
 ```

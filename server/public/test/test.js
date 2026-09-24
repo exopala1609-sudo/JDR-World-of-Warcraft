@@ -7,6 +7,8 @@ import { CARACTERISTIQUES, CLASSES } from "/partage/dnd5e.js";
 import { ETATS_DE_BASE } from "/partage/etats.js";
 import { RARETES } from "/partage/raretes.js";
 import { MODELES_RESSOURCES } from "/partage/ressources.js";
+import { caseDe } from "/partage/geometrie.js";
+import { MoteurCarte } from "/carte/moteur-carte.js";
 
 const $ = (id) => document.getElementById(id);
 const CLE_JETON = "vtt-jeton";
@@ -17,6 +19,8 @@ let socket = null;
 let moi = null;
 let combat = null;
 let compendium = { objets: [], sorts: [], etats: [] };
+let scene = null;
+let moteur = null;
 const personnages = new Map();
 const saisies = new Map(); // valeurs tapees, conservees entre deux affichages
 
@@ -323,6 +327,7 @@ function afficherPersonnages() {
     conteneur.append(fiche, el("hr"));
   }
   afficherListesDePersonnages();
+  afficherOutilsScene();
 }
 
 // Menus deroulants qui listent les personnages (destinataire du compendium, ajout au combat).
@@ -423,18 +428,140 @@ function afficherErreursCompendium(rapport) {
   );
 }
 
-async function chargerCartes() {
+async function chargerListeCartes() {
   const reponse = await demander(EVENEMENTS.MEDIAS_LISTER, { categorie: "cartes" });
   if (!reponse.ok) return;
-  const ul = $("liste-cartes");
-  ul.replaceChildren();
-  if (reponse.fichiers.length === 0) {
-    ul.append(el("li", "Aucune image pour l'instant : l'apercu montre l'image de remplacement."));
+  const options = [["", "(carte de test : carre gris de 2000 px)"], ...reponse.fichiers.map((f) => [f, f])];
+  $("choix-carte").replaceChildren(...options.map(([v, t]) => Object.assign(el("option", t), { value: v })));
+  $("choix-carte").value = scene?.carte.fichier ?? "";
+}
+
+// --- Carte : branchement du moteur sur le temps reel ------------------------------------------
+
+function creerMoteur() {
+  moteur = new MoteurCarte($("carte"), {
+    get estMJ() {
+      return estMJ();
+    },
+    // Simple confort d'affichage : le SERVEUR verifie de toute facon.
+    peutDeplacer: (pion) => estMJ() || pion.proprietaire?.toLocaleLowerCase("fr") === moi?.pseudo.toLocaleLowerCase("fr"),
+    // 1. SAISIR : le serveur accorde-t-il le pion (droit + verrou) ?
+    surSaisie: async (pion) => (await demander(EVENEMENTS.PION_SAISIR, { idPion: pion.id })).ok,
+    // 2. GLISSER (final: false) et 3. LACHER (final: true).
+    surDeplacement: async (pion, x, y, final, aimanter) => {
+      if (!final) {
+        socket?.emit(EVENEMENTS.PION_DEPLACER, { idPion: pion.id, x, y, final: false, aimanter });
+        return null;
+      }
+      const reponse = await demander(EVENEMENTS.PION_DEPLACER, { idPion: pion.id, x, y, final: true, aimanter });
+      return reponse.ok ? reponse.position : null;
+    },
+    surTrait: (trait) =>
+      socket?.emit(EVENEMENTS.BROUILLARD_TRAIT, trait, (reponse) => {
+        if (!reponse?.ok) journal(`REFUS du serveur : ${reponse?.erreur}`);
+      }),
+    surInfo: (texte) => ($("info-carte").textContent = texte),
+  });
+}
+
+function recevoirScene(nouvelle) {
+  scene = nouvelle;
+  if (!moteur) creerMoteur();
+  moteur.chargerScene(nouvelle);
+  afficherOutilsScene();
+}
+
+const descriptionCase = (pion) => {
+  const { colonne, ligne } = caseDe(pion.x, pion.y, scene.grille);
+  return `case (${colonne}, ${ligne})`;
+};
+
+function afficherOutilsScene() {
+  if (!scene) return;
+  // Joueur : ou est mon pion ?
+  const miens = scene.pions.filter((p) => p.proprietaire?.toLocaleLowerCase("fr") === moi?.pseudo.toLocaleLowerCase("fr"));
+  $("mes-pions").textContent = estMJ()
+    ? ""
+    : miens.length
+      ? `Tes pions : ${miens.map((p) => `${p.nom} ${descriptionCase(p)}`).join(", ")}. Clique dessus et fais-les glisser.`
+      : "Aucun de tes personnages n'est sur la carte : le MJ doit placer ton pion.";
+  if (!estMJ()) return;
+
+  // MJ : reglages de la grille
+  const g = scene.grille;
+  for (const [curseur, nombre, cle] of [
+    ["grille-taille", "grille-taille-n", "taille"],
+    ["grille-x", "grille-x-n", "decalageX"],
+    ["grille-y", "grille-y-n", "decalageY"],
+  ]) {
+    if (document.activeElement !== $(curseur)) $(curseur).value = g[cle];
+    if (document.activeElement !== $(nombre)) $(nombre).value = g[cle];
   }
-  for (const nom of reponse.fichiers) {
-    ul.append(
-      el("li", `${nom} `, bouton("Afficher", () => ($("apercu-carte").src = `/medias/cartes/${encodeURIComponent(nom)}`))),
-    );
+  $("grille-visible").checked = g.visible;
+  $("brouillard-actif").checked = scene.brouillard.actif;
+  if ($("choix-carte").options.length) $("choix-carte").value = scene.carte.fichier ?? "";
+
+  // MJ : liste des pions
+  $("liste-pions").replaceChildren(
+    ...scene.pions.map((p) =>
+      el(
+        "li",
+        `${p.nom} (${p.proprietaire ?? "PNJ"}) - ${descriptionCase(p)}${p.cache ? " - CACHE aux joueurs" : ""} `,
+        bouton(p.cache ? "Montrer aux joueurs" : "Cacher aux joueurs", () =>
+          demander(EVENEMENTS.PION_CACHER, { idPion: p.id, cache: !p.cache }),
+        ),
+        bouton("Retirer de la carte", () => demander(EVENEMENTS.PION_RETIRER, { idPion: p.id })),
+      ),
+    ),
+  );
+  const absents = [...personnages.values()].filter((p) => !scene.pions.some((j) => j.idPersonnage === p.id));
+  $("choix-pion").replaceChildren(
+    ...absents.map((p) => Object.assign(el("option", `${p.nom} (${p.proprietaire ?? "PNJ"})`), { value: p.id })),
+  );
+}
+
+// Reglage de la grille : affichage immediat chez le MJ, envoi au serveur
+// au plus toutes les 100 ms (inutile d'envoyer chaque pixel du curseur).
+let minuterieGrille = null;
+function reglerGrille(modification) {
+  if (!scene) return;
+  const grille = { ...scene.grille, ...modification };
+  grille.taille = Math.min(1000, Math.max(10, Math.round(grille.taille * 10) / 10));
+  grille.decalageX = Math.round(grille.decalageX * 10) / 10;
+  grille.decalageY = Math.round(grille.decalageY * 10) / 10;
+  scene = { ...scene, grille };
+  moteur.majGrille(grille);
+  afficherOutilsScene();
+  clearTimeout(minuterieGrille);
+  minuterieGrille = setTimeout(() => demander(EVENEMENTS.SCENE_GRILLE, grille), 100);
+}
+
+function decrireScene(cause) {
+  switch (cause.action) {
+    case "carte":
+      return `${cause.par} affiche la carte ${cause.fichier ?? "de test"} (brouillard remis a zero).`;
+    case "pion-place":
+      return `${cause.par} place le pion de ${cause.nom}.`;
+    case "pions-places":
+      return `${cause.par} place ${cause.nombre} pion(s).`;
+    case "pion-retire":
+      return `${cause.par} retire un pion de la carte.`;
+    case "pion-cache":
+      return `${cause.par} cache un pion aux joueurs.`;
+    case "pion-montre":
+      return `${cause.par} montre un pion aux joueurs.`;
+    case "tout-revele":
+      return `${cause.par} revele toute la carte.`;
+    case "tout-cache":
+      return `${cause.par} recouvre toute la carte de brouillard.`;
+    case "brouillard-active":
+      return `${cause.par} active le brouillard.`;
+    case "brouillard-desactive":
+      return `${cause.par} desactive le brouillard.`;
+    case "visibilite":
+      return "Un pion apparait ou disparait dans le brouillard.";
+    default:
+      return `Scene mise a jour (${cause.action}).`;
   }
 }
 
@@ -467,8 +594,11 @@ function remplirTables(tables) {
   const choix = $("liste-tables");
   const precedent = choix.value;
   choix.replaceChildren(...tables.map((t) => Object.assign(el("option", t.nom), { value: t.id })));
-  if (tables.length === 0) choix.append(el("option", "(aucune table : le MJ doit en creer une)"));
-  if (precedent) choix.value = precedent;
+  if (tables.length === 0) {
+    choix.append(Object.assign(el("option", "(aucune table : le MJ doit en creer une)"), { value: "" }));
+  }
+  // On ne reselectionne l'ancienne table que si elle existe encore.
+  if (tables.some((t) => t.id === precedent)) choix.value = precedent;
 }
 
 async function rejoindre(idTable) {
@@ -483,12 +613,13 @@ async function rejoindre(idTable) {
   for (const p of reponse.personnages) personnages.set(p.id, p);
   combat = reponse.combat;
   afficherZone("jeu");
+  recevoirScene(reponse.scene);
   afficherPersonnages();
   afficherCombat();
   journal(`Table "${reponse.table.nom}" rejointe (${reponse.personnages.length} personnage(s) visible(s)).`);
   if (estMJ()) {
     await chargerCompendium();
-    await chargerCartes();
+    await chargerListeCartes();
   }
 }
 
@@ -619,6 +750,27 @@ function brancherSocket(jeton) {
     journal(decrireCombat(cause));
   });
 
+  // --- La carte ---
+  socket.on(EVENEMENTS.SCENE_ETAT, ({ scene: nouvelle, cause }) => {
+    recevoirScene(nouvelle);
+    journal(decrireScene(cause));
+  });
+  socket.on(EVENEMENTS.SCENE_GRILLE_MAJ, ({ grille }) => {
+    if (!scene) return;
+    scene = { ...scene, grille };
+    moteur.majGrille(grille);
+    afficherOutilsScene();
+  });
+  socket.on(EVENEMENTS.PION_POSITION, ({ idPion, x, y, final }) => {
+    moteur?.positionPion(idPion, x, y);
+    const pion = scene?.pions.find((p) => p.id === idPion);
+    if (pion && final) {
+      Object.assign(pion, { x, y });
+      afficherOutilsScene();
+    }
+  });
+  socket.on(EVENEMENTS.BROUILLARD_TRAIT_AJOUTE, ({ trait }) => moteur?.ajouterTrait(trait));
+
   socket.on(EVENEMENTS.COMPENDIUM_MAJ, async ({ rapport }) => {
     journal(`Compendium recharge : ${rapport.objets} objets, ${rapport.sorts} sorts, ${rapport.etats} auras, ${rapport.erreurs.length} erreur(s).`);
     afficherErreursCompendium(rapport);
@@ -729,7 +881,41 @@ $("bouton-recharger-compendium").addEventListener("click", async () => {
   const reponse = await demander(EVENEMENTS.COMPENDIUM_RECHARGER, {});
   if (reponse.ok) afficherErreursCompendium(reponse.rapport);
 });
-$("bouton-cartes").addEventListener("click", chargerCartes);
+// --- Outils de la carte ---
+for (const radio of document.querySelectorAll("input[name=outil]")) {
+  radio.addEventListener("change", () => moteur?.choisirOutil(radio.value));
+}
+$("rayon-pinceau").addEventListener("input", () => moteur && (moteur.rayonPinceau = Number($("rayon-pinceau").value)));
+$("voir-atravers").addEventListener("change", () => moteur && ((moteur.voirAtravers = $("voir-atravers").checked), (moteur.sale = true)));
+$("aimanter").addEventListener("change", () => moteur && (moteur.aimanter = $("aimanter").checked));
+$("bouton-recentrer").addEventListener("click", () => moteur?.recentrer());
+
+for (const [curseur, nombre, cle] of [
+  ["grille-taille", "grille-taille-n", "taille"],
+  ["grille-x", "grille-x-n", "decalageX"],
+  ["grille-y", "grille-y-n", "decalageY"],
+]) {
+  $(curseur).addEventListener("input", () => reglerGrille({ [cle]: Number($(curseur).value) }));
+  $(nombre).addEventListener("change", () => reglerGrille({ [cle]: Number($(nombre).value) }));
+}
+for (const b of document.querySelectorAll("[data-grille]")) {
+  b.addEventListener("click", () => reglerGrille({ [b.dataset.grille]: scene.grille[b.dataset.grille] + Number(b.dataset.pas) }));
+}
+$("grille-visible").addEventListener("change", () => reglerGrille({ visible: $("grille-visible").checked }));
+
+$("bouton-carte").addEventListener("click", () => demander(EVENEMENTS.SCENE_CARTE, { fichier: $("choix-carte").value || null }));
+$("bouton-actualiser-cartes").addEventListener("click", chargerListeCartes);
+$("bouton-tout-cacher").addEventListener("click", () => {
+  if (confirm("Recouvrir toute la carte de brouillard ?")) demander(EVENEMENTS.BROUILLARD_TOUT, { mode: "cacher" });
+});
+$("bouton-tout-reveler").addEventListener("click", () => demander(EVENEMENTS.BROUILLARD_TOUT, { mode: "reveler" }));
+$("brouillard-actif").addEventListener("change", () =>
+  demander(EVENEMENTS.BROUILLARD_ACTIF, { actif: $("brouillard-actif").checked }),
+);
+$("bouton-placer-tous").addEventListener("click", () => demander(EVENEMENTS.PIONS_PLACER_TOUS, {}));
+$("bouton-placer").addEventListener("click", () => {
+  if ($("choix-pion").value) demander(EVENEMENTS.PION_PLACER, { idPersonnage: $("choix-pion").value });
+});
 
 // --- Demarrage de la page ----------------------------------------------------------------------
 

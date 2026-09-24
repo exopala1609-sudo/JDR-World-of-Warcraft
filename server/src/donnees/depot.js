@@ -6,6 +6,7 @@
 //   └── t-3f9a0c1b2d/              <- une table (session de jeu)
 //       ├── table.json             <- nom, date de creation
 //       ├── combat.json            <- present seulement pendant un combat
+//       ├── scene.json             <- carte, grille, pions, brouillard
 //       ├── personnages/
 //       │   ├── p-8e21aa04c7.json  <- UN fichier par personnage
 //       │   └── p-51c0d9e3f2.json
@@ -24,14 +25,19 @@ import { ecrireJsonAtomique, lireJson } from "../fichiers.js";
 import { SchemaCombat } from "../modeles/combat.js";
 import { migrerPersonnage } from "../modeles/migrations.js";
 import { SchemaPersonnage } from "../modeles/personnage.js";
+import { SchemaScene, sceneVide } from "../modeles/scene.js";
 import { SchemaTable } from "../modeles/table.js";
 
 const DELAI_ECRITURE_MS = 250;
+// La scene change tres souvent (pinceau du brouillard, pions qui glissent) :
+// on l'ecrit au plus une fois par seconde pour menager la synchro du cloud.
+const DELAI_ECRITURE_SCENE_MS = 1000;
 
 export function creerDepot(dossierParties) {
   /** @type {Map<string, object>} */ const tables = new Map();
   /** @type {Map<string, object>} */ const personnages = new Map();
   /** @type {Map<string, object>} */ const combats = new Map(); // idTable -> combat
+  /** @type {Map<string, object>} */ const scenes = new Map(); // idTable -> scene
   /** @type {Map<string, {minuterie: NodeJS.Timeout, donnees: object}>} */
   const ecrituresEnAttente = new Map();
 
@@ -39,6 +45,7 @@ export function creerDepot(dossierParties) {
   const cheminFicheTable = (idTable) => join(cheminTable(idTable), "table.json");
   const cheminPersonnage = (p) => join(cheminTable(p.idTable), "personnages", `${p.id}.json`);
   const cheminCombat = (idTable) => join(cheminTable(idTable), "combat.json");
+  const cheminScene = (idTable) => join(cheminTable(idTable), "scene.json");
 
   function annulerEcriture(chemin) {
     const attente = ecrituresEnAttente.get(chemin);
@@ -49,7 +56,7 @@ export function creerDepot(dossierParties) {
   }
 
   // Regroupe les ecritures rapprochees (ex. 5 degats en 1 seconde = 1 ecriture).
-  function planifierEcriture(chemin, donnees) {
+  function planifierEcriture(chemin, donnees, delai = DELAI_ECRITURE_MS) {
     const existante = ecrituresEnAttente.get(chemin);
     if (existante) clearTimeout(existante.minuterie);
     const minuterie = setTimeout(() => {
@@ -59,7 +66,7 @@ export function creerDepot(dossierParties) {
       } catch (erreur) {
         console.error(`[depot] Echec d'ecriture de ${chemin} : ${erreur.message}`);
       }
-    }, DELAI_ECRITURE_MS);
+    }, delai);
     ecrituresEnAttente.set(chemin, { minuterie, donnees });
   }
 
@@ -104,6 +111,14 @@ export function creerDepot(dossierParties) {
           } else {
             ignores.push(chemin);
           }
+        }
+
+        // La scene (carte, pions, brouillard) de la table.
+        const brutScene = lireJson(cheminScene(table.data.id));
+        if (brutScene) {
+          const scene = SchemaScene.safeParse(brutScene);
+          if (scene.success && scene.data.idTable === table.data.id) scenes.set(table.data.id, scene.data);
+          else ignores.push(cheminScene(table.data.id));
         }
 
         // Combat en cours au moment de l'arret ? On le reprend.
@@ -168,6 +183,24 @@ export function creerDepot(dossierParties) {
       if (existsSync(chemin)) renameSync(chemin, destination);
       else ecrireJsonAtomique(destination, personnage);
       return personnage;
+    },
+
+    // --- Scenes -------------------------------------------------------------
+    /** Toute table a une scene : une scene vide est creee a la premiere demande. */
+    obtenirScene(idTable) {
+      if (!scenes.has(idTable)) scenes.set(idTable, sceneVide(idTable));
+      return scenes.get(idTable);
+    },
+    /**
+     * Enregistre la scene. "valider = false" pour les changements tres
+     * frequents deja verifies un par un (traits de brouillard), afin de ne pas
+     * re-verifier des milliers de traits a chaque coup de pinceau.
+     */
+    enregistrerScene(scene, { valider = true } = {}) {
+      const aJour = valider ? SchemaScene.parse(scene) : scene;
+      scenes.set(aJour.idTable, aJour);
+      planifierEcriture(cheminScene(aJour.idTable), aJour, DELAI_ECRITURE_SCENE_MS);
+      return aJour;
     },
 
     // --- Combats ------------------------------------------------------------

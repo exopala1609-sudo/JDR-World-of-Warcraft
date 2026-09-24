@@ -20,6 +20,7 @@ export default defineConfig({
       "/medias": "http://localhost:3000",
       "/test": "http://localhost:3000",
       "/partage": "http://localhost:3000",
+      "/carte": "http://localhost:3000",
       "/socket.io": { target: "http://localhost:3000", ws: true },
     },
   },

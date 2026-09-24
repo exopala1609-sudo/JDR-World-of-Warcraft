@@ -72,6 +72,14 @@ export function brancher(socket, ctx) {
       par: pseudo,
     });
 
+    // S'il etait sur la carte, son pion disparait.
+    const scene = depot.obtenirScene(personnage.idTable);
+    const pion = scene.pions.find((j) => j.idPersonnage === personnage.id);
+    if (pion) {
+      depot.enregistrerScene({ ...scene, pions: scene.pions.filter((j) => j.id !== pion.id) });
+      ctx.publierScene(personnage.idTable, { action: "pion-retire", par: pseudo });
+    }
+
     // S'il combattait, il quitte le combat.
     const combat = depot.obtenirCombat(personnage.idTable);
     const participant = combat?.participants.find((p) => p.idPersonnage === personnage.id);

@@ -22,7 +22,8 @@ JDR-World-of-Warcraft/
 │   ├── dnd5e.js              Regles de base : classes, modificateurs, ressources de depart
 │   ├── raretes.js            Les 6 raretes WoW et leurs couleurs
 │   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
-│   └── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
+│   ├── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
+│   └── geometrie.js          Grille, aimantation, distances, test du brouillard
 │
 ├── server/                   Le serveur, qui tourne sur ton PC
 │   ├── src/
@@ -42,6 +43,7 @@ JDR-World-of-Warcraft/
 │   │   │   ├── personnage.js Fiche D&D 5e : ressources, inventaire, grimoire, etats
 │   │   │   ├── compendium.js Objets, sorts, auras tels qu'ecrits dans le compendium
 │   │   │   ├── combat.js     Ordre d'initiative et tour actif
+│   │   │   ├── scene.js      Carte, grille, pions et brouillard d'une table
 │   │   │   ├── migrations.js Mise a niveau des fiches d'un ancien format
 │   │   │   └── table.js, identifiants.js, zod.js
 │   │   ├── regles/           Les arbitrages : fonctions pures, testees
@@ -51,13 +53,16 @@ JDR-World-of-Warcraft/
 │   │   │   ├── repos.js      Repos court (des de vie) et repos long
 │   │   │   ├── etats.js      Poser, retirer, faire expirer auras et debuffs
 │   │   │   ├── combat.js     Initiative, ordre, tours et rounds
+│   │   │   ├── scene.js      Placer/deplacer les pions, brouillard, visibilite
 │   │   │   └── erreurs.js    Distingue un refus normal d'un bug
 │   │   └── temps-reel/       Moteur Socket.IO, un fichier par domaine
 │   │       ├── index.js      Controle d'acces, salons, guichet, droits
 │   │       ├── tables.js, personnages.js, repos.js
 │   │       ├── compendium.js Inventaire, grimoire, liste des images
 │   │       ├── combat.js     Initiative et tours (protection double clic)
+│   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
 │   │       └── des.js
+│   ├── public/carte/         Moteur de carte Canvas, sans dependance (reutilisable)
 │   ├── public/test/          Banc de test brut (HTML + JS, sans CSS)
 │   └── test/                 Tests automatiques (npm test)
 │
@@ -78,6 +83,7 @@ JDR-World-of-Warcraft/
     └── t-3f9a0c1b2d/                 Une table de jeu
         ├── table.json
         ├── combat.json               Present seulement pendant un combat
+        ├── scene.json                Carte, grille, pions, brouillard
         ├── personnages/
         │   └── p-8e21aa04c7.json     Un fichier par personnage
         └── corbeille/                Fiches supprimees, recuperables a la main
@@ -120,3 +126,30 @@ Navigateur du joueur           Serveur (ton PC)                     Tous les nav
 ```
 
 Le navigateur ne calcule jamais rien : il demande, puis affiche ce qu'il recoit.
+
+## La carte : pourquoi un Canvas
+
+La zone de jeu est un `<canvas>` HTML5 (dessin 2D natif), redessine jusqu'a
+60 fois par seconde, en quatre calques : image, grille, pions, brouillard.
+
+- Le brouillard est un calque de pixels que la gomme "creuse" (mode de fusion
+  `destination-out`). En HTML ou SVG, il faudrait empiler des milliers de
+  formes, et chaque coup de pinceau ralentirait l'affichage.
+- Tout est en coordonnees de l'IMAGE de la carte : un pion en (1200, 800) est
+  au meme endroit chez tout le monde, quel que soit le zoom de chacun.
+- Le brouillard est stocke comme une liste de traits (gomme / pinceau), rejouee
+  dans l'ordre. Le serveur sait donc calculer, sans dessiner, si un point est
+  visible : c'est ce qui lui permet de ne jamais envoyer aux joueurs un monstre
+  tapi dans le noir.
+
+## Le trajet d'un pion qu'on fait glisser
+
+```
+Navigateur qui glisse            Serveur                           Autres navigateurs
+─────────────────────            ───────                           ──────────────────
+clic  -> "je saisis ce pion" ->  droit ? verrou libre ? -> verrou
+glisser (toutes les 50 ms)   ->  verrou a lui ? -> relaie (volatile) -> le pion glisse
+lacher -> position finale    ->  borne + aimante + enregistre
+                                 diffuse a tous (lui compris) ------> position officielle
+                                 libere le verrou
+```

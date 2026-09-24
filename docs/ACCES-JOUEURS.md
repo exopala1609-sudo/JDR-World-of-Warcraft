@@ -66,3 +66,7 @@ Internet, et l'adresse change a chaque redemarrage de la box.
   et coupe le tunnel (Ctrl + C) a la fin de la seance : l'adresse meurt avec lui.
 - Les fiches de PNJ, les lancers secrets du MJ, le compendium et les sauvegardes
   ne sont jamais envoyes aux navigateurs des joueurs.
+- Les pions de monstres caches (ou tapis dans le brouillard) ne sont jamais
+  envoyes aux joueurs. **En revanche, l'image de la carte leur est envoyee en
+  entier** : le brouillard la masque a l'affichage, mais un joueur qui ouvre
+  l'adresse de l'image dans son navigateur voit tout le donjon.

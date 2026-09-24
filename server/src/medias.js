@@ -16,7 +16,7 @@ import { CATEGORIES_PUBLIQUES } from "./config.js";
 const EXTENSIONS_IMAGE = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"];
 
 const REMPLACEMENTS = {
-  cartes: { largeur: 1600, hauteur: 1200, titre: "Carte introuvable" },
+  cartes: { largeur: 2000, hauteur: 2000, titre: "Carte introuvable" },
   jetons: { largeur: 256, hauteur: 256, titre: "Jeton" },
   portraits: { largeur: 256, hauteur: 256, titre: "Portrait" },
   icones: { largeur: 64, hauteur: 64, titre: "?" },
@@ -25,8 +25,25 @@ const REMPLACEMENTS = {
 const echapperXml = (texte) =>
   String(texte).replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]);
 
+// Carte d'entrainement : on y dessine une "fausse" grille, volontairement
+// decalee (cases de 90 px, depart en 30 / 55), comme sur une vraie carte
+// achetee. Le MJ peut s'exercer a caler la grille virtuelle dessus.
+const GRILLE_DESSINEE = { taille: 90, decalageX: 30, decalageY: 55 };
+
+function grilleDessinee(largeur, hauteur) {
+  const { taille, decalageX, decalageY } = GRILLE_DESSINEE;
+  const lignes = [];
+  for (let x = decalageX; x <= largeur; x += taille) lignes.push(`M${x} 0V${hauteur}`);
+  for (let y = decalageY; y <= hauteur; y += taille) lignes.push(`M0 ${y}H${largeur}`);
+  return `<path d="${lignes.join("")}" stroke="#666" stroke-width="3" fill="none"/>`;
+}
+
 export function imageDeRemplacement(categorie, nom) {
-  const { largeur, hauteur, titre } = REMPLACEMENTS[categorie];
+  const { largeur, hauteur } = REMPLACEMENTS[categorie];
+  // "aucune-carte" : la carte de test, tant que le MJ n'a choisi aucune image.
+  const carteDeTest = categorie === "cartes" && nom === "aucune-carte";
+  const titre = carteDeTest ? "Carte de test" : REMPLACEMENTS[categorie].titre;
+  if (carteDeTest) nom = "Depose tes images dans le dossier cartes/";
   const petite = largeur <= 64;
   const texte = petite
     ? `<text x="50%" y="58%" font-size="28" text-anchor="middle" fill="#bbb" font-family="sans-serif">?</text>`
@@ -34,6 +51,7 @@ export function imageDeRemplacement(categorie, nom) {
        <text x="50%" y="58%" font-size="${largeur / 28}" text-anchor="middle" fill="#aaa" font-family="sans-serif">${echapperXml(nom).slice(0, 60)}</text>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${largeur}" height="${hauteur}" viewBox="0 0 ${largeur} ${hauteur}">
   <rect width="100%" height="100%" fill="#777"/>
+  ${categorie === "cartes" ? grilleDessinee(largeur, hauteur) : ""}
   <rect x="2" y="2" width="${largeur - 4}" height="${hauteur - 4}" fill="none" stroke="#555" stroke-width="4"/>
   ${texte}
 </svg>`;

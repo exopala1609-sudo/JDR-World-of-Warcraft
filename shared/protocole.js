@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 3;
+export const VERSION_PROTOCOLE = 4;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -53,6 +53,19 @@ export const EVENEMENTS = /** @type {const} */ ({
   COMBAT_FIXER_INITIATIVE: "combat:fixerInitiative", // MJ
   COMBAT_TERMINER: "combat:terminer", // MJ
 
+  // Scene : carte, grille, pions, brouillard
+  SCENE_CARTE: "scene:carte", // MJ : choisir l'image de la carte
+  SCENE_GRILLE: "scene:grille", // MJ : taille et decalage de la grille
+  PION_PLACER: "pion:placer", // MJ : poser le pion d'un personnage
+  PIONS_PLACER_TOUS: "pions:placerTous", // MJ
+  PION_RETIRER: "pion:retirer", // MJ
+  PION_CACHER: "pion:cacher", // MJ : cacher / montrer un pion aux joueurs
+  PION_SAISIR: "pion:saisir", // debut d'un glisser : "je prends ce pion"
+  PION_DEPLACER: "pion:deplacer", // pendant (final: false) et a la fin (final: true)
+  BROUILLARD_TRAIT: "brouillard:trait", // MJ : un morceau de trait de gomme / pinceau
+  BROUILLARD_TOUT: "brouillard:tout", // MJ : tout reveler / tout cacher
+  BROUILLARD_ACTIF: "brouillard:actif", // MJ : activer / desactiver le brouillard
+
   // Des et medias
   DES_LANCER: "des:lancer",
   MEDIAS_LISTER: "medias:lister", // MJ
@@ -65,6 +78,10 @@ export const EVENEMENTS = /** @type {const} */ ({
   COMBAT_ETAT: "combat:etat", // photo complete du combat (ou null a la fin)
   COMPENDIUM_MAJ: "compendium:maj", // MJ : le compendium a ete recharge
   DES_RESULTAT: "des:resultat",
+  SCENE_ETAT: "scene:etat", // photo complete de la scene (filtree pour les joueurs)
+  SCENE_GRILLE_MAJ: "scene:grilleMaj",
+  PION_POSITION: "pion:position", // un pion bouge (en cours ou final)
+  BROUILLARD_TRAIT_AJOUTE: "brouillard:traitAjoute",
 });
 
 // Types de modification des points de vie (regles D&D 5e).
