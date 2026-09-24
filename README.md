@@ -23,6 +23,18 @@ npm run dev      # developpement : interface rechargee a chaque modification
 npm run build && npm start   # partie reelle : tout est servi par le port 3000
 ```
 Les adresses a partager s'affichent dans la console au demarrage.
+
+## Sprint 1 : banc de test
+Une page brute (sans mise en forme) permet de tout verifier : connexion MJ /
+joueur, tables, creation de personnages, points de vie et des en temps reel.
+```
+http://localhost:3000/test/
+```
+Les tests automatiques des regles se lancent avec :
+```bash
+npm test
+```
+Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
 ## Ou je mets mes fichiers ?
@@ -41,8 +53,8 @@ chaque dossier et signale tout chemin errone.
 ## Organisation du projet
 | Dossier | Role |
 | --- | --- |
-| `server/` | Serveur local : pages, medias du disque, temps reel |
-| `client/` | Interface WoW (React + TypeScript), verrouillee en 2560x1440 |
-| `shared/` | Vocabulaire et regles D&D 5e communs aux deux cotes |
+| `server/` | Serveur local : acces, donnees JSON, regles D&D, temps reel |
+| `client/` | Interface WoW (React + TypeScript), en pause pendant le sprint 1 |
+| `shared/` | Vocabulaire temps reel et regles D&D 5e communs aux deux cotes |
 | `donnees-mj/` | Dossier de secours quand `VTT_ASSETS` n'est pas configure |
 | `docs/` | Notes d'utilisation |

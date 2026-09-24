@@ -15,7 +15,8 @@
     "dev:serveur": "node --watch server/src/index.js --dev",
     "dev:client": "npm run dev --workspace client",
     "build": "npm run build --workspace client",
-    "start": "node server/src/index.js"
+    "start": "node server/src/index.js",
+    "test": "node --test server/test/*.test.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

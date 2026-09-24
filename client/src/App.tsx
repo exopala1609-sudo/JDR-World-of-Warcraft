@@ -1,42 +1,12 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { SceneJeu } from "@/ui/SceneJeu";
 import { CadreOr } from "@/ui/CadreOr";
-import { socket } from "@/core/socket";
-import { EVENEMENTS, ROLES } from "@/core/protocole";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
 
-type Participant = { id: string; nom: string; role: string };
-
+// Sprint 1 (infrastructure) : l'interface graphique est en pause. Le banc de
+// test brut se trouve sur /test/ ; cet ecran ne fait que reserver la place.
 export default function App() {
-  const [connecte, setConnecte] = useState(socket.connected);
-  const [nomDeLaPartie, setNomDeLaPartie] = useState("...");
-  const [connectes, setConnectes] = useState<Participant[]>([]);
   const { echelle, largeur, hauteur } = useEchelleInterface();
-
-  useEffect(() => {
-    const auBranchement = () => {
-      setConnecte(true);
-      // Etape 1 : tout le monde entre comme joueur anonyme.
-      // L'ecran du MJ et l'authentification arriveront a l'etape suivante.
-      socket.emit(EVENEMENTS.REJOINDRE, { role: ROLES.JOUEUR, nom: "Aventurier" });
-    };
-    const auDebranchement = () => setConnecte(false);
-    const surEtat = (etat: { nomDeLaPartie: string; connectes: Participant[] }) => {
-      setNomDeLaPartie(etat.nomDeLaPartie);
-      setConnectes(etat.connectes);
-    };
-
-    socket.on("connect", auBranchement);
-    socket.on("disconnect", auDebranchement);
-    socket.on(EVENEMENTS.ETAT_SESSION, surEtat);
-    if (socket.connected) auBranchement();
-
-    return () => {
-      socket.off("connect", auBranchement);
-      socket.off("disconnect", auDebranchement);
-      socket.off(EVENEMENTS.ETAT_SESSION, surEtat);
-    };
-  }, []);
 
   return (
     <SceneJeu>
@@ -49,7 +19,7 @@ export default function App() {
       />
 
       <CadreOr
-        titre={nomDeLaPartie}
+        titre="Interface en pause"
         style={{
           position: "absolute",
           left: "50%",
@@ -60,20 +30,10 @@ export default function App() {
         }}
       >
         <p style={{ margin: "0 0 20px", fontSize: 20, opacity: 0.85 }}>
-          Socle technique en place. L&apos;interface de jeu viendra se poser ici.
+          Sprint 1 : infrastructure. Le banc de test se trouve sur <a href="/test/">/test/</a>.
         </p>
-
-        <Ligne
-          etiquette="Liaison temps reel"
-          valeur={connecte ? "etablie" : "en attente du serveur..."}
-          couleur={connecte ? "var(--rarete-peu-commun)" : "var(--ressource-rage)"}
-        />
         <Ligne etiquette="Surface de jeu" valeur={`${largeur} x ${hauteur}`} />
         <Ligne etiquette="Echelle de l'interface" valeur={`${Math.round(echelle * 100)} %`} />
-        <Ligne
-          etiquette="Connectes"
-          valeur={connectes.length ? connectes.map((p) => p.nom).join(", ") : "aucun"}
-        />
       </CadreOr>
     </SceneJeu>
   );

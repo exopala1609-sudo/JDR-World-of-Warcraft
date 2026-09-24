@@ -1,8 +1,29 @@
 // Verification des dossiers au demarrage : sur deux PC differents, la panne
 // numero un sera "le chemin du .env ne correspond pas a ce poste".
 // Mieux vaut un message clair tout de suite qu'une carte qui ne charge pas.
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { CATEGORIES } from "./config.js";
+
+/**
+ * Premier lancement sur un dossier cloud neuf : on cree les sous-dossiers
+ * attendus (cartes, jetons...). Mais UNIQUEMENT si le dossier racine existe
+ * deja : si le chemin du .env contient une faute de frappe, on ne veut surtout
+ * pas fabriquer une arborescence au mauvais endroit.
+ */
+export function creerSousDossiersManquants(config) {
+  if (!existsSync(config.racineAssets)) return [];
+  const crees = [];
+  for (const categorie of Object.keys(CATEGORIES)) {
+    const chemin = config.dossiers[categorie];
+    const dansLaRacine = chemin === join(config.racineAssets, categorie);
+    if (dansLaRacine && !existsSync(chemin)) {
+      mkdirSync(chemin, { recursive: true });
+      crees.push(categorie);
+    }
+  }
+  return crees;
+}
 
 export function diagnostiquerDossiers(config) {
   return Object.keys(CATEGORIES).map((categorie) => {

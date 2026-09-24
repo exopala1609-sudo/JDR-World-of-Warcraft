@@ -34,7 +34,7 @@ export function poserVerrou(config) {
     ecrire();
   } catch (erreur) {
     console.warn(`[verrou] Impossible d'ecrire le verrou (${erreur.message}). On continue sans.`);
-    return;
+    return () => {};
   }
 
   const battement = setInterval(() => {
@@ -46,7 +46,8 @@ export function poserVerrou(config) {
   }, BATTEMENT_MS);
   battement.unref();
 
-  const liberer = () => {
+  // Renvoie la fonction qui retire le verrou (appelee a l'arret du serveur).
+  return function liberer() {
     clearInterval(battement);
     try {
       unlinkSync(chemin);
@@ -54,10 +55,4 @@ export function poserVerrou(config) {
       /* deja supprime */
     }
   };
-
-  process.once("exit", liberer);
-  process.once("SIGINT", () => {
-    liberer();
-    process.exit(0);
-  });
 }

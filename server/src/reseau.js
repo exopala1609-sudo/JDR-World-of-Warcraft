@@ -27,6 +27,11 @@ export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }, { modeDev 
     lignes.push(`   Lien joueurs   : http://${ip}:${portInterface}/   (meme reseau)`);
   }
 
+  lignes.push("", `   Page de test   : http://localhost:${port}/test/`);
+  for (const ip of adressesLocales()) {
+    lignes.push(`                    http://${ip}:${port}/test/`);
+  }
+
   lignes.push(
     "",
     "   Pour des joueurs hors de ton reseau : voir docs/ACCES-JOUEURS.md",

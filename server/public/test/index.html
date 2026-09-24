@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>VTT - Banc de test du sprint 1</title>
+  </head>
+  <body>
+    <h1>Banc de test - Sprint 1</h1>
+    <p>Etat de la liaison : <strong id="statut">deconnecte</strong></p>
+
+    <!-- ETAPE 1 : se presenter a l'entree ---------------------------------->
+    <section id="zone-connexion">
+      <h2>1. Connexion</h2>
+      <form id="form-connexion">
+        <label><input type="radio" name="role" value="joueur" checked /> Joueur</label>
+        <label><input type="radio" name="role" value="mj" /> Maitre du Jeu</label>
+        <br />
+        <label>Pseudo (joueur) : <input name="pseudo" maxlength="24" autocomplete="nickname" /></label>
+        <br />
+        <label>Mot de passe (MJ) : <input name="motDePasse" type="password" autocomplete="current-password" /></label>
+        <br />
+        <button type="submit">Entrer</button>
+      </form>
+    </section>
+
+    <!-- ETAPE 2 : choisir sa table ------------------------------------------>
+    <section id="zone-tables" hidden>
+      <h2>2. Tables de jeu</h2>
+      <p>Connecte en tant que : <strong id="moi"></strong> <button id="bouton-deconnexion">Se deconnecter</button></p>
+      <label>Table : <select id="liste-tables"></select></label>
+      <button id="bouton-rejoindre">Rejoindre</button>
+
+      <form id="form-table" data-mj-seulement hidden>
+        <label>Nouvelle table (MJ) : <input name="nom" maxlength="60" /></label>
+        <button type="submit">Creer</button>
+      </form>
+    </section>
+
+    <!-- ETAPE 3 : jouer ------------------------------------------------------>
+    <section id="zone-jeu" hidden>
+      <h2>3. Table : <span id="nom-table"></span></h2>
+
+      <h3>Connectes a cette table</h3>
+      <ul id="liste-presence"></ul>
+
+      <h3>Personnages</h3>
+      <ul id="liste-personnages"></ul>
+
+      <h3>Creer un personnage (niveau 1)</h3>
+      <form id="form-personnage">
+        <label>Nom : <input name="nom" maxlength="60" required /></label>
+        <label>Classe : <select name="classe" id="choix-classe"></select></label>
+        <br />
+        <label>FOR <input name="force" type="number" min="1" max="30" value="15" /></label>
+        <label>DEX <input name="dexterite" type="number" min="1" max="30" value="14" /></label>
+        <label>CON <input name="constitution" type="number" min="1" max="30" value="13" /></label>
+        <label>INT <input name="intelligence" type="number" min="1" max="30" value="12" /></label>
+        <label>SAG <input name="sagesse" type="number" min="1" max="30" value="10" /></label>
+        <label>CHA <input name="charisme" type="number" min="1" max="30" value="8" /></label>
+        <br />
+        <label data-mj-seulement hidden>
+          Attribuer au joueur (vide = PNJ cache aux joueurs) : <input name="proprietaire" maxlength="24" />
+        </label>
+        <button type="submit">Creer</button>
+      </form>
+
+      <h3>Lancer des des</h3>
+      <form id="form-des">
+        <label>Formule : <input name="formule" value="1d20+5" maxlength="60" /></label>
+        <label>Raison : <input name="raison" placeholder="Attaque, perception..." maxlength="80" /></label>
+        <label data-mj-seulement hidden><input type="checkbox" name="secret" /> Secret (MJ seul)</label>
+        <button type="submit">Lancer</button>
+      </form>
+      <p>Exemples : <code>1d20+3</code>, <code>2d20kh1</code> (avantage), <code>2d20kl1</code> (desavantage), <code>8d6</code>, <code>4d6kh3</code>.</p>
+    </section>
+
+    <h2>Journal (evenements recus du serveur)</h2>
+    <ol id="journal" reversed></ol>
+
+    <!-- Bibliotheque cliente Socket.IO, fournie automatiquement par le serveur. -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="test.js" type="module"></script>
+  </body>
+</html>
