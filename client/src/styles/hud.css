@@ -31,9 +31,14 @@
   inset: 0;
   z-index: var(--z-hud);
   pointer-events: none;
+  /* Les cadres s'adaptent a la largeur du HUD (voir le mode compact plus bas). */
+  container: hud / inline-size;
   display: grid;
-  /* Colonnes laterales de meme largeur : la barre d'actions tombe pile au centre. */
-  grid-template-columns: 520px 1fr 520px;
+  /* La colonne du milieu prend la largeur de la barre d'actions ; les colonnes
+     laterales se partagent le reste a parts egales (la barre tombe pile au
+     centre). minmax(0, ...) : elles peuvent retrecir sous leur contenu, la
+     grille ne deborde donc jamais de l'ecran. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
     "groupe      bandeau   minicarte"
@@ -237,7 +242,9 @@
   align-self: end;
   justify-self: center;
   position: relative;
-  padding: 0 120px; /* place pour les griffons */
+  /* Taille des griffons (1 = dessin d'origine) : toutes leurs cotes en decoulent. */
+  --echelle-griffon: 1;
+  padding: 0 calc(120px * var(--echelle-griffon)); /* place pour les griffons */
 }
 .actions__barre {
   display: flex;
@@ -257,9 +264,9 @@
 /* Griffons : ton image si elle existe dans icones/, sinon le dessin fourni. */
 .actions__embleme {
   position: absolute;
-  bottom: -10px;
-  width: 170px;
-  height: 128px;
+  bottom: calc(-10px * var(--echelle-griffon));
+  width: calc(170px * var(--echelle-griffon));
+  height: calc(128px * var(--echelle-griffon));
   background-repeat: no-repeat;
   background-position: bottom center;
   background-size: contain;
@@ -267,11 +274,11 @@
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
 }
 .actions__embleme--gauche {
-  left: -40px;
+  left: calc(-40px * var(--echelle-griffon));
   background-image: url("/medias/icones/ui-griffon-gauche?remplacement=non"), url("/interface/aile.svg");
 }
 .actions__embleme--droite {
-  right: -40px;
+  right: calc(-40px * var(--echelle-griffon));
   transform: scaleX(-1); /* le meme dessin, en miroir */
   background-image: url("/medias/icones/ui-griffon-droite?remplacement=non"), url("/interface/aile.svg");
 }
@@ -338,3 +345,21 @@
 .menu__bouton--actif {
   filter: brightness(1.4);
 }
+
+/* --- Mode compact : ecrans de 1920 a ~2200 pixels de large ----------------------------------
+   Sur la rangee du bas, discussion (500px) + barre d'actions et griffons
+   (~1110px) + micro-menu demandent environ 2190px d'ecran. En dessous, la
+   discussion, les cases d'action et les griffons retrecissent un peu pour que
+   rien ne se chevauche, jusqu'au minimum garanti de 1920x1080.
+   La largeur interrogee est celle du HUD, marges (--marge-hud) deduites,
+   dans les pixels de l'interface (donc apres la mise a l'echelle). */
+@container hud (width < 2150px) {
+  .discussion {
+    width: 420px; /* aligne sur le cadre du joueur, juste au-dessus */
+  }
+  .actions {
+    --case-action: 54px;
+    --echelle-griffon: 0.8;
+  }
+}
+
