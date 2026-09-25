@@ -10,6 +10,7 @@
 //   table:<id>      tous les participants d'une table (MJ + joueurs)
 //   table:<id>:mj   le MJ de cette table (PNJ caches, lancers secrets)
 //   table:<id>:joueurs  les joueurs seuls (ce qu'ils voient de la carte)
+//   table:<id>:joueur:<pseudo>  les ecrans d'UN joueur (son sac, prive)
 //   mj              tous les ecrans MJ, quelle que soit la table (compendium)
 //
 // Ce fichier prepare les outils communs ; chaque domaine du jeu a son fichier :
@@ -38,6 +39,14 @@ export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
 export const salleMJ = (idTable) => `table:${idTable}:mj`;
 export const salleJoueurs = (idTable) => `table:${idTable}:joueurs`;
+export const salleDuJoueur = (idTable, pseudo) => `table:${idTable}:joueur:${normaliserPseudo(pseudo)}`;
+
+/**
+ * Ce que les AUTRES joueurs voient d'un heros : tout (caracteristiques, PV,
+ * etats...), sauf le contenu de son sac, comme l'"Inspecter" de WoW. Le sac
+ * n'est envoye qu'a son proprietaire et au MJ.
+ */
+const vuePublique = (fiche) => ({ ...fiche, inventaire: [], sacPrive: true });
 
 export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, referentiel: regles, config }) {
   const io = new Server(serveurHttp, {
@@ -100,6 +109,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       socket.leave(salleTable(ancienne));
       socket.leave(salleMJ(ancienne));
       socket.leave(salleJoueurs(ancienne));
+      socket.leave(salleDuJoueur(ancienne, socket.data.profil.pseudo));
       await ctx.diffuserPresence(ancienne);
     },
 
@@ -112,7 +122,8 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       socket.data.idTable = idTable;
       socket.data.idTableCreation = null;
       socket.join(salleTable(idTable));
-      socket.join(ctx.estMJ(socket) ? salleMJ(idTable) : salleJoueurs(idTable));
+      if (ctx.estMJ(socket)) socket.join(salleMJ(idTable));
+      else socket.join([salleJoueurs(idTable), salleDuJoueur(idTable, socket.data.profil.pseudo)]);
       await ctx.diffuserPresence(idTable);
       return {
         table: depot.obtenirTable(idTable),
@@ -162,14 +173,29 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       return depot
         .personnagesDeLaTable(idTable)
         .filter((p) => ctx.estMJ(socket) || p.proprietaire !== null)
-        .map(presenterPersonnage);
+        .map((p) => {
+          const presente = presenterPersonnage(p);
+          return ctx.estMJ(socket) || ctx.estProprietaire(socket, p) ? presente : vuePublique(presente);
+        });
     },
 
-    /** Enregistre une fiche modifiee et l'annonce a qui de droit. */
+    /**
+     * Enregistre une fiche modifiee et l'annonce a qui de droit :
+     *  - un PNJ : au MJ seul ;
+     *  - un heros : la fiche complete au MJ et a son proprietaire, la
+     *    fiche sans le contenu du sac aux autres joueurs.
+     */
     publierPersonnage(personnage, cause) {
       const enregistre = depot.enregistrerPersonnage(personnage);
       const presente = presenterPersonnage(enregistre);
-      io.to(ctx.salleDuPersonnage(enregistre)).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+      const { idTable, proprietaire } = enregistre;
+      if (proprietaire === null) {
+        io.to(salleMJ(idTable)).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+        return presente;
+      }
+      const sallePrivee = salleDuJoueur(idTable, proprietaire);
+      io.to(salleMJ(idTable)).to(sallePrivee).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+      io.to(salleJoueurs(idTable)).except(sallePrivee).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: vuePublique(presente), cause });
       return presente;
     },
 

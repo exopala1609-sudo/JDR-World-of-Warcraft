@@ -46,7 +46,7 @@ export function InfobulleObjet({ objet }: { objet: Objet }) {
 }
 
 export function Sacs({ position }: { position: { x: number; y: number } }) {
-  const personnage = useJeu((e) => jeu.personnageActif(e));
+  const personnage = useJeu((e) => jeu.personnageDesSacs(e));
   const fermer = () => jeu.modifier((e) => ({ fenetres: { ...e.fenetres, sacs: false } }));
   const objets = personnage?.inventaire ?? [];
   const nombreDeCases = Math.max(CASES_MIN, Math.ceil(objets.length / COLONNES) * COLONNES);

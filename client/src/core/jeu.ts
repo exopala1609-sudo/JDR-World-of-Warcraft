@@ -130,9 +130,18 @@ class Jeu {
     return Object.values(etat.personnages).filter((p) => p.proprietaire?.toLocaleLowerCase("fr") === moi);
   }
 
-  /** Personnage dont on ouvre les sacs / la fiche : la cible, sinon le sien. */
+  /** Personnage dont on ouvre la fiche (C) : la cible, sinon le sien. */
   personnageActif(etat = this.etat): Personnage | null {
     return (etat.selection && etat.personnages[etat.selection]) || this.mesPersonnages(etat)[0] || null;
+  }
+
+  /**
+   * Personnage dont on ouvre les sacs (B). Comme dans WoW, un joueur n'ouvre
+   * que SES sacs, meme s'il a cible un compagnon ; le MJ ouvre ceux de la cible.
+   */
+  personnageDesSacs(etat = this.etat): Personnage | null {
+    if (etat.profil?.role === ROLES.MJ) return this.personnageActif(etat);
+    return this.mesPersonnages(etat)[0] ?? null;
   }
 
   // --- Echanges avec le serveur ----------------------------------------------------

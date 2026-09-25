@@ -59,7 +59,8 @@ before(async () => {
   depot = creerDepot(join(dossier, "parties"));
   depot.charger();
   sessions = creerGestionnaireSessions({ motDePasseMJ: "secret-de-test" });
-  const compendium = creerCompendium(join(dossier, "compendium"));
+  const compendium = creerCompendium("exemples/compendium");
+  compendium.charger();
   const referentiel = creerReferentiel("exemples/referentiel");
   referentiel.charger();
   serveur = createServer();
@@ -280,4 +281,29 @@ test("premiere connexion : un joueur sans personnage reste a la porte, puis entr
 test("l'ecran de creation est reserve aux joueurs", async () => {
   const r = await demander(mj, EVENEMENTS.CREATION_VALIDER, { donnees: {} });
   assert.deepEqual(r, { ok: false, erreur: "Le MJ cree ses personnages depuis les outils du MJ." });
+});
+
+// --- 5. Le sac est prive ------------------------------------------------------------------
+
+test("le contenu d'un sac ne part qu'a son proprietaire et au MJ, jamais aux autres joueurs", async () => {
+  const pourGarrosh = (m) => m.personnage.id === perso.Garrosh.id && m.cause.action === "objet-recu";
+  const [chezThrall, chezJaina, chezMJ] = [thrall, jaina, mj].map((s) => attendre(s, EVENEMENTS.PERSONNAGE_MAJ, 400, pourGarrosh));
+  const r = await demander(mj, EVENEMENTS.INVENTAIRE_AJOUTER, { idPersonnage: perso.Garrosh.id, idObjet: "epee-longue" });
+  assert.equal(r.ok, true);
+
+  // Le proprietaire et le MJ voient l'epee dans le sac...
+  assert.deepEqual((await chezThrall).personnage.inventaire.map((o) => o.nom), ["Epee longue"]);
+  assert.deepEqual((await chezMJ).personnage.inventaire.map((o) => o.nom), ["Epee longue"]);
+  // ... Jaina recoit la fiche (caracteristiques, PV...) SANS le contenu du sac.
+  const vuParJaina = (await chezJaina).personnage;
+  assert.deepEqual([vuParJaina.inventaire, vuParJaina.sacPrive], [[], true]);
+  assert.equal(vuParJaina.pointsDeVie.max, (await chezThrall).personnage.pointsDeVie.max);
+
+  // Meme regle a l'arrivee a la table (ou apres un F5).
+  const idTable = depot.listerTables()[0].id;
+  const fiches = async (socket) => (await demander(socket, EVENEMENTS.TABLE_REJOINDRE, { idTable })).personnages;
+  assert.equal((await fiches(jaina)).find((p) => p.id === perso.Garrosh.id).inventaire.length, 0);
+  assert.equal((await fiches(thrall)).find((p) => p.id === perso.Garrosh.id).inventaire.length, 1);
+  // Jaina voit toujours son propre sac.
+  assert.equal((await fiches(jaina)).find((p) => p.id === perso.Antonidas.id).sacPrive, undefined);
 });

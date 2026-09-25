@@ -46,6 +46,7 @@ export type Personnage = {
   race: string | null;
   faction: string | null;
   portrait: string | null; // fichier du dossier portraits/
+  sacPrive?: boolean; // fiche d'un autre joueur : le serveur n'envoie pas le contenu de son sac
   niveau: number;
   caracteristiques: Record<string, number>;
   classeArmure: number;
