@@ -1,4 +1,4 @@
-import { CARACTERISTIQUES, CLASSES } from "@partage/dnd5e.js";
+import { CARACTERISTIQUES } from "@partage/dnd5e.js";
 import { signe } from "@/core/journal";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone, urlPortrait } from "@/core/medias";
@@ -52,7 +52,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
   if (!p) {
     return (
       <Fenetre titre="Personnage" classe="fiche" positionInitiale={position} surFermer={fermer}>
-        <p className="fiche__sous-titre">Aucun personnage. Cree le tien depuis la page de test.</p>
+        <p className="fiche__sous-titre">Aucun personnage.</p>
       </Fenetre>
     );
   }
@@ -62,7 +62,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
   return (
     <Fenetre titre={p.nom} classe="fiche" positionInitiale={position} surFermer={fermer}>
       <p className="fiche__sous-titre">
-        Niveau {p.niveau} {(CLASSES as Record<string, { nom: string }>)[p.classe]?.nom}
+        Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
         {p.proprietaire ? ` - ${p.proprietaire}` : ""}
       </p>
       <div className="fiche__corps">

@@ -1,24 +1,26 @@
 import { useState } from "react";
-import { CLASSES } from "@partage/dnd5e.js";
-import { MODELES_RESSOURCES } from "@partage/ressources.js";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone, urlPortrait } from "@/core/medias";
 import type { Personnage, Ressource } from "@/core/types";
 import { Barre } from "@/ui/Barre";
 import { avecInfobulle } from "@/ui/InfoBulle";
 
-const APPARENCES_CONNUES = new Set([...Object.keys(MODELES_RESSOURCES)]);
+// Couleurs de barre prevues par theme.css (fiches d'avant le referentiel).
+const APPARENCES_DU_THEME = new Set(["mana", "rage", "energie", "focalisation", "puissance-runique", "eclats-ame", "points-combo", "puissance-sacree"]);
 
 /** La ressource affichee sous la vie : une jauge WoW en priorite (Mana, Rage...). */
 function ressourcePrincipale(p: Personnage): Ressource | null {
   return p.ressources.find((r) => r.type === "jauge") ?? p.ressources[0] ?? null;
 }
 
+/** Couleur de la barre : celle du referentiel (ressources.json), sinon celle du theme. */
 function couleurRessource(r: Ressource) {
-  return APPARENCES_CONNUES.has(r.apparence) ? `var(--ressource-${r.apparence})` : "var(--ressource-autre)";
+  const modele = jeu.lire().referentiel?.ressources.find((m) => m.id === r.apparence || m.id === r.cle);
+  if (modele?.couleur) return modele.couleur;
+  return APPARENCES_DU_THEME.has(r.apparence) ? `var(--ressource-${r.apparence})` : "var(--ressource-autre)";
 }
 
-function Portrait({ nom, niveau }: { nom: string; niveau: number }) {
+function Portrait({ nom, niveau, fichier }: { nom: string; niveau: number; fichier: string | null }) {
   const [absent, setAbsent] = useState(false);
   const initiales = nom
     .split(/\s+/)
@@ -31,7 +33,12 @@ function Portrait({ nom, niveau }: { nom: string; niveau: number }) {
       <div className="portrait__initiales">{initiales}</div>
       {/* Ton image portraits/<nom>.png si elle existe ; sinon les initiales. */}
       {!absent && (
-        <img src={`${urlPortrait(nom)}?remplacement=non`} alt="" onError={() => setAbsent(true)} style={{ position: "relative" }} />
+        <img
+          src={`${fichier ? `/medias/portraits/${encodeURIComponent(fichier)}` : urlPortrait(nom)}?remplacement=non`}
+          alt=""
+          onError={() => setAbsent(true)}
+          style={{ position: "relative" }}
+        />
       )}
       <div className="portrait__niveau">{niveau}</div>
     </div>
@@ -58,7 +65,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
         <>
           <div className="infobulle__titre infobulle__ligne--or">{p.nom}</div>
           <div>
-            Niveau {p.niveau} {(CLASSES as Record<string, { nom: string }>)[p.classe]?.nom}
+            Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
           </div>
           <div className="infobulle__ligne--gris">
             Joueur : {p.proprietaire}
@@ -71,7 +78,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
         </>
       ))}
     >
-      <Portrait nom={p.nom} niveau={p.niveau} />
+      <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} />
       <div className="cadre-unite__infos">
         <div className="plaque-nom">
           <span className="plaque-nom__nom">{p.nom}</span>

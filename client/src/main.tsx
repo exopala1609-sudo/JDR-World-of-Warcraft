@@ -8,6 +8,7 @@ import "@/styles/composants.css";
 import "@/styles/hud.css";
 import "@/styles/fenetres.css";
 import "@/styles/ecrans.css";
+import "@/styles/creation.css";
 
 const racine = document.getElementById("racine");
 if (!racine) throw new Error("Element #racine introuvable dans index.html");

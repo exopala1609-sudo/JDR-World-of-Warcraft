@@ -54,6 +54,17 @@ const ETAPES = {
     grimoire: [],
     etats: [],
   }),
+
+  // Version 2 (sprints 2 a 5) -> version 3 (sprint 6 : ecran de creation).
+  // Les fiches existantes n'ont ni race, ni faction, ni portrait choisi :
+  // on les laisse vides (null), le MJ pourra les completer plus tard.
+  2: (fiche) => ({
+    ...fiche,
+    versionSchema: 3,
+    race: fiche.race ?? null,
+    faction: fiche.faction ?? null,
+    portrait: fiche.portrait ?? null,
+  }),
 };
 
 /**

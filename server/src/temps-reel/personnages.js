@@ -1,14 +1,16 @@
 // Domaine "personnages" : creation, points de vie, ressources et etats.
 import { EVENEMENTS, TYPES_PV } from "../../../shared/protocole.js";
-import { MODELES_RESSOURCES } from "../../../shared/ressources.js";
+import { listerImages } from "../medias.js";
 import { schemaId } from "../modeles/identifiants.js";
-import { fabriquerPersonnage } from "../modeles/personnage.js";
+import { fabriquerPersonnage, fabriquerPersonnageGuide } from "../modeles/personnage.js";
+import { schemaIdReferentiel } from "../modeles/referentiel.js";
 import { z } from "../modeles/zod.js";
 import { retirerParticipant } from "../regles/combat.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { poserEtat, retirerEtat } from "../regles/etats.js";
 import { appliquerPointsDeVie, texteDeCombat } from "../regles/points-de-vie.js";
 import { modifierRessource } from "../regles/ressources.js";
+import { caseLibreProche, placerPion } from "../regles/scene.js";
 
 const idPersonnage = schemaId("p");
 const cleRessource = z.string().regex(/^[a-z0-9-]{1,40}$/);
@@ -25,7 +27,7 @@ const Demandes = {
   modifierRessource: z.strictObject({ idPersonnage, cle: cleRessource, variation: z.int().min(-999).max(999) }),
   ajouterRessource: z.strictObject({
     idPersonnage,
-    modele: z.enum(Object.keys(MODELES_RESSOURCES)),
+    modele: schemaIdReferentiel, // une ressource du referentiel (ressources.json)
     max: z.int().min(1).max(999).optional(),
   }),
   retirerRessource: z.strictObject({ idPersonnage, cle: cleRessource }),
@@ -44,21 +46,45 @@ export function brancher(socket, ctx) {
 
   // --- Creation / suppression --------------------------------------------------
 
+  // "Entrer dans le monde" : le joueur envoie ses CHOIX depuis l'ecran de
+  // creation. Le serveur verifie tout d'apres le referentiel, enregistre la
+  // fiche, pose le pion pres du groupe, puis fait entrer le joueur en jeu.
+  ctx.guichet(socket, EVENEMENTS.CREATION_VALIDER, Demandes.creer, async ({ donnees }) => {
+    if (ctx.estMJ(socket)) throw new ErreurRegle("Le MJ cree ses personnages depuis les outils du MJ.");
+    const idTable = socket.data.idTableCreation;
+    if (!idTable || !depot.obtenirTable(idTable)) throw new ErreurRegle("Choisis d'abord une table.");
+    // Deux onglets ouverts, deux clics : un seul personnage par joueur et par table.
+    if (ctx.personnageDuJoueur(socket, idTable)) throw new ErreurRegle("Tu as deja un personnage a cette table.");
+
+    const personnage = fabriquerPersonnageGuide(donnees, {
+      idTable,
+      proprietaire: pseudo,
+      referentiel: ctx.referentiel,
+      portraits: listerImages(ctx.config, "portraits"),
+    });
+    ctx.publierPersonnage(personnage, { action: "creation", par: pseudo }); // la table voit arriver le nouveau
+
+    // Son pion apparait sur la carte, sur une case libre pres des autres heros.
+    const scene = depot.obtenirScene(idTable);
+    const heros = scene.pions.filter((p) => depot.obtenirPersonnage(p.idPersonnage)?.proprietaire);
+    const depart = heros.length
+      ? { x: heros.reduce((t, p) => t + p.x, 0) / heros.length, y: heros.reduce((t, p) => t + p.y, 0) / heros.length }
+      : { x: scene.carte.largeur / 2, y: scene.carte.hauteur / 2 };
+    depot.enregistrerScene(placerPion(scene, personnage, caseLibreProche(scene, depart)).scene);
+    ctx.publierScene(idTable, { action: "pion-place", par: pseudo, nom: personnage.nom });
+
+    return ctx.entrerDansLaTable(socket, idTable);
+  });
+
+  // Creation libre, reservee au MJ (PNJ, monstres, ou fiche attribuee a un joueur).
   ctx.guichet(socket, EVENEMENTS.PERSONNAGE_CREER, Demandes.creer, ({ donnees }) => {
+    if (!ctx.estMJ(socket)) throw new ErreurRegle("Cree ton personnage depuis l'ecran de creation.");
     const idTable = ctx.exigerTable(socket);
     const demande = { ...(donnees ?? {}) };
+    // La forme exacte (texte de 2 a 24 caracteres) est verifiee par le schema.
+    const proprietaire = typeof demande.proprietaire === "string" ? demande.proprietaire.trim() || null : null;
 
-    // Un joueur cree toujours SA fiche ; le MJ choisit le proprietaire (ou PNJ).
-    let proprietaire;
-    if (ctx.estMJ(socket)) {
-      // La forme exacte (texte de 2 a 24 caracteres) est verifiee par le schema.
-      proprietaire = typeof demande.proprietaire === "string" ? demande.proprietaire.trim() || null : null;
-    } else {
-      if (demande.proprietaire !== undefined) throw new ErreurRegle("Seul le MJ peut attribuer une fiche.");
-      proprietaire = pseudo;
-    }
-
-    const personnage = ctx.publierPersonnage(fabriquerPersonnage(demande, { idTable, proprietaire }), {
+    const personnage = ctx.publierPersonnage(fabriquerPersonnage(demande, { idTable, proprietaire, referentiel: ctx.referentiel }), {
       action: "creation",
       par: pseudo,
     });
@@ -129,10 +155,19 @@ export function brancher(socket, ctx) {
     if (personnage.ressources.some((r) => r.cle === modele)) {
       throw new ErreurRegle(`${personnage.nom} possede deja cette ressource.`);
     }
-    const { max: maxParDefaut, ...regles } = MODELES_RESSOURCES[modele];
-    const plafond = max ?? maxParDefaut;
-    // Une jauge qui se vide au repos (Rage) demarre vide ; les autres, pleines.
-    const ressource = { cle: modele, ...regles, max: plafond, actuel: regles.reposLong === "vider" ? 0 : plafond };
+    const m = ctx.referentiel.obtenirRessource(modele);
+    if (!m) throw new ErreurRegle(`Ressource inconnue du referentiel : "${modele}".`);
+    const plafond = max ?? m.max;
+    const ressource = {
+      cle: m.id,
+      nom: m.nom,
+      type: m.type,
+      max: plafond,
+      actuel: m.depart === "vide" ? 0 : plafond, // la Rage demarre vide
+      reposCourt: m.reposCourt,
+      reposLong: m.reposLong,
+      apparence: m.id,
+    };
     return {
       personnage: ctx.publierPersonnage(
         { ...personnage, ressources: [...personnage.ressources, ressource] },

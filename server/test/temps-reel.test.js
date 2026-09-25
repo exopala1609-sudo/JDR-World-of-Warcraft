@@ -21,6 +21,7 @@ const CARAC = { force: 14, dexterite: 12, constitution: 14, intelligence: 10, sa
 const dossier = mkdtempSync(join(tmpdir(), "vtt-temps-reel-"));
 let serveur;
 let depot;
+let sessions;
 let adresse;
 let mj;
 let thrall;
@@ -57,7 +58,7 @@ before(async () => {
   mkdirSync(join(dossier, "parties"));
   depot = creerDepot(join(dossier, "parties"));
   depot.charger();
-  const sessions = creerGestionnaireSessions({ motDePasseMJ: "secret-de-test" });
+  sessions = creerGestionnaireSessions({ motDePasseMJ: "secret-de-test" });
   const compendium = creerCompendium(join(dossier, "compendium"));
   const referentiel = creerReferentiel("exemples/referentiel");
   referentiel.charger();
@@ -71,8 +72,9 @@ before(async () => {
   jaina = await connecter(sessions, { role: "joueur", pseudo: "Jaina" });
 
   // Le MJ prepare la table : deux heros, un monstre, tous poses sur la carte.
+  // (Les joueurs entrent ensuite : ils ont deja leur personnage, pas d'ecran de creation.)
   const { table } = await demander(mj, EVENEMENTS.TABLE_CREER, { nom: "Test" });
-  for (const socket of [mj, thrall, jaina]) await demander(socket, EVENEMENTS.TABLE_REJOINDRE, { idTable: table.id });
+  await demander(mj, EVENEMENTS.TABLE_REJOINDRE, { idTable: table.id });
   for (const [nom, proprietaire] of [["Garrosh", "Thrall"], ["Antonidas", "Jaina"], ["Gnoll", undefined]]) {
     const r = await demander(mj, EVENEMENTS.PERSONNAGE_CREER, {
       donnees: { nom, classe: "guerrier", niveau: 1, caracteristiques: CARAC, ...(proprietaire && { proprietaire }) },
@@ -80,6 +82,7 @@ before(async () => {
     perso[nom] = { id: r.personnage.id };
   }
   await demander(mj, EVENEMENTS.PIONS_PLACER_TOUS);
+  for (const socket of [thrall, jaina]) await demander(socket, EVENEMENTS.TABLE_REJOINDRE, { idTable: table.id });
   for (const pion of depot.obtenirScene(table.id).pions) {
     const nom = Object.keys(perso).find((n) => perso[n].id === pion.idPersonnage);
     perso[nom].pion = pion.id;
@@ -215,4 +218,66 @@ test("un monstre dans le brouillard : seul le MJ voit ses chiffres ; une fois re
 test("un joueur ne peut pas blesser le personnage d'un autre", async () => {
   const r = await demander(thrall, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Antonidas.id, type: "degats", montant: 5 });
   assert.equal(r.ok, false);
+});
+
+// --- 4. Premiere connexion : l'ecran de creation --------------------------------------------
+
+test("premiere connexion : un joueur sans personnage reste a la porte, puis entre en jeu apres sa creation", async () => {
+  const sylvanas = await connecter(sessions, { role: "joueur", pseudo: "Sylvanas" });
+  try {
+    const idTable = depot.listerTables()[0].id;
+
+    // 1. Aiguillage : pas de personnage ici -> ecran de creation, et RIEN de la table.
+    const porte = await demander(sylvanas, EVENEMENTS.TABLE_REJOINDRE, { idTable });
+    assert.equal(porte.creationRequise, true);
+    assert.equal(porte.scene, undefined);
+    assert.equal(porte.personnages, undefined);
+    // Il n'est pas dans les salons : il ne peut ni pinguer, ni recevoir ce qui s'y passe.
+    assert.deepEqual(await demander(sylvanas, EVENEMENTS.CARTE_PING, { x: 1, y: 1 }), { ok: false, erreur: "Rejoins d'abord une table." });
+    const fuite = attendre(sylvanas, EVENEMENTS.COMBAT_TEXTE, 250);
+    await demander(mj, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Garrosh.id, type: "degats", montant: 1 });
+    assert.equal(await fuite, null);
+    // Et il ne peut pas contourner l'ecran avec la creation libre du MJ.
+    const libre = await demander(sylvanas, EVENEMENTS.PERSONNAGE_CREER, { donnees: { nom: "X", classe: "guerrier", caracteristiques: CARAC } });
+    assert.deepEqual(libre, { ok: false, erreur: "Cree ton personnage depuis l'ecran de creation." });
+
+    // 2. Choix refuses par le serveur (restriction de race lue dans races.json).
+    const choix = {
+      nom: "Sylvanas",
+      faction: "horde",
+      race: "mort-vivant",
+      classe: "rodeur",
+      methode: "achat-de-points",
+      caracteristiques: { force: 8, dexterite: 15, constitution: 14, intelligence: 10, sagesse: 14, charisme: 8 },
+    };
+    const refus = await demander(sylvanas, EVENEMENTS.CREATION_VALIDER, { donnees: { ...choix, classe: "druide" } });
+    assert.deepEqual(refus, { ok: false, erreur: "Mort-vivant : la classe Druide n'est pas accessible a cette race." });
+
+    // 3. "Entrer dans le monde" : la table voit arriver le personnage...
+    const annonce = attendre(thrall, EVENEMENTS.PERSONNAGE_MAJ, 400, (m) => m.cause.action === "creation");
+    const entree = await demander(sylvanas, EVENEMENTS.CREATION_VALIDER, { donnees: choix });
+    assert.equal(entree.ok, true);
+    assert.equal(entree.creationRequise, false);
+    assert.equal((await annonce).personnage.nom, "Sylvanas");
+    // ... et le joueur recoit tout ce qu'il faut pour jouer, pion compris.
+    const fiche = entree.personnages.find((p) => p.proprietaire === "Sylvanas");
+    assert.deepEqual([fiche.race, fiche.classe, fiche.caracteristiques.constitution], ["mort-vivant", "rodeur", 16]);
+    const pion = entree.scene.pions.find((p) => p.idPersonnage === fiche.id);
+    assert.ok(pion, "son pion est pose sur la carte");
+    assert.ok(!entree.scene.pions.some((p) => p !== pion && p.x === pion.x && p.y === pion.y), "sur une case libre");
+    // Desormais, il est en jeu : il peut pinguer.
+    assert.equal((await demander(sylvanas, EVENEMENTS.CARTE_PING, { x: 1, y: 1 })).ok, true);
+
+    // 4. Un seul personnage par table ; au retour (F5), il entre directement.
+    const doublon = await demander(sylvanas, EVENEMENTS.CREATION_VALIDER, { donnees: choix });
+    assert.equal(doublon.ok, false);
+    assert.equal((await demander(sylvanas, EVENEMENTS.TABLE_REJOINDRE, { idTable })).creationRequise, false);
+  } finally {
+    sylvanas.close();
+  }
+});
+
+test("l'ecran de creation est reserve aux joueurs", async () => {
+  const r = await demander(mj, EVENEMENTS.CREATION_VALIDER, { donnees: {} });
+  assert.deepEqual(r, { ok: false, erreur: "Le MJ cree ses personnages depuis les outils du MJ." });
 });

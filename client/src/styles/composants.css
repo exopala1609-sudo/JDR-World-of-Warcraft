@@ -214,6 +214,9 @@
 .infobulle {
   position: absolute;
   z-index: var(--z-infobulle);
+  /* Largeur de son contenu (340 px au plus), meme pres du bord droit : sinon
+     le navigateur la comprime a la place restante avant de la decaler a gauche. */
+  width: max-content;
   max-width: 340px;
   padding: 10px 12px;
   pointer-events: none; /* elle ne doit jamais "voler" la souris */

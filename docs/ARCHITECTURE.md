@@ -22,6 +22,7 @@ JDR-World-of-Warcraft/
 │   ├── dnd5e.js              Regles de base : classes, modificateurs, ressources de depart
 │   ├── raretes.js            Les 6 raretes WoW et leurs couleurs
 │   ├── couleurs.js           Couleur de chaque joueur (pions, traces, pings), palette des traces
+│   ├── creation.js           Regles de creation (achat de points, bonus de race, PV, CA), ecran ET serveur
 │   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
 │   ├── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
 │   ├── geometrie.js          Grille, aimantation, distances, test du brouillard
@@ -81,7 +82,7 @@ JDR-World-of-Warcraft/
 │       ├── core/             Magasin d'etat (jeu.ts), liaison serveur, adresses des images
 │       ├── ui/               Briques : surface 1440p, barre, fenetre, infobulle
 │       ├── jeu/              Carte, cadres du groupe, minicarte, barre d'actions, sacs, fiche...
-│       └── ecrans/           Connexion, choix de la table, ecran de jeu
+│       └── ecrans/           Connexion, choix de la table, creation du personnage, ecran de jeu
 ├── scripts/                  Utilitaires (creation du .env, detection du dossier cloud, verification du referentiel)
 └── docs/                     Documentation
 ```
@@ -225,3 +226,60 @@ Chaque changement de PV (degats, soins, repos) produit, cote serveur, un
 message `combat:texte` : `{ idPersonnage, genre, montant, critique, absorbe }`.
 Seul un montant voyage : jamais les PV restants d'un monstre. Couleurs :
 blanc (degats), gros jaune (critique), vert (soins).
+
+## La premiere connexion (sprint 6)
+
+### Le parcours
+
+```
+Connexion --> Choix de la table --+--> (MJ, ou joueur qui a deja son personnage) --> Jeu
+                                  |
+                                  +--> (joueur sans personnage a cette table) --> Creation --> Jeu
+```
+
+### Qui decide ? Le serveur.
+
+Au moment ou le joueur choisit une table (`table:rejoindre`), le serveur
+regarde s'il possede un personnage a cette table :
+
+- **oui** : il le fait entrer dans les salons de la table et lui renvoie la
+  photo complete (fiches, carte, combat, traces) ;
+- **non** : il le laisse **a la porte**. Il ne rejoint aucun salon et ne
+  recoit ni la carte, ni les fiches, ni les degats. Il ne peut ni pinguer ni
+  tracer. Le serveur repond seulement `creationRequise: true`.
+
+L'ecran de creation envoie des **choix** (`creation:valider`) : race, classe,
+methode, caracteristiques de base, portrait, nom. Le serveur verifie tout
+d'apres le referentiel (faction de la race, restriction de classe, tableau
+standard ou budget de points, portrait existant), applique les bonus de race,
+calcule PV, CA et ressources, enregistre la fiche, **pose le pion** sur une
+case libre pres des autres heros, puis fait entrer le joueur en jeu. Il
+renvoie la meme photo complete qu'un `table:rejoindre`.
+
+### Cote navigateur (le magasin d'etat)
+
+Un seul magasin (`core/jeu.ts`) pilote l'ecran affiche (`App.tsx`) :
+
+| Etat du magasin | Ecran |
+|---|---|
+| pas de `profil` | Connexion |
+| `profil`, pas de `table` | Choix de la table |
+| `table` et `creationRequise` | Creation du personnage |
+| `table` sans `creationRequise` | Jeu |
+
+Les choix en cours de l'ecran de creation (race, classe, scores) restent
+**locaux a cet ecran** : ils ne concernent personne d'autre tant que le joueur
+n'a pas valide. Au succes, le magasin recoit la photo de la table et passe
+`creationRequise` a `false` : React affiche aussitot l'ecran de jeu. Il n'y a
+ni rechargement de page ni nouveau jeton : la connexion Socket.IO ouverte a
+la connexion reste la meme, le serveur l'a simplement ajoutee aux salons.
+
+Apres un F5, la session reprend (`sessionStorage`) et redemande la table : le
+serveur renvoie la creation tant que le personnage n'existe pas.
+
+### Un seul calcul, des deux cotes
+
+`shared/creation.js` contient les regles de creation (achat de points,
+tableau standard, bonus de race, PV, CA, ressources). L'ecran s'en sert pour
+l'apercu en direct, le serveur pour arbitrer : ce que le joueur voit est
+exactement ce qui sera enregistre.

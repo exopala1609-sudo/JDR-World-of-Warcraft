@@ -20,8 +20,24 @@ police proche installee avec Windows.
 
 ## Portraits des personnages
 
-Dans `portraits\`, une image par personnage, nommee d'apres son nom en
-minuscules, sans accents, les espaces remplaces par des tirets :
+### Portraits proposes a l'ecran de creation
+
+L'ecran de creation propose, au centre, les images de `portraits\` dont le nom
+commence par l'identifiant de la race (celui de `races.json`), suivi d'un
+tiret ou d'un point. Le joueur les fait defiler avec les fleches.
+
+| Race | Fichiers proposes |
+|---|---|
+| Orc | `orc-1.png`, `orc-2.png`, `orc-femme.webp`... |
+| Elfe de la nuit | `elfe-de-la-nuit-1.png`, `elfe-de-la-nuit-2.png`... |
+
+Le portrait choisi est enregistre dans la fiche : il apparait ensuite dans
+les cadres du groupe.
+
+### Personnages crees par le MJ
+
+Pour une fiche sans portrait choisi, une image nommee d'apres le nom du
+personnage en minuscules, sans accents, les espaces remplaces par des tirets :
 
 | Personnage | Fichier |
 |---|---|
@@ -31,11 +47,16 @@ minuscules, sans accents, les espaces remplaces par des tirets :
 Le portrait apparait dans les cadres du groupe et au centre de la fiche de
 personnage. Sans image, les initiales s'affichent.
 
-## Icones (objets, sorts, auras)
+## Icones (objets, sorts, auras, races, classes, factions)
 
 Dans `icones\`, une image par icone, du nom indique dans le compendium (champ
 `icone`), ou a defaut de son `id` : `epee-longue.png`, `empoisonne.png`...
 Formats : `.png`, `.jpg`, `.webp`, `.gif`, `.svg`. Sans image : un carre gris.
+
+L'ecran de creation cherche, sauf autre nom indique dans le referentiel :
+`faction-alliance.png`, `faction-horde.png`, `race-orc.png`, `race-nain.png`...,
+`classe-guerrier.png`, `classe-roublard.png`... (l'`id`, pas le nom affiche).
+Sans image : une pastille avec les initiales, a la couleur de la classe.
 
 ## Les griffons de la barre d'actions
 

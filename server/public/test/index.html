@@ -129,9 +129,11 @@
       <div id="liste-personnages"></div>
 
       <h4>Creer un personnage (niveau 1)</h4>
-      <form id="form-personnage">
+      <!-- Creation libre, reservee au MJ (PNJ, monstres). Les joueurs passent par l'ecran de creation. -->
+      <form id="form-personnage" data-mj-seulement hidden>
         <label>Nom : <input name="nom" maxlength="60" required /></label>
         <label>Classe : <select name="classe" id="choix-classe"></select></label>
+        <label>Race : <select name="race" id="choix-race"></select></label>
         <br />
         <label>FOR <input name="force" type="number" min="1" max="30" value="15" /></label>
         <label>DEX <input name="dexterite" type="number" min="1" max="30" value="14" /></label>

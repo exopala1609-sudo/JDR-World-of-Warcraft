@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 6;
+export const VERSION_PROTOCOLE = 7;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -19,7 +19,8 @@ export const EVENEMENTS = /** @type {const} */ ({
   TABLE_REJOINDRE: "table:rejoindre",
 
   // Personnages
-  PERSONNAGE_CREER: "personnage:creer",
+  CREATION_VALIDER: "creation:valider", // joueur : "Entrer dans le monde" (ecran de creation)
+  PERSONNAGE_CREER: "personnage:creer", // MJ : creation libre (PNJ, monstres)
   PERSONNAGE_SUPPRIMER: "personnage:supprimer",
   PERSONNAGE_MODIFIER_PV: "personnage:modifierPv",
 
@@ -39,6 +40,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   // Referentiel : factions, races, classes (regles de creation, publiques)
   REFERENTIEL_LISTER: "referentiel:lister",
   REFERENTIEL_RECHARGER: "referentiel:recharger", // MJ
+  PORTRAITS_LISTER: "portraits:lister", // les images du dossier portraits/ (ecran de creation)
 
   // Compendium, inventaire, grimoire
   COMPENDIUM_LISTER: "compendium:lister", // MJ

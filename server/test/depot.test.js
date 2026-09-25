@@ -6,6 +6,9 @@ import { test } from "node:test";
 import { creerDepot } from "../src/donnees/depot.js";
 import { fabriquerPersonnage } from "../src/modeles/personnage.js";
 import { fabriquerTable } from "../src/modeles/table.js";
+import { referentielExemple } from "./aides.js";
+
+const referentiel = referentielExemple();
 
 const caracs = { force: 10, dexterite: 10, constitution: 10, intelligence: 10, sagesse: 10, charisme: 10 };
 
@@ -16,7 +19,7 @@ test("ce qui est enregistre est relu a l'identique apres un redemarrage", () => 
     depot.charger();
     const table = depot.enregistrerTable(fabriquerTable({ nom: "Test" }));
     const perso = depot.enregistrerPersonnage(
-      fabriquerPersonnage({ nom: "Uther", classe: "paladin", caracteristiques: caracs }, { idTable: table.id, proprietaire: "A" }),
+      fabriquerPersonnage({ nom: "Uther", classe: "paladin", caracteristiques: caracs }, { idTable: table.id, proprietaire: "A", referentiel }),
     );
     depot.vider(); // simule Ctrl + C : tout est ecrit sur le disque
 
@@ -55,7 +58,7 @@ test("supprimer un personnage le deplace dans la corbeille", () => {
     depot.charger();
     const table = depot.enregistrerTable(fabriquerTable({ nom: "Test" }));
     const perso = depot.enregistrerPersonnage(
-      fabriquerPersonnage({ nom: "Arthas", classe: "paladin", caracteristiques: caracs }, { idTable: table.id, proprietaire: null }),
+      fabriquerPersonnage({ nom: "Arthas", classe: "paladin", caracteristiques: caracs }, { idTable: table.id, proprietaire: null, referentiel }),
     );
     depot.vider();
     depot.supprimerPersonnage(perso.id);
@@ -90,7 +93,8 @@ test("une fiche du sprint 1 est convertie au nouveau format, sans perte", () => 
     const relu = creerDepot(dossier);
     assert.equal(relu.charger().migrees, 1);
     const fiche = relu.obtenirPersonnage("p-1111111111");
-    assert.equal(fiche.versionSchema, 2);
+    assert.equal(fiche.versionSchema, 3); // 1 -> 2 -> 3, etape par etape
+    assert.deepEqual([fiche.race, fiche.faction, fiche.portrait], [null, null, null]);
     assert.equal(fiche.pointsDeVie.actuels, 9);
     assert.deepEqual(
       { cle: fiche.ressources[0].cle, actuel: fiche.ressources[0].actuel, court: fiche.ressources[0].reposCourt, long: fiche.ressources[0].reposLong },

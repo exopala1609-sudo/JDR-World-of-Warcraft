@@ -3,7 +3,6 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import { CLASSES } from "../../shared/dnd5e.js";
 import { creerReferentiel, installerExemplesReferentiel, situerErreur } from "../src/donnees/referentiel.js";
 import { analyserJsonCommente } from "../src/fichiers.js";
 import { REGLES_CREATION_PAR_DEFAUT } from "../src/modeles/referentiel.js";
@@ -72,7 +71,12 @@ test("les exemples du referentiel sont tous valides", () => {
 test("les 12 classes deja utilisees par les fiches existent toujours, avec le meme de de vie", () => {
   const referentiel = creerReferentiel(EXEMPLES);
   referentiel.charger();
-  for (const [id, { deDeVie }] of Object.entries(CLASSES)) {
+  // Les 12 classes du Manuel, telles que les fiches d'avant le sprint 6 les enregistrent.
+  const CLASSES_DU_MANUEL = {
+    barbare: 12, barde: 8, clerc: 8, druide: 8, ensorceleur: 6, guerrier: 10,
+    magicien: 6, moine: 8, occultiste: 8, paladin: 10, rodeur: 10, roublard: 8,
+  };
+  for (const [id, deDeVie] of Object.entries(CLASSES_DU_MANUEL)) {
     assert.equal(referentiel.obtenirClasse(id)?.deDeVie, deDeVie, `classe ${id}`);
   }
   // Les 4 classes propres a WoW

@@ -8,6 +8,14 @@ son nom** : tout vient de ces fichiers.
 Objectif : à la sortie du livre *D&D World of Warcraft*, tu remplaces les
 données provisoires par les vraies, **au Bloc-notes**, sans toucher au code.
 
+## À quoi il sert
+
+C'est l'écran « Créer un personnage » qui lit le référentiel : il propose les
+factions, les races de chaque faction, les classes (grisées quand la race n'y
+a pas accès) et la méthode de caractéristiques. Le serveur revérifie chaque
+choix avec ces mêmes fichiers. Les portraits et les icônes de l'écran sont
+décrits dans `docs/PERSONNALISER.md`.
+
 ## Où sont les fichiers ?
 
 Dans le dossier `referentiel/` de ton dossier cloud (`VTT_ASSETS`), par exemple

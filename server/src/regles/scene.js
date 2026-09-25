@@ -35,6 +35,28 @@ export function placerPion(scene, personnage, position) {
   return { scene: { ...scene, pions: [...scene.pions, pion] }, pion };
 }
 
+/**
+ * Case libre la plus proche d'un point : on tourne en carres de plus en plus
+ * grands autour de lui, jusqu'a trouver une case sans pion dans la carte.
+ */
+export function caseLibreProche(scene, depart) {
+  const pas = scene.grille.taille;
+  const centre = positionValide(scene, depart.x, depart.y);
+  const occupee = (x, y) => scene.pions.some((p) => Math.hypot(p.x - x, p.y - y) < pas / 2);
+  for (let anneau = 0; anneau <= 30; anneau++) {
+    for (let dy = -anneau; dy <= anneau; dy++) {
+      for (let dx = -anneau; dx <= anneau; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== anneau) continue; // seulement le bord du carre
+        const x = centre.x + dx * pas;
+        const y = centre.y + dy * pas;
+        if (x < 0 || y < 0 || x > scene.carte.largeur || y > scene.carte.hauteur) continue;
+        if (!occupee(x, y)) return { x, y };
+      }
+    }
+  }
+  return centre;
+}
+
 export function deplacerPion(scene, idPion, x, y, options) {
   const pion = scene.pions.find((p) => p.id === idPion);
   if (!pion) throw new ErreurRegle("Ce pion n'est plus sur la carte.");

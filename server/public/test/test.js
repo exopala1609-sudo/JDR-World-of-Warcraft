@@ -3,10 +3,9 @@
 // serveur renvoie. Si deux navigateurs affichent la meme chose, le temps reel
 // et l'autorite du serveur fonctionnent.
 import { EVENEMENTS, ROLES, TYPES_PV } from "/partage/protocole.js";
-import { CARACTERISTIQUES, CLASSES } from "/partage/dnd5e.js";
+import { CARACTERISTIQUES } from "/partage/dnd5e.js";
 import { ETATS_DE_BASE } from "/partage/etats.js";
 import { RARETES } from "/partage/raretes.js";
-import { MODELES_RESSOURCES } from "/partage/ressources.js";
 import { caseDe } from "/partage/geometrie.js";
 import { MoteurCarte } from "/partage/moteur-carte.js";
 
@@ -19,6 +18,10 @@ let socket = null;
 let moi = null;
 let combat = null;
 let compendium = { objets: [], sorts: [], etats: [] };
+// Races, classes, ressources : lues dans les fichiers JSON du referentiel (serveur).
+let referentiel = { factions: [], races: [], classes: [], ressources: [] };
+const nomClasse = (id) => referentiel.classes.find((c) => c.id === id)?.nom ?? id;
+const nomRace = (id) => (id ? (referentiel.races.find((r) => r.id === id)?.nom ?? id) : "");
 let scene = null;
 let moteur = null;
 const personnages = new Map();
@@ -141,7 +144,7 @@ function blocRessources(p) {
   if (estMJ()) {
     const modele = liste(
       `${p.id}:modele`,
-      Object.entries(MODELES_RESSOURCES).map(([cle, m]) => [cle, `${m.nom} (${m.type})`]),
+      referentiel.ressources.map((m) => [m.id, `${m.nom} (${m.type})`]),
     );
     const max = champ(`${p.id}:max`, "number", "");
     max.placeholder = "max";
@@ -288,7 +291,7 @@ function afficherPersonnages() {
     const resume = el(
       "summary",
       el("strong", p.nom),
-      ` - ${CLASSES[p.classe].nom} niv. ${p.niveau} - ${p.proprietaire ?? "PNJ (cache)"} - ` +
+      ` - ${nomRace(p.race)} ${nomClasse(p.classe)} niv. ${p.niveau} - ${p.proprietaire ?? "PNJ (cache)"} - ` +
         `PV ${pv.actuels}/${pv.max}${pv.temporaires ? ` (+${pv.temporaires} temp.)` : ""}` +
         (p.etats.length ? ` - etats : ${p.etats.map((e) => e.nom).join(", ")}` : ""),
     );
@@ -614,6 +617,11 @@ async function rejoindre(idTable) {
     memoire.ecrire(CLE_TABLE, null);
     return;
   }
+  if (reponse.creationRequise) {
+    // Un joueur sans personnage : le serveur le laisse a la porte de la table.
+    journal(`Tu n'as pas encore de personnage a "${reponse.table.nom}" : cree-le depuis l'interface de jeu (adresse /).`);
+    return;
+  }
   memoire.ecrire(CLE_TABLE, idTable);
   $("nom-table").textContent = reponse.table.nom;
   personnages.clear();
@@ -713,6 +721,7 @@ function brancherSocket(jeton) {
     $("statut").textContent = "connecte";
     journal("Liaison temps reel etablie.");
     await listerTables();
+    await chargerReferentiel();
     const table = memoire.lire(CLE_TABLE);
     if (table) await rejoindre(table); // retour automatique apres une coupure
   });
@@ -749,6 +758,12 @@ function brancherSocket(jeton) {
     personnages.delete(idPersonnage);
     afficherPersonnages();
     journal(`${par} a supprime ${nom}.`);
+  });
+
+  socket.on(EVENEMENTS.REFERENTIEL_MAJ, ({ referentiel: nouveau }) => {
+    referentiel = nouveau;
+    remplirListesReferentiel();
+    afficherPersonnages();
   });
 
   socket.on(EVENEMENTS.COMBAT_ETAT, ({ combat: nouveau, cause }) => {
@@ -855,6 +870,7 @@ $("form-personnage").addEventListener("submit", async (evenement) => {
   const donnees = {
     nom: champs.get("nom"),
     classe: champs.get("classe"),
+    ...(champs.get("race") ? { race: champs.get("race") } : {}),
     caracteristiques: Object.fromEntries(CARACTERISTIQUES.map((c) => [c, Number(champs.get(c))])),
   };
   if (estMJ() && champs.get("proprietaire")) donnees.proprietaire = champs.get("proprietaire");
@@ -938,9 +954,24 @@ $("bouton-placer").addEventListener("click", () => {
 
 // --- Demarrage de la page ----------------------------------------------------------------------
 
-$("choix-classe").replaceChildren(
-  ...Object.entries(CLASSES).map(([cle, { nom, deDeVie }]) => Object.assign(el("option", `${nom} (d${deDeVie})`), { value: cle })),
-);
+/** Listes deroulantes tirees du referentiel (classes, races) : a chaque chargement ou rechargement. */
+function remplirListesReferentiel() {
+  $("choix-classe").replaceChildren(
+    ...referentiel.classes.map(({ id, nom, deDeVie }) => Object.assign(el("option", `${nom} (d${deDeVie})`), { value: id })),
+  );
+  $("choix-race").replaceChildren(
+    Object.assign(el("option", "(aucune : monstre)"), { value: "" }),
+    ...referentiel.races.map(({ id, nom }) => Object.assign(el("option", nom), { value: id })),
+  );
+}
+
+async function chargerReferentiel() {
+  const reponse = await demander(EVENEMENTS.REFERENTIEL_LISTER, {});
+  if (!reponse.ok) return;
+  referentiel = reponse;
+  remplirListesReferentiel();
+  afficherPersonnages();
+}
 
 const jetonMemorise = memoire.lire(CLE_JETON);
 const profilMemorise = memoire.lire(CLE_MOI);

@@ -5,9 +5,13 @@
 // aucun secret. Seul le MJ peut le recharger apres avoir modifie les fichiers.
 import { EVENEMENTS } from "../../../shared/protocole.js";
 import { resumerReferentiel, situerErreur } from "../donnees/referentiel.js";
+import { listerImages } from "../medias.js";
 
 export function brancher(socket, ctx) {
   ctx.guichet(socket, EVENEMENTS.REFERENTIEL_LISTER, null, () => ctx.referentiel.lister());
+
+  // Les portraits proposes a l'ecran de creation (le dossier est deja public).
+  ctx.guichet(socket, EVENEMENTS.PORTRAITS_LISTER, null, () => ({ fichiers: listerImages(ctx.config, "portraits") }));
 
   ctx.guichet(socket, EVENEMENTS.REFERENTIEL_RECHARGER, null, () => {
     ctx.exigerMJ(socket, "recharger le referentiel");

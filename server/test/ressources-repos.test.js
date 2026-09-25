@@ -4,6 +4,7 @@ import { fabriquerPersonnage } from "../src/modeles/personnage.js";
 import { ErreurRegle } from "../src/regles/erreurs.js";
 import { reposCourt, reposLong } from "../src/regles/repos.js";
 import { appliquerRegleRepos, modifierRessource } from "../src/regles/ressources.js";
+import { referentielExemple } from "./aides.js";
 
 const jauge = (actuel, reposCourt, reposLong, max = 100) => ({
   cle: "test", nom: "Test", type: "jauge", actuel, max, reposCourt, reposLong, apparence: "test",
@@ -30,7 +31,7 @@ const caracs = { force: 10, dexterite: 10, constitution: 14, intelligence: 10, s
 function guerrierBlesse() {
   const p = fabriquerPersonnage(
     { nom: "Varian", classe: "guerrier", niveau: 4, caracteristiques: caracs },
-    { idTable: "t-0123456789", proprietaire: "A" },
+    { idTable: "t-0123456789", proprietaire: "A", referentiel: referentielExemple() },
   );
   return {
     ...p,

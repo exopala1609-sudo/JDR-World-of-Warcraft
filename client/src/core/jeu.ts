@@ -14,7 +14,7 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { Combat, LigneJournal, OutilCarte, Personnage, Profil, Scene, Table, Trace } from "./types";
+import type { Combat, LigneJournal, OutilCarte, Personnage, Profil, Referentiel, Scene, Table, Trace } from "./types";
 import { decrireCause, decrireCombat, decrireDes } from "./journal";
 
 export type EtatJeu = {
@@ -22,6 +22,10 @@ export type EtatJeu = {
   profil: Profil | null;
   tables: Table[];
   table: Table | null;
+  // true : le joueur n'a pas encore de personnage a cette table. Le serveur
+  // l'a laisse "a la porte" : l'ecran de creation s'affiche au lieu du jeu.
+  creationRequise: boolean;
+  referentiel: Referentiel | null; // races, classes... (fichiers JSON du MJ)
   personnages: Record<string, Personnage>;
   scene: Scene | null;
   combat: Combat;
@@ -38,6 +42,8 @@ const ETAT_INITIAL: EtatJeu = {
   profil: null,
   tables: [],
   table: null,
+  creationRequise: false,
+  referentiel: null,
   personnages: {},
   scene: null,
   combat: null,
@@ -86,6 +92,14 @@ class Jeu {
 
   private versLaCarte(evenement: string, donnees: unknown) {
     for (const rappel of this.ecouteursCarte) rappel(evenement, donnees);
+  }
+
+  /** Nom affiche d'une classe ou d'une race (celui du referentiel ; a defaut, l'identifiant). */
+  nomClasse(id: string) {
+    return this.etat.referentiel?.classes.find((c) => c.id === id)?.nom ?? id;
+  }
+  nomRace(id: string | null) {
+    return id ? (this.etat.referentiel?.races.find((r) => r.id === id)?.nom ?? id) : "";
   }
 
   /** Couleur de mes pings et de mes traces (le MJ : or ; un joueur : la couleur de ses pions). */
@@ -183,6 +197,11 @@ class Jeu {
     for (const rappel of this.abonnes) rappel();
   }
 
+  /**
+   * Rejoindre une table. Le SERVEUR decide de l'etape suivante :
+   *  - creationRequise : pas encore de personnage ici -> ecran de creation ;
+   *  - sinon : la photo complete de la table -> ecran de jeu.
+   */
   async rejoindre(idTable: string) {
     const r = await this.demander(EVENEMENTS.TABLE_REJOINDRE, { idTable });
     if (!r.ok) {
@@ -190,12 +209,39 @@ class Jeu {
       return;
     }
     this.memoriser({ idTable });
+    if (r.creationRequise) {
+      this.modifier({ table: r.table as Table, creationRequise: true, personnages: {}, scene: null, combat: null });
+      return;
+    }
+    this.entrer(r);
+  }
+
+  /**
+   * "Entrer dans le monde" : le serveur verifie les choix, cree la fiche, pose
+   * le pion, fait entrer ce navigateur dans les salons de la table et renvoie
+   * la meme photo complete qu'un "rejoindre". Pas de rechargement de page, pas
+   * de nouveau jeton : la connexion deja ouverte passe simplement en jeu.
+   */
+  async creerPersonnage(choix: unknown) {
+    const r = await this.demander(EVENEMENTS.CREATION_VALIDER, { donnees: choix });
+    if (r.ok) this.entrer(r);
+    return r;
+  }
+
+  /** Retour au choix de la table (depuis l'ecran de creation). */
+  quitterTable() {
+    this.memoriser({ idTable: null });
+    this.modifier({ table: null, creationRequise: false, personnages: {}, scene: null, combat: null });
+  }
+
+  private entrer(r: Reponse) {
     const traces = (r.traces as Trace[] | undefined) ?? [];
     this.traces = new Map(traces.map((t) => [t.id, t]));
     this.versLaCarte(EVENEMENTS.DESSINS_ETAT, { traces }); // retour apres une coupure : la carte est deja ouverte
     const personnages = Object.fromEntries((r.personnages as Personnage[]).map((p) => [p.id, p]));
     this.modifier({
       table: r.table as Table,
+      creationRequise: false,
       personnages,
       scene: r.scene as Scene,
       combat: r.combat as Combat,
@@ -213,6 +259,11 @@ class Jeu {
       this.modifier({ liaison: "connecte" });
       const r = await this.demander(EVENEMENTS.TABLES_LISTER);
       if (r.ok) this.modifier({ tables: r.tables as Table[] });
+      const ref = await this.demander(EVENEMENTS.REFERENTIEL_LISTER);
+      if (ref.ok) {
+        const { ok: _ok, ...referentiel } = ref;
+        this.modifier({ referentiel: referentiel as unknown as Referentiel });
+      }
       const table = idTable ?? this.etat.table?.id;
       if (table) await this.rejoindre(table); // retour automatique apres une coupure
     });
@@ -222,6 +273,8 @@ class Jeu {
     });
 
     socket.on(EVENEMENTS.TABLES_LISTE, ({ tables }) => this.modifier({ tables }));
+    // Le MJ a recharge les fichiers du referentiel : l'ecran de creation se met a jour.
+    socket.on(EVENEMENTS.REFERENTIEL_MAJ, ({ referentiel }) => this.modifier({ referentiel }));
     socket.on(EVENEMENTS.TABLE_PRESENCE, ({ connectes }) => this.modifier({ presence: connectes }));
 
     socket.on(EVENEMENTS.PERSONNAGE_MAJ, ({ personnage, cause }) => {

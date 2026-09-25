@@ -43,6 +43,9 @@ export type Personnage = {
   proprietaire: string | null;
   nom: string;
   classe: string;
+  race: string | null;
+  faction: string | null;
+  portrait: string | null; // fichier du dossier portraits/
   niveau: number;
   caracteristiques: Record<string, number>;
   classeArmure: number;
@@ -63,6 +66,58 @@ export type Pion = {
   couleur: string;
   nom: string;
   proprietaire: string | null;
+};
+
+// --- Referentiel : les fichiers JSON du dossier referentiel/ (races, classes...) ---------
+export type Caracteristique = "force" | "dexterite" | "constitution" | "intelligence" | "sagesse" | "charisme";
+
+export type Faction = { id: string; nom: string; description: string; embleme: string; couleur: string };
+
+export type Race = {
+  id: string;
+  nom: string;
+  factions: string[];
+  description: string;
+  icone: string;
+  taille: string;
+  vitesse: number;
+  bonusCaracteristiques: Partial<Record<Caracteristique, number>>;
+  bonusAuChoix?: { bonus: number[]; parmi: "toutes" | Caracteristique[] };
+  pvParNiveau: number;
+  langues: string[];
+  traits: { nom: string; description: string }[];
+  classesPermises: string[]; // calcule par le serveur (restrictions comprises)
+};
+
+export type Classe = {
+  id: string;
+  nom: string;
+  equivalentDnd?: string;
+  description: string;
+  icone: string;
+  couleur: string;
+  deDeVie: number;
+  caracteristiquesPrincipales: Caracteristique[];
+  defenseSansArmure: Caracteristique[];
+  ressources: { ressource: string }[];
+};
+
+export type ModeleRessource = { id: string; nom: string; type: "jauge" | "compteur"; max: number; couleur?: string; description: string };
+
+export type MethodeCaracteristiques = "tableau-standard" | "achat-de-points";
+
+export type Referentiel = {
+  factions: Faction[];
+  races: Race[];
+  classes: Classe[];
+  ressources: ModeleRessource[];
+  creation: {
+    methodes: MethodeCaracteristiques[];
+    tableauStandard: number[];
+    achatDePoints: { budget: number; couts: Record<string, number> };
+    caracteristiqueMaximale: number;
+    restrictionsRaceClasse: boolean;
+  };
 };
 
 /** Trace tactique (ligne a main levee) : points en pixels de la carte. */

@@ -86,6 +86,44 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       if (!ctx.estMJ(socket)) throw new ErreurRegle(`Seul le MJ peut ${action}.`);
     },
 
+    /** Le personnage de ce joueur a cette table (un seul par joueur et par table). */
+    personnageDuJoueur(socket, idTable) {
+      return depot.personnagesDeLaTable(idTable).find((p) => ctx.estProprietaire(socket, p)) ?? null;
+    },
+
+    /** Quitte les salons de la table courante (ou la porte de l'ecran de creation). */
+    async quitterTable(socket) {
+      const ancienne = socket.data.idTable;
+      socket.data.idTable = null;
+      socket.data.idTableCreation = null;
+      if (!ancienne) return;
+      socket.leave(salleTable(ancienne));
+      socket.leave(salleMJ(ancienne));
+      socket.leave(salleJoueurs(ancienne));
+      await ctx.diffuserPresence(ancienne);
+    },
+
+    /**
+     * Fait entrer ce navigateur dans une table : il rejoint ses salons (il
+     * recevra desormais tout ce qui s'y passe) et recoit une photo complete
+     * de ce qu'il a le droit de voir.
+     */
+    async entrerDansLaTable(socket, idTable) {
+      socket.data.idTable = idTable;
+      socket.data.idTableCreation = null;
+      socket.join(salleTable(idTable));
+      socket.join(ctx.estMJ(socket) ? salleMJ(idTable) : salleJoueurs(idTable));
+      await ctx.diffuserPresence(idTable);
+      return {
+        table: depot.obtenirTable(idTable),
+        creationRequise: false,
+        personnages: ctx.personnagesVisibles(socket, idTable),
+        combat: depot.obtenirCombat(idTable),
+        scene: ctx.vueDeLaScene(depot.obtenirScene(idTable), ctx.estMJ(socket)),
+        traces: ctx.traces.get(idTable) ?? [],
+      };
+    },
+
     exigerTable(socket) {
       const idTable = socket.data.idTable;
       if (!idTable || !depot.obtenirTable(idTable)) throw new ErreurRegle("Rejoins d'abord une table.");
