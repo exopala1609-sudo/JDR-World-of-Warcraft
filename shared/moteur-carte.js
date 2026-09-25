@@ -12,7 +12,10 @@
 //    interface WoW le reutilisera tel quel.
 //
 // Le dessin se fait en "calques", du fond vers le dessus :
-//   1. l'image de la carte   2. la grille   3. les pions   4. le brouillard
+//   1. l'image de la carte       2. la grille
+//   3. les pions des monstres    4. le brouillard (il les recouvre)
+//   5. les traces tactiques      6. les pions des joueurs (jamais sous le brouillard)
+//   7. les effets animes : pings et textes de combat flottants
 //
 // Coordonnees : tout est exprime en pixels DE L'IMAGE de la carte. La "vue"
 // (zoom, decalage) est propre a chaque ecran et n'est jamais partagee.
@@ -22,6 +25,16 @@ const TAILLE_MAX_BROUILLARD = 2048; // resolution max du calque de brouillard (m
 const INTERVALLE_ENVOI_MS = 50; // ~20 positions par seconde pendant un glisser
 const ZOOM_MIN = 0.05;
 const ZOOM_MAX = 4;
+const DELAI_ENTRE_PINGS_MS = 400;
+const DUREE_PING_MS = 1600;
+
+// Textes de combat flottants (facon WoW) : taille en pixels d'ECRAN, pour
+// rester lisibles quel que soit le zoom de la carte.
+const STYLES_TEXTE = {
+  degats: { couleur: "#ffffff", taille: 30, duree: 1400 },
+  critique: { couleur: "#ffd100", taille: 48, duree: 1800 },
+  soins: { couleur: "#3cff3c", taille: 30, duree: 1400 },
+};
 
 export class MoteurCarte {
   /**
@@ -34,6 +47,11 @@ export class MoteurCarte {
    *   surTrait(trait)            : un morceau de trait de gomme / pinceau a envoyer
    *   surInfo(texte)             : ligne d'information (case, distance...)
    *   surChangement()            : (facultatif) la carte a change (pour la minicarte)
+   *   surPing(x, y)              : (facultatif) un ping a envoyer aux autres
+   *   surTrace(morceau)          : (facultatif) un morceau de trace tactique a envoyer
+   *   couleur                    : (facultatif) couleur de ce participant (pings, traces)
+   *   prefixeTraces              : (facultatif) debut des identifiants de SES traces ("thrall:")
+   *   police                     : (facultatif) police des textes de combat
    */
   constructor(canvas, options) {
     this.canvas = canvas;
@@ -45,7 +63,11 @@ export class MoteurCarte {
     this.fichierCharge = undefined;
     this.affichage = new Map(); // idPion -> position affichee (animee)
     this.vue = { x: 0, y: 0, zoom: 0.35 }; // x, y = point de la carte en haut a gauche
-    this.outil = "deplacer"; // "deplacer" | "gomme" | "pinceau"
+    this.outil = "deplacer"; // "deplacer" | "tracer" | "ping" | "gomme" | "pinceau" (les 2 derniers : MJ)
+    this.couleurTrace = null; // null = sa propre couleur
+    this.traces = new Map(); // traces tactiques : id -> { id, couleur, points }
+    this.effets = []; // animations en cours : pings, textes de combat
+    this.dernierPing = 0;
     this.rayonPinceau = 60;
     this.voirAtravers = true; // le MJ voit la carte sous le brouillard (en grise)
     this.aimanter = true;
@@ -61,6 +83,7 @@ export class MoteurCarte {
     this.brancherEvenements();
     const boucle = () => {
       this.animer();
+      if (this.effets.length) this.sale = true; // une animation est en cours
       if (this.sale) {
         this.dessiner();
         this.options.surChangement?.();
@@ -129,6 +152,47 @@ export class MoteurCarte {
     this.sale = true;
   }
 
+  // --- Traces tactiques, pings, textes de combat -------------------------------
+
+  /** Liste complete des traces (a l'arrivee, ou apres un effacement). */
+  chargerTraces(traces) {
+    this.traces = new Map(traces.map((t) => [t.id, { ...t, points: [...t.points] }]));
+    // Une trace en cours chez nous survit (le serveur l'a peut-etre deja effacee : tant pis, on la garde a l'ecran).
+    if (this.geste?.type === "trace") this.traces.set(this.geste.id, this.geste.trace);
+    this.sale = true;
+  }
+
+  /** Un morceau de trace d'un autre participant : il se dessine sous nos yeux. */
+  ajouterMorceauTrace({ id, couleur, points }) {
+    const trace = this.traces.get(id);
+    if (trace) trace.points.push(...points);
+    else this.traces.set(id, { id, couleur, points: [...points] });
+    this.sale = true;
+  }
+
+  /** Un cercle qui s'agrandit puis s'efface, pour attirer l'attention. */
+  afficherPing(x, y, couleur, nom = "") {
+    this.effets.push({ type: "ping", x, y, couleur, nom, debut: performance.now(), duree: DUREE_PING_MS });
+    this.sale = true;
+  }
+
+  /**
+   * Texte de combat flottant au-dessus du pion d'un personnage.
+   * texte = { genre: "degats" | "soins", montant, critique, absorbe }
+   * Renvoie false si le personnage n'a pas de pion sur la carte.
+   */
+  afficherTexteCombat(idPersonnage, texte) {
+    const pion = this.scene?.pions.find((p) => p.idPersonnage === idPersonnage);
+    if (!pion) return false;
+    const maintenant = performance.now();
+    // Plusieurs coups rapproches : on les decale a gauche / a droite pour qu'ils restent lisibles.
+    const voisins = this.effets.filter((e) => e.type === "texte" && e.idPion === pion.id && maintenant - e.debut < 500).length;
+    const style = STYLES_TEXTE[texte.genre === "soins" ? "soins" : texte.critique ? "critique" : "degats"];
+    this.effets.push({ type: "texte", idPion: pion.id, ...texte, style, colonne: [0, -1, 1][voisins % 3], debut: maintenant, duree: style.duree });
+    this.sale = true;
+    return true;
+  }
+
   // ===== Reglages locaux (non partages) =======================================
 
   choisirOutil(outil) {
@@ -165,18 +229,21 @@ export class MoteurCarte {
     const echelle = Math.max(cible.width / largeur, cible.height / hauteur); // remplit le cercle
     c.setTransform(echelle, 0, 0, echelle, (cible.width - largeur * echelle) / 2, (cible.height - hauteur * echelle) / 2);
     if (this.image?.complete && this.image.naturalWidth) c.drawImage(this.image, 0, 0, largeur, hauteur);
-    for (const pion of this.scene.pions) {
+    const point = (pion) => {
       const { x, y } = this.affichage.get(pion.id) ?? pion;
       c.fillStyle = pion.couleur;
       c.beginPath();
       c.arc(x, y, Math.max(this.rayonPion(pion), 3 / echelle), 0, Math.PI * 2);
       c.fill();
-    }
+    };
+    // Meme ordre que la grande carte : monstres sous le brouillard, groupe par-dessus.
+    for (const pion of this.scene.pions) if (pion.proprietaire == null) point(pion);
     if (this.scene.brouillard.actif) {
       c.globalAlpha = this.options.estMJ && this.voirAtravers ? 0.5 : 1;
       c.drawImage(this.brouillard, 0, 0, largeur, hauteur);
       c.globalAlpha = 1;
     }
+    for (const pion of this.scene.pions) if (pion.proprietaire != null) point(pion);
   }
 
   recentrer() {
@@ -286,9 +353,9 @@ export class MoteurCarte {
     // 2. La grille
     this.dessinerGrille();
 
-    // 3. Les pions
-    for (const pion of this.scene.pions) this.dessinerPion(pion);
-    if (this.geste?.type === "pion") this.dessinerFantome();
+    // 3. Les pions des monstres (PNJ) : SOUS le brouillard.
+    const estPJ = (pion) => pion.proprietaire != null;
+    for (const pion of this.scene.pions) if (!estPJ(pion)) this.dessinerPion(pion);
 
     // 4. Le brouillard : opaque pour les joueurs, grise pour le MJ qui "voit a travers".
     if (this.scene.brouillard.actif) {
@@ -298,14 +365,124 @@ export class MoteurCarte {
       c.globalAlpha = 1;
     }
 
+    // 5. Les traces tactiques, par-dessus le brouillard (on peut montrer un chemin dans le noir).
+    for (const trace of this.traces.values()) this.dessinerTrace(trace);
+
+    // 6. Les pions des joueurs : le groupe se voit toujours, meme dans le noir
+    //    (le serveur l'a toujours voulu ainsi : voir pionVisibleParLesJoueurs).
+    for (const pion of this.scene.pions) if (estPJ(pion)) this.dessinerPion(pion);
+    if (this.geste?.type === "pion") this.dessinerFantome();
+
     // Curseur du pinceau (MJ)
-    if (this.options.estMJ && this.outil !== "deplacer" && this.souris) {
+    if (this.options.estMJ && (this.outil === "gomme" || this.outil === "pinceau") && this.souris) {
       c.strokeStyle = this.outil === "gomme" ? "#ff0" : "#f0f";
       c.lineWidth = 2 / zoom;
       c.beginPath();
       c.arc(this.souris.x, this.souris.y, this.rayonPinceau, 0, Math.PI * 2);
       c.stroke();
     }
+
+    // 7. Effets animes (pings, textes de combat), en pixels d'ECRAN.
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    this.dessinerEffets();
+  }
+
+  dessinerTrace(trace) {
+    if (!trace.points.length) return;
+    const c = this.ctx;
+    const z = this.vue.zoom;
+    c.lineCap = c.lineJoin = "round";
+    c.beginPath();
+    trace.points.forEach(([x, y], i) => (i === 0 ? c.moveTo(x, y) : c.lineTo(x, y)));
+    if (trace.points.length === 1) c.lineTo(trace.points[0][0] + 0.1, trace.points[0][1]); // un simple point
+    // Epaisseur constante a l'ecran, avec un liseré noir pour ressortir sur toutes les cartes.
+    c.strokeStyle = "rgba(0, 0, 0, 0.75)";
+    c.lineWidth = 8 / z;
+    c.stroke();
+    c.strokeStyle = trace.couleur;
+    c.lineWidth = 4.5 / z;
+    c.stroke();
+  }
+
+  dessinerEffets() {
+    const maintenant = performance.now();
+    this.effets = this.effets.filter((e) => maintenant - e.debut < e.duree);
+    for (const effet of this.effets) {
+      const progression = (maintenant - effet.debut) / effet.duree; // de 0 a 1
+      if (effet.type === "ping") this.dessinerPing(effet, progression);
+      else this.dessinerTexte(effet, progression);
+    }
+  }
+
+  dessinerPing(ping, t) {
+    const c = this.ctx;
+    const centre = this.versEcran(ping.x, ping.y);
+    const caseEcran = this.scene.grille.taille * this.vue.zoom;
+    const portee = Math.max(70, caseEcran * 1.6);
+    c.strokeStyle = ping.couleur;
+    c.fillStyle = ping.couleur;
+    // Deux ondes decalees, qui grandissent en s'effacant.
+    for (const retard of [0, 0.3]) {
+      const onde = (t - retard) / (1 - retard);
+      if (onde <= 0) continue;
+      c.globalAlpha = 1 - onde;
+      c.lineWidth = 5 * (1 - onde) + 1.5;
+      c.beginPath();
+      c.arc(centre.x, centre.y, 8 + onde * portee, 0, Math.PI * 2);
+      c.stroke();
+    }
+    c.globalAlpha = Math.max(0, 1 - t * 1.4);
+    c.beginPath();
+    c.arc(centre.x, centre.y, 7, 0, Math.PI * 2);
+    c.fill();
+    if (ping.nom) {
+      c.font = `bold 16px ${this.options.police ?? "sans-serif"}`;
+      c.textAlign = "center";
+      c.textBaseline = "bottom";
+      c.lineWidth = 4;
+      c.strokeStyle = "#000";
+      c.strokeText(ping.nom, centre.x, centre.y - 16);
+      c.fillText(ping.nom, centre.x, centre.y - 16);
+    }
+    c.globalAlpha = 1;
+  }
+
+  dessinerTexte(texte, t) {
+    const pion = this.scene.pions.find((p) => p.id === texte.idPion);
+    if (!pion) return;
+    const c = this.ctx;
+    const { x, y } = this.affichage.get(pion.id) ?? pion;
+    const r = this.rayonPion(pion) * this.vue.zoom;
+    const base = this.versEcran(x, y);
+    // Le texte monte vite puis ralentit (courbe "ease-out"), et s'efface sur la fin.
+    const montee = 1 - (1 - t) ** 2;
+    const opacite = t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4;
+    // Un coup critique "claque" : il apparait en grand puis revient a sa taille.
+    const zoomCritique = texte.critique && t < 0.12 ? 1.6 - (t / 0.12) * 0.6 : 1;
+    const taille = texte.style.taille * zoomCritique;
+    const px = base.x + texte.colonne * Math.max(r, 20) * 0.9;
+    const py = base.y - r - 12 - montee * 70;
+    const valeur = texte.genre === "soins" ? `+${texte.montant}` : `${texte.montant}`;
+
+    c.globalAlpha = opacite;
+    c.textAlign = "center";
+    c.textBaseline = "bottom";
+    c.lineJoin = "round";
+    c.font = `bold ${taille}px ${this.options.police ?? "sans-serif"}`;
+    c.lineWidth = Math.max(4, taille / 7);
+    c.strokeStyle = "#000";
+    c.strokeText(valeur, px, py);
+    c.fillStyle = texte.style.couleur;
+    c.fillText(valeur, px, py);
+    if (texte.absorbe > 0) {
+      c.font = `bold 15px ${this.options.police ?? "sans-serif"}`;
+      c.lineWidth = 3;
+      c.textBaseline = "top";
+      c.strokeText(`(${texte.absorbe} absorbes)`, px, py + 2);
+      c.fillStyle = "#c8c8c8";
+      c.fillText(`(${texte.absorbe} absorbes)`, px, py + 2);
+    }
+    c.globalAlpha = 1;
   }
 
   dessinerGrille() {
@@ -365,9 +542,16 @@ export class MoteurCarte {
     c.textBaseline = "middle";
     c.font = `bold ${r * 0.8}px sans-serif`;
     c.fillText(initiales, x, y);
-    c.font = `${Math.max(r * 0.38, 11 / z)}px sans-serif`;
-    c.fillStyle = "#000";
-    c.fillText(pion.nom + (pion.cache ? " (cache)" : ""), x, y + r + Math.max(r * 0.3, 10 / z));
+    // Nom sous le pion : blanc cerne de noir, lisible sur une carte claire comme dans le brouillard.
+    const nom = pion.nom + (pion.cache ? " (cache)" : "");
+    const yNom = y + r + Math.max(r * 0.3, 10 / z);
+    c.font = `bold ${Math.max(r * 0.38, 12 / z)}px sans-serif`;
+    c.lineJoin = "round";
+    c.lineWidth = 3 / z;
+    c.strokeStyle = "#000";
+    c.strokeText(nom, x, yNom);
+    c.fillStyle = "#fff";
+    c.fillText(nom, x, yNom);
     c.globalAlpha = 1;
   }
 
@@ -431,8 +615,20 @@ export class MoteurCarte {
       return;
     }
 
+    // Ping : outil "ping", ou Alt + clic avec n'importe quel outil.
+    if (this.outil === "ping" || e.altKey) {
+      this.pinguer(point);
+      return;
+    }
+
+    // Trace tactique (joueurs et MJ).
+    if (this.outil === "tracer") {
+      this.commencerTrace(point);
+      return;
+    }
+
     // Pinceau / gomme du MJ.
-    if (this.options.estMJ && this.outil !== "deplacer") {
+    if (this.options.estMJ && (this.outil === "gomme" || this.outil === "pinceau")) {
       const mode = this.outil === "gomme" ? "reveler" : "cacher";
       // aEnvoyer : points pas encore transmis (precedes du point de raccord) ;
       // nouveaux : combien de ces points sont reellement nouveaux.
@@ -506,6 +702,49 @@ export class MoteurCarte {
     this.sale = true;
   }
 
+  // --- Ping et trace tactique -------------------------------------------------------------
+
+  pinguer(point) {
+    const maintenant = performance.now();
+    if (maintenant - this.dernierPing < DELAI_ENTRE_PINGS_MS) return; // pas de rafale
+    this.dernierPing = maintenant;
+    const { x, y } = borner(point.x, point.y, this.scene.carte);
+    this.afficherPing(x, y, this.options.couleur ?? "#ffd100");
+    this.options.surPing?.(x, y);
+  }
+
+  // Meme principe que le pinceau du brouillard : la trace s'affiche tout de
+  // suite chez nous et part au serveur par morceaux, toutes les 50 ms.
+  commencerTrace(point) {
+    const cle = Math.random().toString(36).slice(2, 12).padEnd(6, "0");
+    const debut = [point.x, point.y];
+    const trace = { id: `${this.options.prefixeTraces ?? "moi:"}${cle}`, couleur: this.couleurTrace ?? this.options.couleur ?? "#ffd100", points: [debut] };
+    this.traces.set(trace.id, trace);
+    this.geste = { type: "trace", id: trace.id, cle, trace, aEnvoyer: [debut], nouveaux: 1, dernier: debut, minuterie: null };
+    this.planifierEnvoiMorceau();
+    this.sale = true;
+  }
+
+  planifierEnvoiMorceau() {
+    const geste = this.geste;
+    if (geste.minuterie) return;
+    geste.minuterie = setTimeout(() => {
+      geste.minuterie = null;
+      this.envoyerMorceau(geste);
+    }, INTERVALLE_ENVOI_MS);
+  }
+
+  envoyerMorceau(geste) {
+    if (geste.nouveaux === 0) return;
+    while (geste.aEnvoyer.length > 0) {
+      const lot = geste.aEnvoyer.splice(0, 63);
+      this.options.surTrace?.({ cle: geste.cle, couleur: geste.trace.couleur, points: lot });
+      if (geste.aEnvoyer.length > 0) geste.aEnvoyer.unshift(lot.at(-1)); // raccord
+    }
+    geste.aEnvoyer = [];
+    geste.nouveaux = 0;
+  }
+
   // --- Peindre le brouillard ---------------------------------------------------------
   // Le trait est dessine immediatement chez le MJ, et envoye au serveur par
   // petits morceaux (toutes les 50 ms). Chaque morceau recommence au dernier
@@ -561,6 +800,16 @@ export class MoteurCarte {
       const pion = this.scene.pions.find((p) => p.id === geste.idPion);
       const cases = distanceEnCases(geste.depart, this.positionDeLacher(pion), this.scene.grille);
       this.options.surInfo(`Deplacement de ${pion.nom} : ${cases} case(s), soit ${(cases * METRES_PAR_CASE).toLocaleString("fr-FR")} m`);
+    } else if (geste?.type === "trace") {
+      const [dx, dy] = [point.x - geste.dernier[0], point.y - geste.dernier[1]];
+      if (Math.hypot(dx, dy) * this.vue.zoom >= 5) {
+        // 5 pixels d'ecran entre deux points : une ligne souple, sans points inutiles.
+        geste.dernier = [point.x, point.y];
+        geste.trace.points.push(geste.dernier);
+        geste.aEnvoyer.push(geste.dernier);
+        geste.nouveaux += 1;
+        this.planifierEnvoiMorceau();
+      }
     } else if (geste?.type === "trait") {
       // On ignore les micro-mouvements (inutile d'envoyer 3 points au meme endroit).
       const [dx, dy] = [point.x - geste.dernier[0], point.y - geste.dernier[1]];
@@ -575,7 +824,18 @@ export class MoteurCarte {
       const { colonne, ligne } = caseDe(point.x, point.y, this.scene.grille);
       this.options.surInfo(`Case (${colonne}, ${ligne}) - zoom ${Math.round(this.vue.zoom * 100)} %`);
     }
+    this.canvas.style.cursor = this.curseur(point);
     this.sale = true;
+  }
+
+  /** Le curseur annonce ce qu'un clic va faire (une main sur SON pion...). */
+  curseur(point) {
+    if (this.geste?.type === "pion") return "grabbing";
+    if (this.geste?.type === "vue") return "move";
+    if (this.outil === "tracer" || this.outil === "gomme" || this.outil === "pinceau") return "crosshair";
+    if (this.outil === "ping") return "pointer";
+    const pion = this.pionSous(point);
+    return pion && this.options.peutDeplacer(pion) ? "grab" : "default";
   }
 
   relachement(e) {
@@ -591,6 +851,10 @@ export class MoteurCarte {
     if (geste.type === "trait") {
       clearTimeout(geste.minuterie);
       this.envoyerTrait(geste); // le reste du trait, s'il y en a
+    }
+    if (geste.type === "trace") {
+      clearTimeout(geste.minuterie);
+      this.envoyerMorceau(geste);
     }
     this.geste = null;
     this.sale = true;

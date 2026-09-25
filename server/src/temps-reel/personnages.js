@@ -7,7 +7,7 @@ import { z } from "../modeles/zod.js";
 import { retirerParticipant } from "../regles/combat.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { poserEtat, retirerEtat } from "../regles/etats.js";
-import { appliquerPointsDeVie } from "../regles/points-de-vie.js";
+import { appliquerPointsDeVie, texteDeCombat } from "../regles/points-de-vie.js";
 import { modifierRessource } from "../regles/ressources.js";
 
 const idPersonnage = schemaId("p");
@@ -20,6 +20,7 @@ const Demandes = {
     idPersonnage,
     type: z.enum(Object.values(TYPES_PV)),
     montant: z.int().min(0).max(10_000),
+    critique: z.boolean().default(false), // coup critique : gros chiffres jaunes
   }),
   modifierRessource: z.strictObject({ idPersonnage, cle: cleRessource, variation: z.int().min(-999).max(999) }),
   ajouterRessource: z.strictObject({
@@ -94,15 +95,16 @@ export function brancher(socket, ctx) {
 
   // --- Points de vie -------------------------------------------------------------
 
-  ctx.guichet(socket, EVENEMENTS.PERSONNAGE_MODIFIER_PV, Demandes.modifierPv, ({ idPersonnage, type, montant }) => {
+  ctx.guichet(socket, EVENEMENTS.PERSONNAGE_MODIFIER_PV, Demandes.modifierPv, ({ idPersonnage, type, montant, critique }) => {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
     const { pointsDeVie, detail } = appliquerPointsDeVie(personnage.pointsDeVie, type, montant);
-    return {
-      personnage: ctx.publierPersonnage(
-        { ...personnage, pointsDeVie },
-        { action: "points-de-vie", par: pseudo, ...detail },
-      ),
-    };
+    const coupCritique = critique && type === TYPES_PV.DEGATS; // un soin n'est jamais "critique"
+    const publie = ctx.publierPersonnage(
+      { ...personnage, pointsDeVie },
+      { action: "points-de-vie", par: pseudo, ...detail, critique: coupCritique },
+    );
+    ctx.publierTexteCombat(personnage, texteDeCombat(detail, { critique: coupCritique }));
+    return { personnage: publie };
   });
 
   // --- Ressources ----------------------------------------------------------------

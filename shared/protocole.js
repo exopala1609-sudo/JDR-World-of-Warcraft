@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 5;
+export const VERSION_PROTOCOLE = 6;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -70,6 +70,11 @@ export const EVENEMENTS = /** @type {const} */ ({
   BROUILLARD_TOUT: "brouillard:tout", // MJ : tout reveler / tout cacher
   BROUILLARD_ACTIF: "brouillard:actif", // MJ : activer / desactiver le brouillard
 
+  // Dessin tactique : tout le monde (joueurs et MJ)
+  CARTE_PING: "carte:ping", // "regardez ici !" : un cercle qui s'agrandit
+  DESSIN_TRAIT: "dessin:trait", // un morceau de trace (envoye pendant qu'on dessine)
+  DESSIN_EFFACER: "dessin:effacer", // ses propres traces (le MJ : toutes)
+
   // Des et medias
   DES_LANCER: "des:lancer",
   MEDIAS_LISTER: "medias:lister", // MJ
@@ -87,6 +92,10 @@ export const EVENEMENTS = /** @type {const} */ ({
   SCENE_GRILLE_MAJ: "scene:grilleMaj",
   PION_POSITION: "pion:position", // un pion bouge (en cours ou final)
   BROUILLARD_TRAIT_AJOUTE: "brouillard:traitAjoute",
+  CARTE_PING_RECU: "carte:pingRecu",
+  DESSIN_AJOUTE: "dessin:ajoute", // un morceau de trace d'un autre participant
+  DESSINS_ETAT: "dessins:etat", // la liste complete des traces (apres un effacement)
+  COMBAT_TEXTE: "combat:texte", // texte de combat flottant : degats, soins
 });
 
 // Types de modification des points de vie (regles D&D 5e).

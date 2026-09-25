@@ -13,7 +13,8 @@ export function decrireCause(p: Personnage, cause: any): string {
       return `${p.nom} rejoint l'aventure.`;
     case "points-de-vie":
       if (cause.type === "degats") {
-        return `${p.nom} subit ${cause.montant} degats (${pv.actuels}/${pv.max} PV)${cause.aTerre ? " et s'effondre !" : "."}`;
+        const critique = cause.critique ? " (coup critique !)" : "";
+        return `${p.nom} subit ${cause.montant} degats${critique} (${pv.actuels}/${pv.max} PV)${cause.aTerre ? " et s'effondre !" : "."}`;
       }
       if (cause.type === "soins") return `${p.nom} recupere ${cause.variation} PV (${pv.actuels}/${pv.max}).`;
       return `${p.nom} gagne ${cause.montant} PV temporaires.`;

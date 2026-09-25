@@ -12,8 +12,9 @@
 // pas redessiner toute l'interface a chaque petit mouvement.
 import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
+import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { Combat, LigneJournal, Personnage, Profil, Scene, Table } from "./types";
+import type { Combat, LigneJournal, OutilCarte, Personnage, Profil, Scene, Table, Trace } from "./types";
 import { decrireCause, decrireCombat, decrireDes } from "./journal";
 
 export type EtatJeu = {
@@ -28,6 +29,8 @@ export type EtatJeu = {
   journal: LigneJournal[];
   selection: string | null; // personnage cible (clic sur un cadre de groupe)
   fenetres: { sacs: boolean; personnage: boolean };
+  outil: OutilCarte; // ce que fait un clic gauche sur la carte
+  couleurTrace: string | null; // null = sa propre couleur
 };
 
 const ETAT_INITIAL: EtatJeu = {
@@ -42,6 +45,8 @@ const ETAT_INITIAL: EtatJeu = {
   journal: [],
   selection: null,
   fenetres: { sacs: false, personnage: false },
+  outil: "deplacer",
+  couleurTrace: null,
 };
 
 const CLE_SESSION = "vtt-session";
@@ -54,6 +59,9 @@ class Jeu {
   private ecouteursCarte = new Set<EcouteurCarte>();
   private compteurJournal = 0;
   socket: Socket | null = null;
+  // Traces tactiques de la table : gardees hors du magasin (pas besoin de
+  // redessiner l'interface), mais memorisees pour la carte qui s'ouvre.
+  traces = new Map<string, Trace>();
 
   // --- Magasin ------------------------------------------------------------
   lire = () => this.etat;
@@ -74,6 +82,20 @@ class Jeu {
   journaliser(texte: string, type: LigneJournal["type"] = "systeme") {
     const ligne = { id: ++this.compteurJournal, texte, type };
     this.modifier((e) => ({ journal: [...e.journal.slice(-199), ligne] }));
+  }
+
+  private versLaCarte(evenement: string, donnees: unknown) {
+    for (const rappel of this.ecouteursCarte) rappel(evenement, donnees);
+  }
+
+  /** Couleur de mes pings et de mes traces (le MJ : or ; un joueur : la couleur de ses pions). */
+  maCouleur() {
+    return this.etat.profil ? couleurDe(this.etat.profil) : "#ffd100";
+  }
+
+  /** Debut des identifiants de mes traces, le meme que celui fabrique par le serveur. */
+  prefixeTraces() {
+    return `${this.etat.profil?.pseudo.trim().toLocaleLowerCase("fr") ?? "moi"}:`;
   }
 
   /** Canal direct vers le moteur de carte (messages frequents). */
@@ -168,6 +190,9 @@ class Jeu {
       return;
     }
     this.memoriser({ idTable });
+    const traces = (r.traces as Trace[] | undefined) ?? [];
+    this.traces = new Map(traces.map((t) => [t.id, t]));
+    this.versLaCarte(EVENEMENTS.DESSINS_ETAT, { traces }); // retour apres une coupure : la carte est deja ouverte
     const personnages = Object.fromEntries((r.personnages as Personnage[]).map((p) => [p.id, p]));
     this.modifier({
       table: r.table as Table,
@@ -219,11 +244,27 @@ class Jeu {
 
     // La carte : l'etat complet passe par le magasin, le reste va direct au moteur.
     socket.on(EVENEMENTS.SCENE_ETAT, ({ scene }) => this.modifier({ scene }));
-    for (const evenement of [EVENEMENTS.PION_POSITION, EVENEMENTS.BROUILLARD_TRAIT_AJOUTE, EVENEMENTS.SCENE_GRILLE_MAJ]) {
-      socket.on(evenement, (donnees) => {
-        for (const rappel of this.ecouteursCarte) rappel(evenement, donnees);
-      });
+    for (const evenement of [
+      EVENEMENTS.PION_POSITION,
+      EVENEMENTS.BROUILLARD_TRAIT_AJOUTE,
+      EVENEMENTS.SCENE_GRILLE_MAJ,
+      EVENEMENTS.CARTE_PING_RECU,
+      EVENEMENTS.COMBAT_TEXTE,
+    ]) {
+      socket.on(evenement, (donnees) => this.versLaCarte(evenement, donnees));
     }
+
+    // Traces tactiques : memorisees ici, et transmises a la carte.
+    socket.on(EVENEMENTS.DESSIN_AJOUTE, (morceau: Trace) => {
+      const trace = this.traces.get(morceau.id);
+      if (trace) trace.points.push(...morceau.points);
+      else this.traces.set(morceau.id, { ...morceau, points: [...morceau.points] });
+      this.versLaCarte(EVENEMENTS.DESSIN_AJOUTE, morceau);
+    });
+    socket.on(EVENEMENTS.DESSINS_ETAT, ({ traces }: { traces: Trace[] }) => {
+      this.traces = new Map(traces.map((t) => [t.id, t]));
+      this.versLaCarte(EVENEMENTS.DESSINS_ETAT, { traces });
+    });
   }
 }
 

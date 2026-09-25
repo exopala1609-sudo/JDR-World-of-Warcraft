@@ -1,20 +1,13 @@
 // Regles de la scene : placer et deplacer les pions, regler la grille,
 // peindre le brouillard, et decider ce que les joueurs ont le droit de voir.
+import { couleurPour } from "../../../shared/couleurs.js";
 import { aimanter, borner, estRevele, traitCouvre } from "../../../shared/geometrie.js";
 import { nouvelId } from "../modeles/identifiants.js";
 import { LIMITES_BROUILLARD } from "../modeles/scene.js";
 import { ErreurRegle } from "./erreurs.js";
 
-// Couleur stable par joueur (le meme pseudo donne toujours la meme couleur).
-const COULEURS_JOUEURS = ["#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#bcbd22", "#8c564b"];
-const COULEUR_PNJ = "#b22222";
-
-export function couleurPour(proprietaire) {
-  if (proprietaire === null) return COULEUR_PNJ;
-  let somme = 0;
-  for (const lettre of proprietaire.toLocaleLowerCase("fr")) somme = (somme * 31 + lettre.charCodeAt(0)) % 1_000_003;
-  return COULEURS_JOUEURS[somme % COULEURS_JOUEURS.length];
-}
+// La couleur d'un pion est celle de son joueur (voir shared/couleurs.js).
+export { couleurPour };
 
 /** Position finale d'un pion : dans la carte, et aimantee a la grille si demande. */
 export function positionValide(scene, x, y, { aimanter: avecAimant = true, taille = 1 } = {}) {

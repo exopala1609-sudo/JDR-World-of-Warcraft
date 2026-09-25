@@ -65,6 +65,20 @@ export type Pion = {
   proprietaire: string | null;
 };
 
+/** Trace tactique (ligne a main levee) : points en pixels de la carte. */
+export type Trace = { id: string; auteur?: string; couleur: string; points: [number, number][] };
+
+/** Texte de combat flottant envoye par le serveur. */
+export type TexteCombat = {
+  idPersonnage: string;
+  genre: "degats" | "soins";
+  montant: number;
+  critique: boolean;
+  absorbe: number;
+};
+
+export type OutilCarte = "deplacer" | "tracer" | "ping";
+
 export type Scene = {
   carte: { fichier: string | null; largeur: number; hauteur: number };
   grille: { taille: number; decalageX: number; decalageY: number; visible: boolean };

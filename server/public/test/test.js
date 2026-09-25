@@ -276,8 +276,14 @@ function afficherPersonnages() {
   for (const p of personnages.values()) {
     const pv = p.pointsDeVie;
     const montant = champ(`${p.id}:montant`, "number", "5");
+    const critique = Object.assign(el("input"), { type: "checkbox" });
     const modifierPv = (type) => () =>
-      demander(EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: p.id, type, montant: Number(montant.value) });
+      demander(EVENEMENTS.PERSONNAGE_MODIFIER_PV, {
+        idPersonnage: p.id,
+        type,
+        montant: Number(montant.value),
+        critique: type === TYPES_PV.DEGATS && critique.checked,
+      });
 
     const resume = el(
       "summary",
@@ -305,6 +311,7 @@ function afficherPersonnages() {
         montant,
         " ",
         bouton("Degats", modifierPv(TYPES_PV.DEGATS)),
+        el("label", critique, "critique "),
         bouton("Soins", modifierPv(TYPES_PV.SOINS)),
         bouton("PV temporaires", modifierPv(TYPES_PV.TEMPORAIRES)),
       ),

@@ -41,9 +41,10 @@ import {
   toutReveler,
   traitTouchePnj,
 } from "../regles/scene.js";
-import { salleJoueurs, salleMJ } from "./index.js";
+import { salleJoueurs, salleMJ, salleTable } from "./index.js";
 
 const DUREE_VERROU_MS = 5000; // un verrou abandonne (navigateur ferme) expire seul
+const RELAIS_PAR_SECONDE = 40; // le navigateur en envoie 20 : au-dela, c'est de l'inondation
 const coordonnee = z.number().min(-100_000).max(100_000);
 
 const Demandes = {
@@ -138,6 +139,9 @@ export function brancher(socket, ctx) {
 
     enregistrer(changerCarte(scene, carte));
     ctx.publierScene(scene.idTable, { action: "carte", par: pseudo, fichier });
+    // Nouvelle carte : les traces tactiques de l'ancienne n'ont plus de sens.
+    ctx.traces.delete(scene.idTable);
+    io.to(salleTable(scene.idTable)).emit(EVENEMENTS.DESSINS_ETAT, { traces: [] });
     return {};
   });
 
@@ -214,6 +218,8 @@ export function brancher(socket, ctx) {
       // 2. GLISSER : on relaie sans rien enregistrer.
       verrous.set(idPion, { idSocket: socket.id, pseudo, expire: Date.now() + DUREE_VERROU_MS });
       const position = positionValide(scene, x, y, { aimanter: false });
+      // Trop rapproche du precedent : ignore (sans erreur, le suivant arrivera).
+      if (!ctx.quota(socket, "glisser", RELAIS_PAR_SECONDE)) return { position };
       const message = { idPion, ...position, final: false, par: pseudo };
       socket.volatile.to(salleMJ(scene.idTable)).emit(EVENEMENTS.PION_POSITION, message);
       // Les joueurs ne voient passer un monstre que s'il est dans une zone revelee.

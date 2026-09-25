@@ -21,6 +21,7 @@ JDR-World-of-Warcraft/
 │   ├── protocole.js          Noms des messages temps reel (le "vocabulaire" commun)
 │   ├── dnd5e.js              Regles de base : classes, modificateurs, ressources de depart
 │   ├── raretes.js            Les 6 raretes WoW et leurs couleurs
+│   ├── couleurs.js           Couleur de chaque joueur (pions, traces, pings), palette des traces
 │   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
 │   ├── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
 │   ├── geometrie.js          Grille, aimantation, distances, test du brouillard
@@ -57,6 +58,7 @@ JDR-World-of-Warcraft/
 │   │   │   ├── etats.js      Poser, retirer, faire expirer auras et debuffs
 │   │   │   ├── combat.js     Initiative, ordre, tours et rounds
 │   │   │   ├── scene.js      Placer/deplacer les pions, brouillard, visibilite
+│   │   │   ├── dessins.js    Traces tactiques : auteur, limites, effacement
 │   │   │   └── erreurs.js    Distingue un refus normal d'un bug
 │   │   └── temps-reel/       Moteur Socket.IO, un fichier par domaine
 │   │       ├── index.js      Controle d'acces, salons, guichet, droits
@@ -65,6 +67,7 @@ JDR-World-of-Warcraft/
 │   │       ├── compendium.js Inventaire, grimoire, liste des images
 │   │       ├── combat.js     Initiative et tours (protection double clic)
 │   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
+│   │       ├── tactique.js   Pings et traces tactiques (joueurs et MJ)
 │   │       └── des.js
 │   ├── public/test/          Banc de test brut (HTML + JS, sans CSS)
 │   └── test/                 Tests automatiques (npm test)
@@ -180,3 +183,45 @@ lacher -> position finale    ->  borne + aimante + enregistre
 (`pointer-events: none`) ; seuls leurs cadres visibles les reactivent
 (`pointer-events: auto`). Un clic dans le vide atteint donc la carte, un clic
 sur un cadre n'y arrive jamais.
+
+## La carte interactive (sprint 5)
+
+### Qui recoit le clic ?
+
+L'ecran de jeu est un empilement de couches. Le Canvas de la carte est **au
+fond** ; les cadres de l'interface (groupe, minicarte, barres, fenetres) sont
+au-dessus, dans des couches « transparentes aux clics » (`pointer-events:
+none`) dont seuls les cadres visibles captent la souris. Un clic sur un cadre
+s'arrete donc au cadre ; un clic dans le vide traverse jusqu'a la carte.
+
+Une fois un geste commence sur la carte (glisser un pion, tracer), le Canvas
+« capture » la souris (`setPointerCapture`) : on peut passer au-dessus d'un
+cadre ou y relacher le bouton, le geste se termine normalement.
+
+### Ordre de dessin du Canvas
+
+1. image de la carte, 2. grille, 3. pions des monstres, 4. brouillard,
+5. traces tactiques, 6. pions des joueurs (le groupe se voit toujours, meme
+dans le noir), 7. effets animes : pings et textes de combat. Les effets sont
+dessines en pixels d'ECRAN : ils gardent la meme taille quel que soit le zoom.
+
+### Securite des deplacements
+
+| Protection | Ou |
+|---|---|
+| Identite : le role et le pseudo viennent du jeton de connexion, jamais du message | `auth/sessions.js` |
+| Un joueur ne saisit que le pion de SON personnage ; le MJ, tous | `temps-reel/scene.js` (`exigerDroitDeDeplacer`) |
+| Verrou : deux personnes ne tirent jamais le meme pion | `temps-reel/scene.js` |
+| Position finale calculee par le serveur : bornee a la carte, aimantee a la grille | `regles/scene.js` |
+| Un monstre dans le brouillard n'est jamais envoye aux joueurs (ni sa position, ni ses chiffres de degats) | `regles/scene.js`, `publierTexteCombat` |
+| Quotas anti-inondation : 40 positions / s, 3 pings / s, 40 morceaux de trace / s | `ctx.quota` |
+
+Non gere a ce jour : la limite de distance par tour (vitesse) et l'obligation
+de ne bouger que pendant son tour de combat.
+
+### Textes de combat flottants
+
+Chaque changement de PV (degats, soins, repos) produit, cote serveur, un
+message `combat:texte` : `{ idPersonnage, genre, montant, critique, absorbe }`.
+Seul un montant voyage : jamais les PV restants d'un monstre. Couleurs :
+blanc (degats), gros jaune (critique), vert (soins).

@@ -338,3 +338,56 @@
 .menu__bouton--actif {
   filter: brightness(1.4);
 }
+
+/* --- Sous la minicarte : outils de la carte (deplacer, tracer, ping) ---------------------- */
+.outils-carte {
+  margin-top: 14px; /* laisse respirer l'anneau metallique de la minicarte */
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.outils-carte__rangee {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.outils-carte__bouton {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #4a4a55, #1a1a20);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  text-shadow: var(--ombre-texte);
+}
+.outils-carte__bouton:hover {
+  filter: brightness(1.4);
+}
+.outils-carte__bouton--actif {
+  background: linear-gradient(180deg, #8a6a1c, #3a2a08);
+  color: #fff;
+  box-shadow: var(--bordure-or), 0 0 12px rgba(255, 209, 0, 0.6);
+}
+.outils-carte__palette {
+  flex-wrap: wrap;
+  max-width: 250px;
+}
+.outils-carte__couleur {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--metal);
+  cursor: pointer;
+}
+.outils-carte__couleur--moi {
+  border-radius: 4px; /* "ma couleur" se distingue des autres pastilles */
+}
+.outils-carte__couleur--active {
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--or);
+}

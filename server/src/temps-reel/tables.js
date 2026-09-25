@@ -45,6 +45,7 @@ export function brancher(socket, ctx) {
       personnages: ctx.personnagesVisibles(socket, idTable),
       combat: depot.obtenirCombat(idTable),
       scene: ctx.vueDeLaScene(depot.obtenirScene(idTable), ctx.estMJ(socket)),
+      traces: ctx.traces.get(idTable) ?? [],
     };
   });
 }

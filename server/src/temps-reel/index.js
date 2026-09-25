@@ -14,7 +14,7 @@
 //
 // Ce fichier prepare les outils communs ; chaque domaine du jeu a son fichier :
 //   tables.js, personnages.js, repos.js, referentiel.js, compendium.js,
-//   combat.js, scene.js, des.js
+//   combat.js, scene.js, tactique.js (traces et pings), des.js
 import { Server } from "socket.io";
 import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
@@ -30,8 +30,9 @@ import * as referentiel from "./referentiel.js";
 import * as repos from "./repos.js";
 import * as scene from "./scene.js";
 import * as tables from "./tables.js";
+import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, combat, scene, des];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, combat, scene, tactique, des];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
@@ -59,6 +60,25 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     compendium: bibliotheque,
     referentiel: regles,
     config,
+
+    // Traces tactiques de chaque table (idTable -> liste). Gardees en MEMOIRE
+    // seulement : ce sont des annotations ephemeres, pas une sauvegarde.
+    traces: new Map(),
+
+    /**
+     * Anti-inondation : true tant que ce navigateur n'a pas fait cette action
+     * plus de "maxParSeconde" fois dans la seconde en cours. Protege la table
+     * d'un joueur qui enverrait 1000 pings par seconde avec un script, sans
+     * gener un usage normal (qui reste loin en dessous).
+     */
+    quota(socket, action, maxParSeconde) {
+      const compteurs = (socket.data.quotas ??= {});
+      const seconde = Math.floor(Date.now() / 1000);
+      const compteur = compteurs[action]?.seconde === seconde ? compteurs[action] : { seconde, nombre: 0 };
+      compteur.nombre += 1;
+      compteurs[action] = compteur;
+      return compteur.nombre <= maxParSeconde;
+    },
 
     estMJ: (socket) => socket.data.profil.role === ROLES.MJ,
 
@@ -113,6 +133,23 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       const presente = presenterPersonnage(enregistre);
       io.to(ctx.salleDuPersonnage(enregistre)).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
       return presente;
+    },
+
+    /**
+     * Texte de combat flottant (degats, soins) au-dessus du pion.
+     * Le MJ le voit toujours. Les joueurs le voient pour un personnage-joueur,
+     * et pour un monstre SEULEMENT si son pion leur est visible : un monstre
+     * tapi dans le brouillard ne se trahit pas par ses chiffres de degats.
+     */
+    publierTexteCombat(personnage, texte) {
+      if (!texte) return;
+      const message = { idPersonnage: personnage.id, ...texte };
+      io.to(salleMJ(personnage.idTable)).emit(EVENEMENTS.COMBAT_TEXTE, message);
+      const scene = depot.obtenirScene(personnage.idTable);
+      const pion = scene.pions.find((p) => p.idPersonnage === personnage.id);
+      if (personnage.proprietaire !== null || (pion && pionVisibleParLesJoueurs(scene, pion, personnage))) {
+        io.to(salleJoueurs(personnage.idTable)).emit(EVENEMENTS.COMBAT_TEXTE, message);
+      }
     },
 
     publierCombat(idTable, cause) {
