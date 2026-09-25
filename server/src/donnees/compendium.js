@@ -7,10 +7,10 @@
 // - Apres avoir modifie un fichier, le MJ clique sur "Recharger le compendium" :
 //   pas besoin de redemarrer le serveur. (On ne surveille pas le dossier
 //   automatiquement : sur un disque Google Drive, cette surveillance n'est pas fiable.)
-import { copyFileSync, existsSync, readdirSync } from "node:fs";
+import { copyFileSync, existsSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { ETATS_DE_BASE } from "../../../shared/etats.js";
-import { lireTexteJson } from "../fichiers.js";
+import { lireJsonCommente, listerFichiersJson as fichiersJson } from "../fichiers.js";
 import { SchemaDefinitionEtat, SchemaEntreeObjet, SchemaEntreeSort } from "../modeles/compendium.js";
 import { nouvelId } from "../modeles/identifiants.js";
 
@@ -19,18 +19,6 @@ const SECTIONS = {
   sorts: SchemaEntreeSort,
   etats: SchemaDefinitionEtat,
 };
-
-function fichiersJson(dossier) {
-  if (!existsSync(dossier)) return [];
-  const resultat = [];
-  for (const entree of readdirSync(dossier, { withFileTypes: true })) {
-    if (entree.name.startsWith(".") || entree.name.startsWith("~")) continue;
-    const chemin = join(dossier, entree.name);
-    if (entree.isDirectory()) resultat.push(...fichiersJson(chemin));
-    else if (entree.isFile() && entree.name.toLowerCase().endsWith(".json")) resultat.push(chemin);
-  }
-  return resultat.sort();
-}
 
 /**
  * Premier lancement : si le dossier ne contient aucun fichier JSON, on y copie
@@ -62,9 +50,9 @@ export function creerCompendium(dossier) {
     for (const fichier of fichiersJson(dossier)) {
       let contenu;
       try {
-        contenu = lireTexteJson(fichier);
+        contenu = lireJsonCommente(fichier);
       } catch (erreur) {
-        signaler(fichier, "fichier", `JSON illisible : ${erreur.message}`);
+        signaler(fichier, "fichier", erreur.message);
         continue;
       }
       if (!contenu || typeof contenu !== "object" || Array.isArray(contenu)) {

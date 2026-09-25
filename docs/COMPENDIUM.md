@@ -22,7 +22,8 @@ ton dossier cloud (`VTT_ASSETS`). Tu peux les ouvrir avec le Bloc-notes.
 }
 ```
 Les trois listes sont facultatives. Attention aux virgules : il en faut une
-entre deux entrees, et **aucune** apres la derniere.
+entre deux entrees (une virgule en trop apres la derniere est toleree).
+Les lignes qui commencent par `//` sont des commentaires, ignores par le jeu.
 
 ## L'identifiant (`id`)
 

@@ -17,6 +17,7 @@ export const CATEGORIES = /** @type {const} */ ({
   icones: "VTT_ASSETS_ICONES",
   polices: "VTT_ASSETS_POLICES",
   compendium: "VTT_ASSETS_COMPENDIUM",
+  referentiel: "VTT_ASSETS_REFERENTIEL",
   parties: "VTT_ASSETS_PARTIES",
 });
 

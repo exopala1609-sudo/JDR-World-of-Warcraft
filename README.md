@@ -37,6 +37,7 @@ npm test
 ```
 Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Ecrire ses objets, sorts et auras : [docs/COMPENDIUM.md](docs/COMPENDIUM.md).
+Modifier les races, classes et regles de creation : [docs/REFERENTIEL.md](docs/REFERENTIEL.md).
 Polices, portraits, icones : [docs/PERSONNALISER.md](docs/PERSONNALISER.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
@@ -59,6 +60,6 @@ chaque dossier et signale tout chemin errone.
 | `server/` | Serveur local : acces, donnees JSON, regles D&D, temps reel |
 | `client/` | Interface World of Warcraft (React + TypeScript) |
 | `shared/` | Vocabulaire temps reel et regles D&D 5e communs aux deux cotes |
-| `exemples/` | Donnees de test (compendium), copiees au premier lancement |
+| `exemples/` | Donnees de test (compendium, referentiel), copiees au premier lancement |
 | `donnees-mj/` | Dossier de secours quand `VTT_ASSETS` n'est pas configure |
 | `docs/` | Notes d'utilisation |

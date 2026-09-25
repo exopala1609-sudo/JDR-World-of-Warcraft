@@ -1,0 +1,38 @@
+// =============================================================================
+//  FACTIONS : le premier choix de l'écran de création
+// =============================================================================
+//
+//  DONNÉES PROVISOIRES, en attendant le livre « D&D World of Warcraft ».
+//
+//  L'ordre de la liste est l'ordre d'affichage (Alliance à gauche, Horde à
+//  droite). Une race peut appartenir à plusieurs factions (voir races.json).
+//
+//  Les champs d'une faction :
+//
+//    "id"          Nom technique : minuscules, chiffres et tirets.
+//                  NE LE CHANGE PLUS une fois des personnages créés.
+//    "nom"         Nom affiché.
+//    "description" Texte de présentation.
+//    "embleme"     (facultatif) Nom d'une image du dossier icones/, sans
+//                  extension. Par défaut : "faction-" suivi de l'id
+//                  (ex. icones/faction-alliance.png).
+//    "couleur"     (facultatif) Couleur du cadre, au format #RRVVBB.
+//
+//  Les lignes qui commencent par // sont des commentaires : le jeu les ignore.
+// =============================================================================
+{
+  "factions": [
+    {
+      "id": "alliance",
+      "nom": "Alliance",
+      "description": "Humains, nains, elfes de la nuit, gnomes, draeneï et worgens, unis par l'honneur et la tradition sous la bannière de Hurlevent.",
+      "couleur": "#1e5bc6"
+    },
+    {
+      "id": "horde",
+      "nom": "Horde",
+      "description": "Orcs, morts-vivants, taurens, trolls, elfes de sang et gobelins : des peuples rejetés qui ont forgé leur force dans l'adversité, autour d'Orgrimmar.",
+      "couleur": "#b3161c"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import { chargerConfig, RACINE } from "./config.js";
 import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers } from "./diagnostic.js";
 import { creerCompendium, installerExemples } from "./donnees/compendium.js";
 import { creerDepot } from "./donnees/depot.js";
+import { creerReferentiel, installerExemplesReferentiel, resumerReferentiel, situerErreur } from "./donnees/referentiel.js";
 import { routesMedias } from "./medias.js";
 import { afficherBanniere, afficherLienDistant } from "./reseau.js";
 import { installerTempsReel } from "./temps-reel/index.js";
@@ -25,6 +26,11 @@ const avecTunnel = process.argv.includes("--tunnel"); // npm run partie
 const dossiersCrees = creerSousDossiersManquants(config);
 // Compendium vide (premier lancement) : on y depose les fichiers d'exemple.
 const exemplesInstalles = installerExemples(config.dossiers.compendium, resolve(RACINE, "exemples", "compendium"));
+// Referentiel vide (premier lancement) : races, classes... provisoires, a remplacer.
+const referentielInstalle = installerExemplesReferentiel(
+  config.dossiers.referentiel,
+  resolve(RACINE, "exemples", "referentiel"),
+);
 const rapportDossiers = diagnostiquerDossiers(config);
 
 // --- 2. Donnees : lecture des tables et fiches depuis le dossier cloud -------
@@ -41,6 +47,10 @@ const bilan = depot.charger();
 // Compendium : lecture de tous les fichiers JSON du dossier.
 const compendium = creerCompendium(config.dossiers.compendium);
 const rapportCompendium = compendium.charger();
+
+// Referentiel : factions, races, classes et regles de creation de personnage.
+const referentiel = creerReferentiel(config.dossiers.referentiel);
+const rapportReferentiel = referentiel.charger();
 
 // --- 3. Acces -----------------------------------------------------------------
 const sessions = creerGestionnaireSessions(config);
@@ -96,7 +106,7 @@ if (existsSync(CLIENT_COMPILE)) {
 }
 
 // --- 5. Temps reel ---------------------------------------------------------------
-installerTempsReel(serveurHttp, { depot, sessions, compendium, config });
+installerTempsReel(serveurHttp, { depot, sessions, compendium, referentiel, config });
 
 // --- 6. Demarrage ------------------------------------------------------------------
 let libererVerrou = () => {};
@@ -122,6 +132,9 @@ serveurHttp.listen(config.port, "0.0.0.0", () => {
   for (const { fichier, emplacement, message } of rapportCompendium.erreurs) {
     console.log(`  !! compendium/${fichier} > ${emplacement} : ${message}`);
   }
+  if (referentielInstalle.length) console.log(`  Referentiel vide : exemples installes (${referentielInstalle.join(", ")}).`);
+  console.log(`  Referentiel : ${resumerReferentiel(rapportReferentiel)}.`);
+  for (const erreur of rapportReferentiel.erreurs) console.log(`  !! ${situerErreur(erreur)} : ${erreur.message}`);
   if (!sessions.motDePasseUtilisable) {
     console.log("  !! Acces MJ DESACTIVE : definis VTT_MOTDEPASSE_MJ (6 caracteres min.) dans .env.");
   }

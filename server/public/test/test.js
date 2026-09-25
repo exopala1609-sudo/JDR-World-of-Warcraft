@@ -881,6 +881,18 @@ $("bouton-recharger-compendium").addEventListener("click", async () => {
   const reponse = await demander(EVENEMENTS.COMPENDIUM_RECHARGER, {});
   if (reponse.ok) afficherErreursCompendium(reponse.rapport);
 });
+$("bouton-recharger-referentiel").addEventListener("click", async () => {
+  const reponse = await demander(EVENEMENTS.REFERENTIEL_RECHARGER, {});
+  if (!reponse.ok) return;
+  const { rapport } = reponse;
+  $("bilan-referentiel").textContent =
+    ` ${rapport.factions} faction(s), ${rapport.races} race(s), ${rapport.classes} classe(s), ${rapport.ressources} ressource(s)`;
+  $("erreurs-referentiel").replaceChildren(
+    ...rapport.erreurs.map((e) =>
+      el("li", `ERREUR referentiel${e.fichier ? `/${e.fichier}` : ""} > ${e.emplacement} : ${e.message}`),
+    ),
+  );
+});
 // --- Outils de la carte ---
 for (const radio of document.querySelectorAll("input[name=outil]")) {
   radio.addEventListener("change", () => moteur?.choisirOutil(radio.value));

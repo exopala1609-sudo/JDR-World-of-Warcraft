@@ -1,0 +1,45 @@
+// =============================================================================
+//  RÈGLES DE CRÉATION : comment le joueur obtient ses caractéristiques
+// =============================================================================
+//
+//  Valeurs OFFICIELLES de D&D 5e. Si ce fichier disparaît, le jeu utilise
+//  exactement ces valeurs. Le livre « D&D World of Warcraft » pourra les changer.
+//
+//  C'est le SERVEUR qui vérifie les choix du joueur : impossible de tricher
+//  en trafiquant sa page web.
+// =============================================================================
+{
+  "creation": {
+    // Méthodes proposées au joueur. Retire-en une pour l'interdire.
+    //   "tableau-standard" : il répartit les valeurs ci-dessous ;
+    //   "achat-de-points"  : il dépense un budget de points.
+    "methodes": ["tableau-standard", "achat-de-points"],
+
+    // Le tableau standard : exactement 6 valeurs, une par caractéristique.
+    "tableauStandard": [15, 14, 13, 12, 10, 8],
+
+    // L'achat de points : chaque caractéristique part de la plus petite
+    // valeur du tableau des coûts ; monter un score coûte des points.
+    "achatDePoints": {
+      "budget": 27,
+      // "score": coût total pour l'atteindre. Pas de trou dans la liste.
+      "couts": {
+        "8": 0,
+        "9": 1,
+        "10": 2,
+        "11": 3,
+        "12": 4,
+        "13": 5,
+        "14": 7,
+        "15": 9
+      }
+    },
+
+    // Plafond d'une caractéristique APRÈS les bonus de race.
+    "caracteristiqueMaximale": 20,
+
+    // true  = on applique les "classesAutorisees" de chaque race (races.json) ;
+    // false = toutes les races peuvent prendre toutes les classes.
+    "restrictionsRaceClasse": true
+  }
+}

@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 4;
+export const VERSION_PROTOCOLE = 5;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -35,6 +35,10 @@ export const EVENEMENTS = /** @type {const} */ ({
   // Etats (auras / debuffs)
   ETAT_POSER: "etat:poser",
   ETAT_RETIRER: "etat:retirer",
+
+  // Referentiel : factions, races, classes (regles de creation, publiques)
+  REFERENTIEL_LISTER: "referentiel:lister",
+  REFERENTIEL_RECHARGER: "referentiel:recharger", // MJ
 
   // Compendium, inventaire, grimoire
   COMPENDIUM_LISTER: "compendium:lister", // MJ
@@ -76,6 +80,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   PERSONNAGE_MAJ: "personnage:maj", // une fiche a change (avec sa "cause")
   PERSONNAGE_SUPPRIME: "personnage:supprime",
   COMBAT_ETAT: "combat:etat", // photo complete du combat (ou null a la fin)
+  REFERENTIEL_MAJ: "referentiel:maj", // tous : le referentiel a ete recharge
   COMPENDIUM_MAJ: "compendium:maj", // MJ : le compendium a ete recharge
   DES_RESULTAT: "des:resultat",
   SCENE_ETAT: "scene:etat", // photo complete de la scene (filtree pour les joueurs)

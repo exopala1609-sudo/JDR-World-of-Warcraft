@@ -32,6 +32,7 @@ JDR/                     <- VTT_ASSETS pointe ici
 ├── jetons/              images de monstres et de PJ
 ├── portraits/           visages du groupe
 ├── compendium/          fichiers de sorts et d'objets (JSON)
+├── referentiel/         factions, races, classes, regles de creation (JSON)
 └── parties/             sauvegardes ecrites par le serveur
 ```
 

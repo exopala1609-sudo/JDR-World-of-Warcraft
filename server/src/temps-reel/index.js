@@ -13,7 +13,8 @@
 //   mj              tous les ecrans MJ, quelle que soit la table (compendium)
 //
 // Ce fichier prepare les outils communs ; chaque domaine du jeu a son fichier :
-//   tables.js, personnages.js, repos.js, compendium.js, combat.js, des.js
+//   tables.js, personnages.js, repos.js, referentiel.js, compendium.js,
+//   combat.js, scene.js, des.js
 import { Server } from "socket.io";
 import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
@@ -25,18 +26,19 @@ import * as combat from "./combat.js";
 import * as compendium from "./compendium.js";
 import * as des from "./des.js";
 import * as personnages from "./personnages.js";
+import * as referentiel from "./referentiel.js";
 import * as repos from "./repos.js";
 import * as scene from "./scene.js";
 import * as tables from "./tables.js";
 
-const DOMAINES = [tables, personnages, repos, compendium, combat, scene, des];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, combat, scene, des];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
 export const salleMJ = (idTable) => `table:${idTable}:mj`;
 export const salleJoueurs = (idTable) => `table:${idTable}:joueurs`;
 
-export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, config }) {
+export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, referentiel: regles, config }) {
   const io = new Server(serveurHttp, {
     // Aucun message legitime ne depasse quelques Ko : on refuse les colis geants.
     maxHttpBufferSize: 100_000,
@@ -55,6 +57,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     io,
     depot,
     compendium: bibliotheque,
+    referentiel: regles,
     config,
 
     estMJ: (socket) => socket.data.profil.role === ROLES.MJ,

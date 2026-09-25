@@ -34,15 +34,17 @@ JDR-World-of-Warcraft/
 │   │   ├── reseau.js         Affiche les adresses de connexion
 │   │   ├── tunnel.js         Acces distant en un lien (tunnel rapide Cloudflare)
 │   │   ├── verrou.js         Empeche deux PC d'ouvrir la partie en meme temps
-│   │   ├── fichiers.js       Lecture/ecriture sures des JSON (atomique, BOM Windows)
+│   │   ├── fichiers.js       Lecture/ecriture sures des JSON (atomique, BOM Windows, commentaires //)
 │   │   ├── medias.js         Images du dossier cloud + carre gris de remplacement
 │   │   ├── auth/             Mot de passe MJ, pseudos, jetons d'acces, anti force brute
 │   │   ├── donnees/
 │   │   │   ├── depot.js      Memoire du jeu + sauvegarde (fiches, tables, combats)
-│   │   │   └── compendium.js Lecture des fichiers du compendium, rapport d'erreurs
+│   │   │   ├── compendium.js Lecture des fichiers du compendium, rapport d'erreurs
+│   │   │   └── referentiel.js Lecture des factions, races, classes : liens verifies, rapport d'erreurs
 │   │   ├── modeles/          La "forme" exacte des donnees (verifiee par Zod)
 │   │   │   ├── personnage.js Fiche D&D 5e : ressources, inventaire, grimoire, etats
 │   │   │   ├── compendium.js Objets, sorts, auras tels qu'ecrits dans le compendium
+│   │   │   ├── referentiel.js Factions, races, classes, ressources, regles de creation
 │   │   │   ├── combat.js     Ordre d'initiative et tour actif
 │   │   │   ├── scene.js      Carte, grille, pions et brouillard d'une table
 │   │   │   ├── migrations.js Mise a niveau des fiches d'un ancien format
@@ -59,6 +61,7 @@ JDR-World-of-Warcraft/
 │   │   └── temps-reel/       Moteur Socket.IO, un fichier par domaine
 │   │       ├── index.js      Controle d'acces, salons, guichet, droits
 │   │       ├── tables.js, personnages.js, repos.js
+│   │       ├── referentiel.js Lecture (tous) et rechargement (MJ) du referentiel
 │   │       ├── compendium.js Inventaire, grimoire, liste des images
 │   │       ├── combat.js     Initiative et tours (protection double clic)
 │   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
@@ -67,6 +70,7 @@ JDR-World-of-Warcraft/
 │   └── test/                 Tests automatiques (npm test)
 │
 ├── exemples/compendium/      Donnees de test, copiees dans un compendium vide
+├── exemples/referentiel/     Races, classes... PROVISOIRES, copiees dans un referentiel vide
 ├── client/                   L'interface World of Warcraft (React + TypeScript)
 │   ├── public/interface/     Decors libres de droits (ailes de la barre d'actions)
 │   └── src/
@@ -75,7 +79,7 @@ JDR-World-of-Warcraft/
 │       ├── ui/               Briques : surface 1440p, barre, fenetre, infobulle
 │       ├── jeu/              Carte, cadres du groupe, minicarte, barre d'actions, sacs, fiche...
 │       └── ecrans/           Connexion, choix de la table, ecran de jeu
-├── scripts/                  Utilitaires (creation du .env, detection du dossier cloud)
+├── scripts/                  Utilitaires (creation du .env, detection du dossier cloud, verification du referentiel)
 └── docs/                     Documentation
 ```
 
@@ -85,6 +89,7 @@ JDR-World-of-Warcraft/
 <VTT_ASSETS>/                 ex. G:\Mon Drive\JDR
 ├── cartes/  jetons/  portraits/  icones/  polices/
 ├── compendium/               Tes objets, sorts et auras (voir docs/COMPENDIUM.md)
+├── referentiel/              Factions, races, classes, regles de creation (voir docs/REFERENTIEL.md)
 └── parties/
     ├── partie-en-cours.verrou.json   Present seulement quand un serveur tourne
     └── t-3f9a0c1b2d/                 Une table de jeu
