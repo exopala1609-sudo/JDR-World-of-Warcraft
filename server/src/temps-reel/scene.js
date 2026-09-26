@@ -22,6 +22,7 @@
 // disparaissent chez les joueurs : le serveur ne leur envoie jamais un pion
 // qu'ils ne doivent pas voir.
 import { existsSync } from "node:fs";
+import { traitCouvre } from "../../../shared/geometrie.js";
 import { basename, join } from "node:path";
 import { imageSizeFromFile } from "image-size/fromFile";
 import { EVENEMENTS } from "../../../shared/protocole.js";
@@ -265,7 +266,9 @@ export function brancher(socket, ctx) {
     socket.to(salleMJ(scene.idTable)).to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.BROUILLARD_TRAIT_AJOUTE, { trait: propre });
 
     // Si le trait passe sur un monstre, celui-ci apparait / disparait chez les joueurs.
-    if (traitTouchePnj(suite, propre, (id) => depot.obtenirPersonnage(id))) {
+    // (ou sur un coffre : il apparait / disparait lui aussi)
+    const surUnButin = suite.butins.some((b) => propre.mode === "tout-reveler" || traitCouvre(propre, b.x, b.y));
+    if (surUnButin || traitTouchePnj(suite, propre, (id) => depot.obtenirPersonnage(id))) {
       io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.SCENE_ETAT, {
         scene: ctx.vueDeLaScene(suite, false),
         cause: { action: "visibilite" },

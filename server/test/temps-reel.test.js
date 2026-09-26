@@ -307,3 +307,116 @@ test("le contenu d'un sac ne part qu'a son proprietaire et au MJ, jamais aux aut
   // Jaina voit toujours son propre sac.
   assert.equal((await fiches(jaina)).find((p) => p.id === perso.Antonidas.id).sacPrive, undefined);
 });
+
+// --- 6. Equipement, barre d'actions, butin (sprint 7) ------------------------------------------
+
+const idTableTest = () => depot.listerTables()[0].id;
+const fiche = (nom) => depot.obtenirPersonnage(perso[nom].id);
+const pionDe = (nom) => depot.obtenirScene(idTableTest()).pions.find((p) => p.idPersonnage === perso[nom].id);
+
+test("equiper un bouclier : CA +2 recalculee par le serveur, et visible des autres (pas le sac)", async () => {
+  await demander(mj, EVENEMENTS.INVENTAIRE_AJOUTER, { idPersonnage: perso.Garrosh.id, idObjet: "bouclier-de-hurlevent" });
+  const bouclier = fiche("Garrosh").inventaire.find((o) => o.source === "bouclier-de-hurlevent");
+  const avant = fiche("Garrosh").classeArmure;
+
+  // Jaina ne peut pas equiper le personnage de Thrall.
+  const intrus = await demander(jaina, EVENEMENTS.EQUIPER, { idPersonnage: perso.Garrosh.id, idObjet: bouclier.id });
+  assert.deepEqual(intrus, { ok: false, erreur: "Ce personnage ne t'appartient pas." });
+
+  const vuParJaina = attendre(jaina, EVENEMENTS.PERSONNAGE_MAJ, 400, (m) => m.cause.action === "equipe");
+  const r = await demander(thrall, EVENEMENTS.EQUIPER, { idPersonnage: perso.Garrosh.id, idObjet: bouclier.id, emplacement: "main-gauche" });
+  assert.equal(r.personnage.classeArmure, avant + 2);
+  const chezJaina = (await vuParJaina).personnage;
+  assert.equal(chezJaina.classeArmure, avant + 2);
+  assert.equal(chezJaina.equipement["main-gauche"].nom, "Bouclier de Hurlevent"); // l'equipement se voit ("Inspecter")
+  assert.deepEqual(chezJaina.inventaire, []); // le sac, non
+
+  const mauvais = await demander(thrall, EVENEMENTS.EQUIPER, {
+    idPersonnage: perso.Garrosh.id,
+    idObjet: fiche("Garrosh").inventaire.find((o) => o.source === "epee-longue").id,
+    emplacement: "tete",
+  });
+  assert.equal(mauvais.erreur, "Epee longue ne se porte pas a cet emplacement (Tete).");
+});
+
+test("barre d'actions : un raccourci de potion, qu'on boit d'un clic", async () => {
+  await demander(mj, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Garrosh.id, type: "degats", montant: 6 });
+  await demander(mj, EVENEMENTS.INVENTAIRE_AJOUTER, { idPersonnage: perso.Garrosh.id, idObjet: "potion-de-soins", quantite: 2 });
+  const raccourci = { type: "objet", reference: "potion-de-soins" };
+  const pose = await demander(thrall, EVENEMENTS.BARRE_DEFINIR, { idPersonnage: perso.Garrosh.id, index: 0, raccourci });
+  assert.deepEqual(pose.personnage.barreActions[0], raccourci);
+  // Un objet qui ne s'utilise pas n'a pas sa place dans la barre.
+  const bouclier = await demander(thrall, EVENEMENTS.BARRE_DEFINIR, { idPersonnage: perso.Garrosh.id, index: 1, raccourci: { type: "objet", reference: "chope-ebrechee" } });
+  assert.equal(bouclier.ok, false);
+
+  const pvAvant = fiche("Garrosh").pointsDeVie.actuels;
+  const texte = attendre(jaina, EVENEMENTS.COMBAT_TEXTE, 400, (m) => m.idPersonnage === perso.Garrosh.id && m.genre === "soins");
+  const bu = await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "potion-de-soins" });
+  assert.equal(bu.ok, true);
+  assert.ok(bu.personnage.pointsDeVie.actuels > pvAvant);
+  assert.equal(bu.personnage.inventaire.find((o) => o.source === "potion-de-soins").quantite, 1);
+  assert.ok(await texte, "le soin flotte au-dessus du pion, chez tout le monde");
+});
+
+test("barre d'actions : une arme equipee lance attaque et degats pour toute la table", async () => {
+  const epee = fiche("Garrosh").inventaire.find((o) => o.source === "epee-longue");
+  const pasEquipee = await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "epee-longue" });
+  assert.equal(pasEquipee.erreur, "Equipe d'abord Epee longue pour attaquer avec.");
+  await demander(thrall, EVENEMENTS.EQUIPER, { idPersonnage: perso.Garrosh.id, idObjet: epee.id, emplacement: "main-droite" });
+
+  const jets = [];
+  const ecoute = (r) => jets.push(r);
+  jaina.on(EVENEMENTS.DES_RESULTAT, ecoute);
+  await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "epee-longue" });
+  await new Promise((ok) => setTimeout(ok, 150));
+  jaina.off(EVENEMENTS.DES_RESULTAT, ecoute);
+  assert.equal(jets.length, 2);
+  assert.match(jets[0].raison, /^Garrosh attaque avec Epee longue/);
+  assert.match(jets[0].formule, /^1d20\+\d+$/);
+  assert.match(jets[1].formule, /^1d8/);
+});
+
+test("butin : a distance on ne voit que le coffre ; a cote, on fouille ; jamais de double pillage", async () => {
+  const g = pionDe("Garrosh");
+  const { butin } = await demander(mj, EVENEMENTS.BUTIN_CREER, { nom: "Coffre du gnoll", x: g.x + 100, y: g.y });
+  await demander(mj, EVENEMENTS.BUTIN_AJOUTER, { idButin: butin.id, idObjet: "lame-des-cendres" });
+
+  // Ce que les joueurs recoivent de la carte : le coffre, sans son contenu.
+  const vue = (await demander(jaina, EVENEMENTS.TABLE_REJOINDRE, { idTable: idTableTest() })).scene.butins.find((b) => b.id === butin.id);
+  assert.deepEqual([vue.nom, vue.vide, vue.objets], ["Coffre du gnoll", false, undefined]);
+
+  // Antonidas est loin : Jaina ne peut pas fouiller.
+  const loin = await demander(jaina, EVENEMENTS.BUTIN_OUVRIR, { idButin: butin.id });
+  assert.equal(loin.erreur, "Approche-toi : il faut etre a 2 cases au plus pour fouiller.");
+
+  // Le MJ approche Antonidas : les deux heros sont a cote du coffre.
+  const a = pionDe("Antonidas");
+  await demander(mj, EVENEMENTS.PION_SAISIR, { idPion: a.id });
+  await demander(mj, EVENEMENTS.PION_DEPLACER, { idPion: a.id, x: g.x + 200, y: g.y, final: true });
+  const [ouvertThrall, ouvertJaina] = await Promise.all([thrall, jaina].map((s) => demander(s, EVENEMENTS.BUTIN_OUVRIR, { idButin: butin.id })));
+  const idObjet = ouvertThrall.butin.objets[0].id;
+  assert.equal(ouvertJaina.butin.objets[0].nom, "Lame des Cendres");
+
+  // Les deux cliquent au meme instant : un seul l'obtient.
+  const majChezJaina = attendre(jaina, EVENEMENTS.BUTIN_MAJ, 400, (m) => m.idButin === butin.id);
+  const reponses = await Promise.all([thrall, jaina].map((s) => demander(s, EVENEMENTS.BUTIN_PRENDRE, { idButin: butin.id, idObjet })));
+  assert.deepEqual(reponses.map((r) => r.ok).sort(), [false, true]);
+  assert.equal(reponses.find((r) => !r.ok).erreur, "Quelqu'un a deja pris cet objet.");
+  assert.deepEqual((await majChezJaina).butin.objets, []); // sa fenetre se vide en direct
+  const gagnant = reponses[0].ok ? "Garrosh" : "Antonidas";
+  assert.ok(fiche(gagnant).inventaire.some((o) => o.nom === "Lame des Cendres"));
+});
+
+test("le MJ transforme un monstre en cadavre : ce qu'il portait devient du butin", async () => {
+  await demander(mj, EVENEMENTS.INVENTAIRE_AJOUTER, { idPersonnage: perso.Gnoll.id, idObjet: "chope-ebrechee" });
+  const refus = await demander(thrall, EVENEMENTS.PION_EN_CADAVRE, { idPion: pionDe("Gnoll").id });
+  assert.equal(refus.ok, false);
+  assert.equal((await demander(mj, EVENEMENTS.PION_EN_CADAVRE, { idPion: pionDe("Gnoll").id })).ok, true);
+
+  const scene = depot.obtenirScene(idTableTest());
+  const cadavre = scene.butins.find((b) => b.genre === "cadavre");
+  assert.equal(cadavre.nom, "Cadavre : Gnoll");
+  assert.deepEqual(cadavre.objets.map((o) => o.nom), ["Chope ebrechee"]);
+  assert.equal(pionDe("Gnoll"), undefined);
+  assert.deepEqual(fiche("Gnoll").inventaire, []);
+});

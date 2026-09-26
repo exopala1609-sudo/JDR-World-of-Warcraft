@@ -21,11 +21,14 @@ import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { presenterPersonnage } from "../modeles/personnage.js";
+import { butinVisibleParLesJoueurs } from "../regles/butins.js";
 import { pionVisibleParLesJoueurs } from "../regles/scene.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import * as combat from "./combat.js";
 import * as compendium from "./compendium.js";
+import * as butins from "./butins.js";
 import * as des from "./des.js";
+import * as equipement from "./equipement.js";
 import * as personnages from "./personnages.js";
 import * as referentiel from "./referentiel.js";
 import * as repos from "./repos.js";
@@ -33,7 +36,7 @@ import * as scene from "./scene.js";
 import * as tables from "./tables.js";
 import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, combat, scene, tactique, des];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, combat, scene, tactique, des];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
@@ -235,7 +238,14 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       const pions = pourMJ
         ? scene.pions
         : scene.pions.filter((p) => pionVisibleParLesJoueurs(scene, p, depot.obtenirPersonnage(p.idPersonnage)));
-      return { ...scene, pions: pions.map((p) => ctx.presenterPion(p)) };
+      // Butins : le MJ voit tout ; un joueur ne voit que ceux hors du brouillard,
+      // et jamais leur contenu (seulement s'ils sont vides) : il faut ouvrir.
+      const butins = pourMJ
+        ? scene.butins
+        : scene.butins
+            .filter((b) => butinVisibleParLesJoueurs(scene, b))
+            .map(({ objets, cache: _cache, ...b }) => ({ ...b, vide: objets.length === 0 }));
+      return { ...scene, pions: pions.map((p) => ctx.presenterPion(p)), butins };
     },
 
     publierScene(idTable, cause) {

@@ -93,8 +93,9 @@ test("une fiche du sprint 1 est convertie au nouveau format, sans perte", () => 
     const relu = creerDepot(dossier);
     assert.equal(relu.charger().migrees, 1);
     const fiche = relu.obtenirPersonnage("p-1111111111");
-    assert.equal(fiche.versionSchema, 3); // 1 -> 2 -> 3, etape par etape
+    assert.equal(fiche.versionSchema, 4); // 1 -> 2 -> 3 -> 4, etape par etape
     assert.deepEqual([fiche.race, fiche.faction, fiche.portrait], [null, null, null]);
+    assert.deepEqual([fiche.equipement, fiche.barreActions.length], [{}, 12]);
     assert.equal(fiche.pointsDeVie.actuels, 9);
     assert.deepEqual(
       { cle: fiche.ressources[0].cle, actuel: fiche.ressources[0].actuel, court: fiche.ressources[0].reposCourt, long: fiche.ressources[0].reposLong },

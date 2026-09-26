@@ -31,7 +31,13 @@ export function decrireCause(p: Personnage, cause: any): string {
     case "etats-ecoules":
       return cause.expires.length ? `${cause.expires.map((e: any) => e.nom).join(", ")} se dissipe sur ${p.nom}.` : "";
     case "objet-recu":
-      return `${p.nom} recoit le butin : [${cause.nom}]${cause.quantite > 1 ? ` x${cause.quantite}` : ""} (${nomRarete(cause.rarete)}).`;
+      return `${p.nom} recoit le butin : [${cause.nom}]${cause.quantite > 1 ? ` x${cause.quantite}` : ""} (${nomRarete(cause.rarete)})${cause.origine ? ` - ${cause.origine}` : ""}.`;
+    case "equipe":
+      return `${p.nom} s'equipe de [${cause.nom}]${p.classeArmure !== cause.classeArmure ? ` (CA ${cause.classeArmure} -> ${p.classeArmure})` : ""}.`;
+    case "desequipe":
+      return `${p.nom} range [${cause.nom}] dans son sac${p.classeArmure !== cause.classeArmure ? ` (CA ${cause.classeArmure} -> ${p.classeArmure})` : ""}.`;
+    case "objet-utilise":
+      return `${p.nom} utilise [${cause.nom}] : +${cause.soins} PV.`;
     case "objet-retire":
       return `${p.nom} se debarrasse de [${cause.nom}].`;
     case "sort-appris":

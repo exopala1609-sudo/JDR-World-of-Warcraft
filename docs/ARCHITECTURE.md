@@ -23,6 +23,7 @@ JDR-World-of-Warcraft/
 │   ├── raretes.js            Les 6 raretes WoW et leurs couleurs
 │   ├── couleurs.js           Couleur de chaque joueur (pions, traces, pings), palette des traces
 │   ├── creation.js           Regles de creation (achat de points, bonus de race, PV, CA), ecran ET serveur
+│   ├── equipement.js         Emplacements, CA selon l'equipement, attaques, raccourcis : ecran ET serveur
 │   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
 │   ├── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
 │   ├── geometrie.js          Grille, aimantation, distances, test du brouillard
@@ -283,3 +284,44 @@ serveur renvoie la creation tant que le personnage n'existe pas.
 tableau standard, bonus de race, PV, CA, ressources). L'ecran s'en sert pour
 l'apercu en direct, le serveur pour arbitrer : ce que le joueur voit est
 exactement ce qui sera enregistre.
+
+## Equipement, barre d'actions et butin (sprint 7)
+
+### Le glisser-deposer des objets (`client/src/ui/glisser.tsx`)
+
+Pas d'API « Drag & Drop » HTML5 : le navigateur y impose son image et son
+curseur, et perd le fil si l'on lache hors de la fenetre. On utilise les
+**Pointer Events** et la **capture du pointeur** :
+
+1. appui sur un objet : rien tant que la souris n'a pas bouge de 5 px (un clic
+   reste un clic) ; le glisser natif des images est bloque ;
+2. au-dela, l'element capture le pointeur (`setPointerCapture`) : il recoit
+   tous les mouvements et le relachement, meme au-dessus de la carte ou hors
+   du navigateur. **Le Canvas ne recoit rien** : pas de pion ni de vue deplaces ;
+3. une icone « fantome » suit la souris, dans une couche transparente aux clics ;
+4. au relachement, `document.elementsFromPoint` trouve la cible (`data-cible`).
+   Si elle accepte l'objet, elle le recoit ; sinon (vide, hors fenetre, Echap,
+   Alt+Tab) le glisser est annule et l'objet reste en place.
+
+Pendant un glisser, les cases qui peuvent recevoir l'objet s'eclairent en
+vert, celle survolee en or. Le calcul (`peutAllerDans`) est dans
+`shared/equipement.js`, le meme que celui du serveur.
+
+### Le serveur arbitre
+
+| Demande | Verifications | Effet |
+|---|---|---|
+| `equipement:equiper` | proprietaire ou MJ, objet dans CE sac, emplacement compatible | l'objet quitte le sac ; l'ancien (et une arme a deux mains en conflit) y retourne ; CA recalculee |
+| `equipement:desequiper` | proprietaire ou MJ | retour au sac, CA recalculee |
+| `barre:definir` | l'objet existe et s'utilise (arme, soins) | raccourci enregistre dans la fiche |
+| `objet:utiliser` | proprietaire ou MJ | potion : soins lances par le serveur, une de moins ; arme equipee : jets d'attaque et de degats pour toute la table |
+| `butin:ouvrir` / `butin:prendre` | butin visible, pion a 2 cases au plus | l'objet quitte le butin et entre dans le sac |
+
+**Pas de double pillage** : Node.js traite les demandes une par une. Le premier
+« prendre » retire l'objet ; le second, meme envoye au meme instant, trouve la
+place vide et recoit un refus. Les fenetres de butin ouvertes chez les autres
+se mettent a jour en direct (`butin:maj`).
+
+**Ce que voient les joueurs** : sur la carte, un coffre ou un cadavre (et s'il
+est vide), jamais son contenu. Le contenu n'est envoye qu'a l'ouverture, a
+cote du coffre. Les butins dans le brouillard ne sont pas envoyes du tout.

@@ -24,9 +24,18 @@ export type Objet = {
   valeur: number;
   description: string;
   arme?: { degats: string; typeDegats: string; proprietes: string[] };
-  armure?: { classeArmure: number; categorie: string };
+  armure?: { classeArmure: number; categorie: string; dexteriteMax?: number };
   soins?: string;
+  emplacement?: string;
 };
+
+export type Raccourci = { type: "objet"; reference: string };
+export type Attaque = { emplacement: string; idObjet: string; nom: string; bonus: number; degats: string; typeDegats: string };
+
+/** Un coffre ou un cadavre sur la carte. Les joueurs n'en recoivent pas le contenu. */
+export type ButinCarte = { id: string; genre: "coffre" | "cadavre"; nom: string; x: number; y: number; vide?: boolean; objets?: Objet[] };
+/** Un butin ouvert (fenetre de butin) : son contenu, et ou afficher la fenetre. */
+export type ButinOuvert = { id: string; nom: string; genre: string; objets: Objet[]; x: number; y: number };
 
 export type EtatActif = {
   id: string;
@@ -54,9 +63,11 @@ export type Personnage = {
   desDeVie: { faces: number; restants: number };
   ressources: Ressource[];
   inventaire: Objet[];
+  equipement: Record<string, Objet>;
+  barreActions: (Raccourci | null)[];
   grimoire: { id: string; nom: string; niveau: number }[];
   etats: EtatActif[];
-  derives: { modificateurs: Record<string, number>; bonusDeMaitrise: number; bonusInitiative: number };
+  derives: { modificateurs: Record<string, number>; bonusDeMaitrise: number; bonusInitiative: number; attaques: Attaque[] };
 };
 
 export type Pion = {
@@ -139,6 +150,7 @@ export type Scene = {
   carte: { fichier: string | null; largeur: number; hauteur: number };
   grille: { taille: number; decalageX: number; decalageY: number; visible: boolean };
   pions: Pion[];
+  butins: ButinCarte[];
   brouillard: { actif: boolean; traits: unknown[] };
 };
 

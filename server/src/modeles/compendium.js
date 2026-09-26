@@ -7,6 +7,7 @@
 //
 // Chaque entree a un "id" que TU choisis (ex. "epee-longue") : c'est son nom
 // technique, stable, qui sert a la retrouver (glisser-deposer, sauvegardes...).
+import { TYPES_EMPLACEMENT } from "../../../shared/equipement.js";
 import { CLES_RARETES } from "../../../shared/raretes.js";
 import { NATURES_ETAT } from "../../../shared/etats.js";
 import { lancerDes } from "../regles/des.js";
@@ -80,6 +81,9 @@ export const champsObjet = {
     })
     .optional(),
   soins: schemaFormule.optional(), // ex. potion : "2d4+2"
+  // Ou l'objet se porte (voir docs/COMPENDIUM.md). Absent : deduit du type
+  // (arme -> une main, bouclier -> main gauche, armure -> torse...).
+  emplacement: z.enum(TYPES_EMPLACEMENT, "Emplacement inconnu (voir docs/COMPENDIUM.md).").optional(),
 };
 
 export const SchemaEntreeObjet = z.strictObject({ id: schemaIdCompendium, ...champsObjet });

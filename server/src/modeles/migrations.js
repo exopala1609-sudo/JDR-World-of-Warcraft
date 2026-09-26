@@ -65,6 +65,14 @@ const ETAPES = {
     faction: fiche.faction ?? null,
     portrait: fiche.portrait ?? null,
   }),
+
+  // Version 3 (sprint 6) -> version 4 (sprint 7 : equipement et barre d'actions).
+  3: (fiche) => ({
+    ...fiche,
+    versionSchema: 4,
+    equipement: fiche.equipement ?? {},
+    barreActions: fiche.barreActions ?? Array(12).fill(null),
+  }),
 };
 
 /**

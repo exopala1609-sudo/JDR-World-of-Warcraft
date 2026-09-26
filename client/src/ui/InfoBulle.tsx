@@ -11,8 +11,11 @@ const publier = (nouvel: EtatInfobulle) => {
   abonnes.forEach((rappel) => rappel());
 };
 
+/** Cache l'infobulle (par exemple au debut d'un glisser-deposer). */
+export const cacherInfobulle = () => publier(null);
+
 /** Coordonnees de la souris dans la surface de jeu (tient compte du zoom). */
-function versScene(clientX: number, clientY: number) {
+export function versScene(clientX: number, clientY: number) {
   const scene = document.querySelector(".scene-jeu") as HTMLElement;
   const rect = scene.getBoundingClientRect();
   const echelle = rect.width / scene.offsetWidth;
@@ -27,6 +30,8 @@ function versScene(clientX: number, clientY: number) {
 /** A brancher sur un element : props onPointerEnter / Move / Leave. */
 export function avecInfobulle(contenu: () => ReactNode) {
   const placer = (e: React.PointerEvent) => {
+    // Pendant un glisser-deposer, aucune infobulle : elle cacherait la cible.
+    if (document.body.classList.contains("glisser-en-cours")) return publier(null);
     const { x, y, largeur, hauteur } = versScene(e.clientX, e.clientY);
     // Pres d'un bord, l'infobulle s'ouvre de l'autre cote du curseur.
     publier({ contenu: contenu(), x, y, versGauche: x > largeur - 400, versHaut: y > hauteur * 0.55 });

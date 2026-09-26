@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 7;
+export const VERSION_PROTOCOLE = 8;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -49,6 +49,21 @@ export const EVENEMENTS = /** @type {const} */ ({
   INVENTAIRE_RETIRER: "inventaire:retirer",
   GRIMOIRE_APPRENDRE: "grimoire:apprendre", // MJ : depuis le compendium
   GRIMOIRE_OUBLIER: "grimoire:oublier",
+
+  // Equipement et barre d'actions (le proprietaire ou le MJ)
+  EQUIPER: "equipement:equiper", // du sac vers un emplacement de la fiche
+  DESEQUIPER: "equipement:desequiper", // de la fiche vers le sac
+  BARRE_DEFINIR: "barre:definir", // poser / retirer un raccourci
+  OBJET_UTILISER: "objet:utiliser", // boire une potion, attaquer avec une arme
+
+  // Butin : coffres et cadavres
+  BUTIN_OUVRIR: "butin:ouvrir", // voir le contenu (il faut etre a cote)
+  BUTIN_FERMER: "butin:fermer",
+  BUTIN_PRENDRE: "butin:prendre", // un objet du butin vers son sac
+  BUTIN_CREER: "butin:creer", // MJ : poser un coffre
+  BUTIN_AJOUTER: "butin:ajouter", // MJ : y mettre un objet du compendium
+  BUTIN_SUPPRIMER: "butin:supprimer", // MJ
+  PION_EN_CADAVRE: "pion:enCadavre", // MJ : le monstre tombe, son cadavre se fouille
 
   // Combat
   COMBAT_DEMARRER: "combat:demarrer", // MJ : lance l'initiative
@@ -98,6 +113,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   DESSIN_AJOUTE: "dessin:ajoute", // un morceau de trace d'un autre participant
   DESSINS_ETAT: "dessins:etat", // la liste complete des traces (apres un effacement)
   COMBAT_TEXTE: "combat:texte", // texte de combat flottant : degats, soins
+  BUTIN_MAJ: "butin:maj", // le contenu d'un butin ouvert a change (quelqu'un s'est servi)
 });
 
 // Types de modification des points de vie (regles D&D 5e).

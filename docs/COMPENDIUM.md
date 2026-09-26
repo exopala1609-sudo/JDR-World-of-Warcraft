@@ -58,7 +58,37 @@ changer ensuite : c'est lui qui relie un objet ramasse a son entree d'origine.
 | `description` | non | texte libre |
 | `arme` | non | `degats` (formule de des), `typeDegats`, `proprietes` (liste) |
 | `armure` | non | `classeArmure`, `categorie` (`legere`, `intermediaire`, `lourde`, `bouclier`), `dexteriteMax` |
-| `soins` | non | formule de des, ex. `"2d4+2"` |
+| `soins` | non | formule de des, ex. `"2d4+2"`. L'objet s'utilise (barre d'actions, clic droit) |
+| `emplacement` | non | ou il se porte, voir ci-dessous |
+
+### Ou se porte un objet (`emplacement`)
+
+Valeurs : `tete`, `cou`, `epaules`, `dos`, `torse`, `chemise`, `tabard`,
+`poignets`, `mains`, `taille`, `jambes`, `pieds`, `doigt`, `bijou`,
+`une-main`, `deux-mains`, `main-gauche` (bouclier), `distance`.
+
+Sans ce champ, le jeu devine d'apres le type :
+
+| Objet | Emplacement devine |
+|---|---|
+| arme | `une-main` ; `deux-mains` si ses proprietes contiennent "deux mains" ; `distance` si elles contiennent "munitions" |
+| bouclier (ou armure de categorie `bouclier`) | `main-gauche` |
+| armure dont `classeArmure` vaut 10 ou plus | `torse` (un plastron) |
+| armure dont `classeArmure` vaut moins de 10 | `dos` (un accessoire, comme une cape) |
+| autre | ne s'equipe pas |
+
+### Classe d'armure : comment elle est recalculee
+
+A chaque objet equipe ou retire, le serveur recalcule la CA (regles D&D 5e) :
+
+- **plastron** (emplacement `torse`) : `legere` = valeur + DEX ;
+  `intermediaire` = valeur + DEX plafonnee (`dexteriteMax`, 2 par defaut) ;
+  `lourde` = valeur seule ;
+- **sans plastron** : 10 + DEX (+ la defense sans armure de la classe) ;
+- **ensuite on ajoute** le bouclier et tous les autres objets portes qui ont
+  une `armure` (cape, anneau de protection...).
+
+Exemple : armure de cuir (11) + DEX +2 + bouclier (2) + cape (1) = CA 16.
 
 ## Sorts
 

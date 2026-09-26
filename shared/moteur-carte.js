@@ -13,7 +13,8 @@
 //
 // Le dessin se fait en "calques", du fond vers le dessus :
 //   1. l'image de la carte       2. la grille
-//   3. les pions des monstres    4. le brouillard (il les recouvre)
+//   3. butins (coffres, cadavres) et pions des monstres
+//   4. le brouillard (il les recouvre)
 //   5. les traces tactiques      6. les pions des joueurs (jamais sous le brouillard)
 //   7. les effets animes : pings et textes de combat flottants
 //
@@ -52,6 +53,7 @@ export class MoteurCarte {
    *   couleur                    : (facultatif) couleur de ce participant (pings, traces)
    *   prefixeTraces              : (facultatif) debut des identifiants de SES traces ("thrall:")
    *   police                     : (facultatif) police des textes de combat
+   *   surButin(butin, clientX, clientY) : (facultatif) clic sur un coffre / cadavre
    */
   constructor(canvas, options) {
     this.canvas = canvas;
@@ -353,7 +355,8 @@ export class MoteurCarte {
     // 2. La grille
     this.dessinerGrille();
 
-    // 3. Les pions des monstres (PNJ) : SOUS le brouillard.
+    // 3. Les butins (coffres, cadavres) et les pions des monstres : SOUS le brouillard.
+    for (const butin of this.scene.butins ?? []) this.dessinerButin(butin);
     const estPJ = (pion) => pion.proprietaire != null;
     for (const pion of this.scene.pions) if (!estPJ(pion)) this.dessinerPion(pion);
 
@@ -385,6 +388,65 @@ export class MoteurCarte {
     // 7. Effets animes (pings, textes de combat), en pixels d'ECRAN.
     c.setTransform(1, 0, 0, 1, 0, 0);
     this.dessinerEffets();
+  }
+
+  /** Un coffre (carre dore) ou un cadavre (disque gris et crane). Vide : estompe. */
+  dessinerButin(butin) {
+    const c = this.ctx;
+    const z = this.vue.zoom;
+    const t = this.scene.grille.taille * 0.36;
+    const vide = butin.vide ?? butin.objets?.length === 0;
+    c.globalAlpha = butin.cache ? 0.4 : vide ? 0.55 : 1;
+    if (butin.genre === "coffre") {
+      c.fillStyle = "#6b4220";
+      c.strokeStyle = "#e0b040";
+      c.lineWidth = 3 / z;
+      c.beginPath();
+      c.roundRect(butin.x - t, butin.y - t * 0.75, t * 2, t * 1.5, t * 0.2);
+      c.fill();
+      c.stroke();
+      c.beginPath(); // le couvercle et la serrure
+      c.moveTo(butin.x - t, butin.y - t * 0.15);
+      c.lineTo(butin.x + t, butin.y - t * 0.15);
+      c.stroke();
+      c.fillStyle = "#e0b040";
+      c.fillRect(butin.x - t * 0.15, butin.y - t * 0.3, t * 0.3, t * 0.35);
+    } else {
+      c.fillStyle = "#3a3a3a";
+      c.strokeStyle = "#9a9a9a";
+      c.lineWidth = 3 / z;
+      c.beginPath();
+      c.arc(butin.x, butin.y, t, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+      c.fillStyle = "#e8e8e8";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.font = `${t * 1.2}px sans-serif`;
+      c.fillText("\u2620", butin.x, butin.y + t * 0.05);
+    }
+    if (!vide) {
+      // Une etincelle doree : "il y a quelque chose a prendre".
+      c.fillStyle = "#fff6b0";
+      c.beginPath();
+      c.arc(butin.x + t * 0.95, butin.y - t * 0.85, Math.max(t * 0.16, 3 / z), 0, Math.PI * 2);
+      c.fill();
+    }
+    const yNom = butin.y + t + Math.max(t * 0.35, 10 / z);
+    c.font = `bold ${Math.max(t * 0.45, 12 / z)}px sans-serif`;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.lineWidth = 3 / z;
+    c.strokeStyle = "#000";
+    c.strokeText(butin.nom, butin.x, yNom);
+    c.fillStyle = "#ffd100";
+    c.fillText(butin.nom, butin.x, yNom);
+    c.globalAlpha = 1;
+  }
+
+  butinSous(point) {
+    const t = (this.scene.grille.taille ?? 100) * 0.45;
+    return (this.scene.butins ?? []).find((b) => Math.abs(point.x - b.x) <= t && Math.abs(point.y - b.y) <= t) ?? null;
   }
 
   dessinerTrace(trace) {
@@ -644,7 +706,10 @@ export class MoteurCarte {
       this.commencerGlisser(pion, point);
     } else {
       if (pion) this.options.surInfo(`${pion.nom} : ce pion ne t'appartient pas (selectionne seulement).`);
-      this.geste = { type: "vue", ecran: { x: point.sx, y: point.sy }, vue: { ...this.vue } };
+      // Sur un coffre : on retient le clic. S'il n'y a pas de glisser, il ouvrira le butin
+      // au relachement ; si la souris bouge, c'etait un deplacement de la vue.
+      const butin = pion ? null : this.butinSous(point);
+      this.geste = { type: "vue", ecran: { x: point.sx, y: point.sy }, vue: { ...this.vue }, butin, client: { x: e.clientX, y: e.clientY } };
     }
     this.sale = true;
   }
@@ -835,7 +900,8 @@ export class MoteurCarte {
     if (this.outil === "tracer" || this.outil === "gomme" || this.outil === "pinceau") return "crosshair";
     if (this.outil === "ping") return "pointer";
     const pion = this.pionSous(point);
-    return pion && this.options.peutDeplacer(pion) ? "grab" : "default";
+    if (pion && this.options.peutDeplacer(pion)) return "grab";
+    return !pion && this.butinSous(point) ? "pointer" : "default";
   }
 
   relachement(e) {
@@ -855,6 +921,9 @@ export class MoteurCarte {
     if (geste.type === "trace") {
       clearTimeout(geste.minuterie);
       this.envoyerMorceau(geste);
+    }
+    if (geste.type === "vue" && geste.butin && Math.hypot(e.clientX - geste.client.x, e.clientY - geste.client.y) < 5) {
+      this.options.surButin?.(geste.butin, e.clientX, e.clientY);
     }
     this.geste = null;
     this.sale = true;

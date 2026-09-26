@@ -5,6 +5,7 @@ import { carte } from "@/core/carte";
 import { jeu, useJeu } from "@/core/jeu";
 import type { TexteCombat, Trace } from "@/core/types";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
+import { versScene } from "@/ui/InfoBulle";
 
 /**
  * Le "monde" : notre moteur Canvas du sprint 3, en plein ecran, sous toute
@@ -53,6 +54,8 @@ export function CarteMonde() {
       surPing: (x: number, y: number) => jeu.demander(EVENEMENTS.CARTE_PING, { x, y }),
       surTrace: (morceau: { cle: string; couleur: string; points: [number, number][] }) =>
         jeu.demander(EVENEMENTS.DESSIN_TRAIT, morceau),
+      // Clic sur un coffre ou un cadavre : la fenetre de butin s'ouvre a cote du curseur.
+      surButin: (butin: { id: string }, clientX: number, clientY: number) => jeu.ouvrirButin(butin.id, versScene(clientX, clientY)),
       surTrait: () => {},
       surInfo: () => {},
       surChangement: () => carte.signalerChangement(),

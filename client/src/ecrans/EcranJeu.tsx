@@ -1,15 +1,17 @@
 import { useEffect } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
-import { BarreActions } from "@/jeu/BarreActions";
+import { BarreActions, RACCOURCIS, utiliserRaccourci } from "@/jeu/BarreActions";
 import { Bandeau } from "@/jeu/Bandeau";
 import { CadresGroupe } from "@/jeu/CadresGroupe";
+import { FenetreButin } from "@/jeu/FenetreButin";
 import { CarteMonde } from "@/jeu/CarteMonde";
 import { Discussion } from "@/jeu/Discussion";
 import { FichePersonnage } from "@/jeu/FichePersonnage";
 import { MicroMenu } from "@/jeu/MicroMenu";
 import { Minicarte } from "@/jeu/Minicarte";
 import { Sacs } from "@/jeu/Sacs";
+import { CoucheGlisser } from "@/ui/glisser";
 import { CoucheInfobulle } from "@/ui/InfoBulle";
 
 /**
@@ -33,7 +35,10 @@ export function EcranJeu() {
         jeu.modifier((etat) => ({ fenetres: { ...etat.fenetres, [nom]: !etat.fenetres[nom] } }));
       if (touche === "b") basculer("sacs");
       else if (touche === "c") basculer("personnage");
-      else if (touche === "escape") jeu.modifier({ fenetres: { sacs: false, personnage: false } });
+      else if (touche === "escape") {
+        jeu.fermerButin();
+        jeu.modifier({ fenetres: { sacs: false, personnage: false } });
+      } else if (RACCOURCIS.includes(e.key)) utiliserRaccourci(RACCOURCIS.indexOf(e.key)); // touches 1 a =
       else if (touche === "enter") document.getElementById("saisie-discussion")?.focus();
       else return;
       e.preventDefault();
@@ -56,8 +61,10 @@ export function EcranJeu() {
       <div className="fenetres">
         {fenetres.personnage && <FichePersonnage position={{ x: 560, y: 150 }} />}
         {fenetres.sacs && <Sacs position={{ x: largeur - 420, y: hauteur - 560 }} />}
+        <FenetreButin />
       </div>
       <CoucheInfobulle />
+      <CoucheGlisser />
     </>
   );
 }

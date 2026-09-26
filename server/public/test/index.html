@@ -107,6 +107,15 @@
           | Placer : <select id="choix-pion"></select> <button id="bouton-placer" type="button">Placer au centre</button>
         </p>
         <ul id="liste-pions"></ul>
+
+        <h4>Butins (MJ) : coffres et cadavres</h4>
+        <p>
+          <input id="nom-butin" maxlength="60" placeholder="Nom (ex. Coffre du chef)" />
+          <select id="genre-butin"><option value="coffre">Coffre</option><option value="cadavre">Cadavre</option></select>
+          <button id="bouton-creer-butin" type="button">Poser au centre de la carte</button>
+          (remplis-le avec le destinataire "Butin : ..." du compendium)
+        </p>
+        <ul id="liste-butins"></ul>
       </div>
 
       <hr />

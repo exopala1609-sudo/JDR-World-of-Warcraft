@@ -1,6 +1,7 @@
 // La "scene" d'une table : la carte affichee, sa grille, ses pions et son
 // brouillard de guerre. Sauvegardee dans parties/<table>/scene.json.
 import { schemaId } from "./identifiants.js";
+import { SchemaObjetInventaire } from "./personnage.js";
 import { z } from "./zod.js";
 
 // Carte factice (tant que le MJ n'a pas choisi d'image) : un carre de 2000 px.
@@ -42,6 +43,18 @@ export const SchemaTrait = z.union([
   z.strictObject({ mode: z.literal("tout-reveler") }),
 ]);
 
+// Un butin pose sur la carte : un coffre, ou le cadavre d'un monstre.
+// Ses objets sont des COPIES pretes a aller dans un sac (voir personnage.js).
+export const SchemaButin = z.strictObject({
+  id: schemaId("b"),
+  genre: z.enum(["coffre", "cadavre"]),
+  nom: z.string().trim().min(1).max(60),
+  x: coordonnee,
+  y: coordonnee,
+  objets: z.array(SchemaObjetInventaire).max(100),
+  cache: z.boolean(), // le MJ peut le cacher aux joueurs
+});
+
 export const SchemaScene = z.strictObject({
   idTable: schemaId("t"),
   carte: z.strictObject({
@@ -51,6 +64,7 @@ export const SchemaScene = z.strictObject({
   }),
   grille: SchemaGrille,
   pions: z.array(SchemaPion).max(200),
+  butins: z.array(SchemaButin).max(100).default([]), // absent des scenes d'avant le sprint 7
   brouillard: z.strictObject({
     actif: z.boolean(),
     traits: z.array(SchemaTrait).max(LIMITES_BROUILLARD.traits),
@@ -63,6 +77,7 @@ export function sceneVide(idTable) {
     carte: { ...CARTE_PAR_DEFAUT },
     grille: { ...GRILLE_PAR_DEFAUT },
     pions: [],
+    butins: [],
     brouillard: { actif: true, traits: [] }, // tout est noir au depart
   };
 }

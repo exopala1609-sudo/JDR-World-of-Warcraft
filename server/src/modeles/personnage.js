@@ -10,6 +10,7 @@
 // 999 PV ou une Force de 30 en trafiquant sa requete.
 import { apercuPersonnage, classeArmureSansArmure, pvMax, ressourcesDeDepart, verifierBase, verifierChoixBonus } from "../../../shared/creation.js";
 import { CARACTERISTIQUES, bonusDeMaitrise, modificateur } from "../../../shared/dnd5e.js";
+import { attaquesEquipees, IDS_EMPLACEMENTS, TAILLE_BARRE } from "../../../shared/equipement.js";
 import { NATURES_ETAT } from "../../../shared/etats.js";
 import { MODES_REPOS, TYPES_RESSOURCE } from "../../../shared/ressources.js";
 import { champsObjet, champsSort, schemaIdCompendium } from "./compendium.js";
@@ -20,7 +21,7 @@ import { z } from "./zod.js";
 
 // Version du format des fiches. Si elle change, modeles/migrations.js sait
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
-export const VERSION_FICHE = 3;
+export const VERSION_FICHE = 4;
 
 const entier = (min, max) => z.int().min(min).max(max);
 
@@ -67,6 +68,17 @@ export const SchemaObjetInventaire = z.strictObject({
   ...champsObjet,
 });
 
+// L'equipement porte : un objet (une COPIE, comme dans le sac) par emplacement.
+export const SchemaEquipement = z.partialRecord(z.enum(IDS_EMPLACEMENTS), SchemaObjetInventaire).default({});
+
+// Barre d'actions : 12 cases, vides (null) ou un raccourci vers un objet.
+export const SchemaRaccourci = z.strictObject({
+  type: z.literal("objet"),
+  reference: z.string().min(1).max(80), // l'origine dans le compendium, ou l'identifiant de l'objet
+});
+export const SchemaBarreActions = z.array(SchemaRaccourci.nullable()).length(TAILLE_BARRE);
+export const barreVide = () => Array(TAILLE_BARRE).fill(null);
+
 // Un sort connu (le "grimoire"), copie depuis le compendium.
 export const SchemaSortConnu = z.strictObject({
   id: schemaId("s"),
@@ -109,6 +121,8 @@ export const SchemaPersonnage = z
     desDeVie: z.strictObject({ faces: z.literal([6, 8, 10, 12]), restants: entier(0, 20) }),
     ressources: z.array(SchemaRessource).max(30),
     inventaire: z.array(SchemaObjetInventaire).max(500),
+    equipement: SchemaEquipement,
+    barreActions: SchemaBarreActions,
     grimoire: z.array(SchemaSortConnu).max(300),
     etats: z.array(SchemaEtatActif).max(40),
     creeLe: z.iso.datetime(),
@@ -184,6 +198,8 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
     desDeVie: { faces: classe.deDeVie, restants: niveau },
     ressources,
     inventaire: [],
+    equipement: {},
+    barreActions: barreVide(),
     grimoire: [],
     etats: [],
     creeLe: maintenant,
@@ -262,6 +278,7 @@ export function presenterPersonnage(personnage) {
       ),
       bonusDeMaitrise: bonusDeMaitrise(personnage.niveau),
       bonusInitiative: modificateur(personnage.caracteristiques.dexterite),
+      attaques: attaquesEquipees(personnage), // armes en main : bonus au toucher et degats
     },
   };
 }

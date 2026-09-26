@@ -12,10 +12,10 @@ import { schemaIdCompendium } from "../modeles/compendium.js";
 import { schemaId } from "../modeles/identifiants.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
+import { ajouterAuSac, QUANTITE_MAX } from "../regles/inventaire.js";
 import { SALLE_MJ } from "./index.js";
 
 const idPersonnage = schemaId("p");
-const QUANTITE_MAX = 9999;
 
 const Demandes = {
   ajouterObjet: z.strictObject({ idPersonnage, idObjet: schemaIdCompendium, quantite: z.int().min(1).max(999).default(1) }),
@@ -57,10 +57,7 @@ export function brancher(socket, ctx) {
     if (!entree) throw new ErreurRegle("Objet absent du compendium (recharge-le apres une modification).");
 
     // Les objets empilables (potions, fleches...) rejoignent la pile existante.
-    const pile = entree.empilable && personnage.inventaire.find((o) => o.source === entree.id);
-    const inventaire = pile
-      ? personnage.inventaire.map((o) => (o === pile ? { ...o, quantite: Math.min(QUANTITE_MAX, o.quantite + quantite) } : o))
-      : [...personnage.inventaire, instancierObjet(entree, quantite)];
+    const inventaire = ajouterAuSac(personnage.inventaire, instancierObjet(entree, quantite));
 
     return {
       personnage: ctx.publierPersonnage(

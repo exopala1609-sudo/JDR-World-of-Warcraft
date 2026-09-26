@@ -14,7 +14,7 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { Combat, LigneJournal, OutilCarte, Personnage, Profil, Referentiel, Scene, Table, Trace } from "./types";
+import type { ButinOuvert, Combat, LigneJournal, Objet, OutilCarte, Personnage, Profil, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
 import { decrireCause, decrireCombat, decrireDes } from "./journal";
 
 export type EtatJeu = {
@@ -33,6 +33,7 @@ export type EtatJeu = {
   journal: LigneJournal[];
   selection: string | null; // personnage cible (clic sur un cadre de groupe)
   fenetres: { sacs: boolean; personnage: boolean };
+  butin: ButinOuvert | null; // la fenetre de butin ouverte (coffre, cadavre)
   outil: OutilCarte; // ce que fait un clic gauche sur la carte
   couleurTrace: string | null; // null = sa propre couleur
 };
@@ -51,6 +52,7 @@ const ETAT_INITIAL: EtatJeu = {
   journal: [],
   selection: null,
   fenetres: { sacs: false, personnage: false },
+  butin: null,
   outil: "deplacer",
   couleurTrace: null,
 };
@@ -92,6 +94,39 @@ class Jeu {
 
   private versLaCarte(evenement: string, donnees: unknown) {
     for (const rappel of this.ecouteursCarte) rappel(evenement, donnees);
+  }
+
+  // --- Equipement, barre d'actions, butin --------------------------------------------
+  // Chaque action n'est qu'une DEMANDE : la fiche a jour revient du serveur
+  // (evenement personnage:maj) et l'interface se redessine d'elle-meme.
+
+  equiper(idPersonnage: string, idObjet: string, emplacement?: string) {
+    return this.demander(EVENEMENTS.EQUIPER, { idPersonnage, idObjet, ...(emplacement ? { emplacement } : {}) });
+  }
+  desequiper(idPersonnage: string, emplacement: string) {
+    return this.demander(EVENEMENTS.DESEQUIPER, { idPersonnage, emplacement });
+  }
+  definirRaccourci(idPersonnage: string, index: number, raccourci: Raccourci | null) {
+    return this.demander(EVENEMENTS.BARRE_DEFINIR, { idPersonnage, index, raccourci });
+  }
+  utiliser(idPersonnage: string, reference: string) {
+    return this.demander(EVENEMENTS.OBJET_UTILISER, { idPersonnage, reference });
+  }
+
+  /** Clic sur un coffre de la carte : le serveur verifie qu'on est a cote, puis envoie le contenu. */
+  async ouvrirButin(idButin: string, position: { x: number; y: number }) {
+    const r = await this.demander(EVENEMENTS.BUTIN_OUVRIR, { idButin });
+    if (r.ok) this.modifier({ butin: { ...(r.butin as Omit<ButinOuvert, "x" | "y">), ...position } });
+  }
+  fermerButin() {
+    if (!this.etat.butin) return;
+    this.modifier({ butin: null });
+    this.demander(EVENEMENTS.BUTIN_FERMER, {});
+  }
+  /** Prendre un objet du butin : dans SON sac (le MJ : dans celui du personnage cible). */
+  prendreButin(objet: Objet, idButin = this.etat.butin?.id, idPersonnage = this.personnageDesSacs()?.id) {
+    if (!idButin) return;
+    return this.demander(EVENEMENTS.BUTIN_PRENDRE, { idButin, idObjet: objet.id, ...(this.estMJ() && idPersonnage ? { idPersonnage } : {}) });
   }
 
   /** Nom affiche d'une classe ou d'une race (celui du referentiel ; a defaut, l'identifiant). */
@@ -296,6 +331,12 @@ class Jeu {
         const { [idPersonnage]: _supprime, ...reste } = e.personnages;
         return { personnages: reste, selection: e.selection === idPersonnage ? null : e.selection };
       });
+    });
+
+    // Quelqu'un s'est servi dans le butin que j'ai ouvert : ma fenetre se met a jour.
+    socket.on(EVENEMENTS.BUTIN_MAJ, ({ idButin, butin, supprime }) => {
+      if (this.etat.butin?.id !== idButin) return;
+      this.modifier((e) => ({ butin: supprime ? null : { ...e.butin!, objets: butin.objets } }));
     });
 
     socket.on(EVENEMENTS.COMBAT_ETAT, ({ combat, cause }) => {

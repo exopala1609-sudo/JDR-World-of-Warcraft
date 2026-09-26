@@ -345,7 +345,9 @@ function afficherListesDePersonnages() {
   const options = [...personnages.values()].map((p) => [p.id, `${p.nom} (${p.proprietaire ?? "PNJ"})`]);
   const destinataire = $("choix-destinataire");
   const precedent = destinataire.value;
-  destinataire.replaceChildren(...options.map(([v, t]) => Object.assign(el("option", t), { value: v })));
+  // Les coffres et cadavres de la carte peuvent aussi recevoir des objets du compendium.
+  const butins = (scene?.butins ?? []).map((b) => [b.id, `Butin : ${b.nom}`]);
+  destinataire.replaceChildren(...[...options, ...butins].map(([v, t]) => Object.assign(el("option", t), { value: v })));
   if (precedent) destinataire.value = precedent;
 
   const horsCombat = options.filter(([id]) => !combat?.participants.some((c) => c.idPersonnage === id));
@@ -404,12 +406,14 @@ async function chargerCompendium() {
         ` ${o.nom} [${nomRarete(o.rarete)}] - ${o.type} `,
         quantite,
         " ",
-        bouton(`Ajouter "${o.nom}" a l'inventaire`, () =>
-          demander(EVENEMENTS.INVENTAIRE_AJOUTER, {
-            idPersonnage: destinataire(),
-            idObjet: o.id,
-            quantite: Number(quantite.value),
-          }),
+        bouton(`Ajouter "${o.nom}"`, () =>
+          destinataire().startsWith("b-")
+            ? demander(EVENEMENTS.BUTIN_AJOUTER, { idButin: destinataire(), idObjet: o.id, quantite: Number(quantite.value) })
+            : demander(EVENEMENTS.INVENTAIRE_AJOUTER, {
+                idPersonnage: destinataire(),
+                idObjet: o.id,
+                quantite: Number(quantite.value),
+              }),
         ),
       );
     }),
@@ -521,9 +525,22 @@ function afficherOutilsScene() {
           demander(EVENEMENTS.PION_CACHER, { idPion: p.id, cache: !p.cache }),
         ),
         bouton("Retirer de la carte", () => demander(EVENEMENTS.PION_RETIRER, { idPion: p.id })),
+        p.proprietaire === null
+          ? bouton("Tue : laisser un cadavre a fouiller", () => demander(EVENEMENTS.PION_EN_CADAVRE, { idPion: p.id }))
+          : null,
       ),
     ),
   );
+  $("liste-butins").replaceChildren(
+    ...(scene.butins ?? []).map((b) =>
+      el(
+        "li",
+        `${b.genre === "cadavre" ? "Cadavre" : "Coffre"} "${b.nom}" - ${descriptionCase(b)} - ${b.objets.length ? b.objets.map((o) => `${o.nom}${o.quantite > 1 ? ` x${o.quantite}` : ""}`).join(", ") : "vide"} `,
+        bouton("Supprimer", () => demander(EVENEMENTS.BUTIN_SUPPRIMER, { idButin: b.id })),
+      ),
+    ),
+  );
+  afficherListesDePersonnages();
   const absents = [...personnages.values()].filter((p) => !scene.pions.some((j) => j.idPersonnage === p.id));
   $("choix-pion").replaceChildren(
     ...absents.map((p) => Object.assign(el("option", `${p.nom} (${p.proprietaire ?? "PNJ"})`), { value: p.id })),
@@ -948,6 +965,9 @@ $("brouillard-actif").addEventListener("change", () =>
   demander(EVENEMENTS.BROUILLARD_ACTIF, { actif: $("brouillard-actif").checked }),
 );
 $("bouton-placer-tous").addEventListener("click", () => demander(EVENEMENTS.PIONS_PLACER_TOUS, {}));
+$("bouton-creer-butin").addEventListener("click", () =>
+  demander(EVENEMENTS.BUTIN_CREER, { nom: $("nom-butin").value.trim() || "Coffre", genre: $("genre-butin").value }),
+);
 $("bouton-placer").addEventListener("click", () => {
   if ($("choix-pion").value) demander(EVENEMENTS.PION_PLACER, { idPersonnage: $("choix-pion").value });
 });
