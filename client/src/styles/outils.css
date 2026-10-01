@@ -213,3 +213,664 @@
   color: var(--texte-gris);
   font-size: 12px;
 }
+
+/* =============================================================================
+   SPRINT 10 : outils du MJ dans l'interface de jeu ("God mode")
+   ============================================================================= */
+
+/* --- Barre d'outils du MJ : panneau vertical, bord droit, repliable -------------------- */
+.barre-mj {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 168px;
+  padding: 8px 8px 10px;
+  border-radius: 6px 0 0 6px;
+}
+.barre-mj__entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px 6px;
+  border-bottom: 1px solid var(--metal-sombre);
+  font-size: 16px;
+}
+.barre-mj__replier {
+  border: 0;
+  background: none;
+  color: var(--or);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.barre-mj__outil {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--texte);
+  font-family: var(--police-ui);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.barre-mj__outil:hover {
+  border-color: var(--metal-sombre);
+  background: rgba(255, 209, 0, 0.08);
+  color: var(--or);
+}
+.barre-mj__outil--actif {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.barre-mj__symbole {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #4a4a55, #1a1a20);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-size: 20px;
+  text-shadow: var(--ombre-texte);
+}
+/* Repliee : un simple onglet "MJ" colle au bord */
+.barre-mj--repliee {
+  width: auto;
+  padding: 18px 8px;
+  border: 0;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  writing-mode: vertical-rl;
+  cursor: pointer;
+}
+
+/* --- Bouton MJ sur le bord de la minicarte --------------------------------------------- */
+.minicarte__bouton-mj {
+  position: absolute;
+  left: -6px;
+  bottom: 10px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a3a44, #0c0c10);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  cursor: pointer;
+}
+.minicarte__bouton-mj svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.minicarte__bouton-mj:hover,
+.minicarte__bouton-mj--actif {
+  filter: brightness(1.4);
+  box-shadow: var(--bordure-or), 0 0 12px rgba(255, 209, 0, 0.6);
+}
+.outils-carte__rayon {
+  align-items: center;
+  gap: 8px;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.outils-carte__rayon input {
+  flex: 1;
+  accent-color: var(--or);
+}
+
+/* La carte, survolee par un monstre en cours de glisser : liseré dore */
+.monde__depot {
+  outline: 3px solid rgba(255, 209, 0, 0.6);
+  outline-offset: -3px;
+}
+
+/* --- Bestiaire (facon "Collections" de WoW) ---------------------------------------------- */
+.bestiaire {
+  width: 900px;
+}
+.bestiaire__barre {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.bestiaire__barre .champ {
+  flex: 1;
+}
+.bestiaire__option {
+  flex: none;
+  color: var(--texte-doux);
+}
+.bestiaire__corps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  height: 500px;
+}
+.bestiaire__liste {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: var(--relief-creux);
+}
+.carte-monstre {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(40, 40, 48, 0.9), rgba(16, 16, 20, 0.9));
+  cursor: grab;
+  user-select: none;
+}
+.carte-monstre:hover,
+.carte-monstre--choisie {
+  border-color: var(--or-bordure);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.3);
+}
+.carte-monstre__icone {
+  --taille-case: 50px;
+}
+.carte-monstre__texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.carte-monstre__nom {
+  overflow: hidden;
+  color: var(--or);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.carte-monstre__detail {
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.bestiaire__detail {
+  overflow-y: auto;
+  border-radius: 4px;
+  background: var(--texture-parchemin);
+  box-shadow: inset 0 0 26px rgba(95, 62, 20, 0.6);
+  color: #000;
+}
+.bestiaire__fiche {
+  padding: 16px 20px;
+  font-family: var(--police-texte);
+}
+.bestiaire__nom {
+  margin: 0;
+  color: #6b1b0d;
+  font-family: var(--police-ui);
+  font-size: 22px;
+  font-weight: normal;
+}
+.bestiaire__type {
+  margin: 0 0 10px;
+  font-style: italic;
+}
+.bestiaire__chiffres {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 2px solid #8a2a12;
+  border-bottom: 2px solid #8a2a12;
+}
+.bestiaire__chiffres strong,
+.bestiaire__caracs strong {
+  color: #6b1b0d;
+}
+.bestiaire__caracs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 2px solid #8a2a12;
+  text-align: center;
+  font-size: 14px;
+}
+.bestiaire__caracs div {
+  display: flex;
+  flex-direction: column;
+}
+.bestiaire__rubrique {
+  margin: 12px 0 4px;
+  color: #6b1b0d;
+  font-family: var(--police-ui);
+  font-size: 16px;
+  font-weight: normal;
+  border-bottom: 1px solid #8a2a12;
+}
+.bestiaire__texte {
+  margin: 4px 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.bestiaire__description {
+  margin-top: 12px;
+  font-style: italic;
+}
+.bestiaire__vide {
+  grid-column: 1 / -1;
+  margin: 12px;
+  color: var(--texte-doux);
+}
+.bestiaire__pied {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+.carte-monstre--coffre {
+  width: 300px;
+}
+.bestiaire__astuce,
+.compendium-mj__astuce,
+.carte-mj__astuce {
+  margin: 0;
+  color: var(--texte-gris);
+  font-size: 13px;
+}
+
+/* --- Initiative, facon cadres de raid ------------------------------------------------------ */
+.raid {
+  width: 420px;
+}
+.raid__statut {
+  margin: 0 0 8px;
+  color: var(--or);
+  font-size: 16px;
+  text-shadow: var(--ombre-texte);
+}
+.raid__aide {
+  margin: 4px 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.raid__liste,
+.raid__grille {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+.raid__grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.raid__rang {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.raid__numero {
+  color: var(--texte-gris);
+  font-family: var(--police-chiffres);
+  text-align: right;
+}
+/* Une case de raid : fond sombre, nom en haut, barre de vie, initiative a droite */
+.raid__case {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(30, 30, 36, 0.95), rgba(8, 8, 10, 0.95));
+  box-shadow: inset 0 0 0 1px var(--metal-sombre);
+  cursor: pointer;
+}
+.raid__case--actif {
+  box-shadow:
+    inset 0 0 0 2px var(--or),
+    0 0 10px rgba(255, 209, 0, 0.6);
+}
+.raid__case--masque .raid__nom {
+  color: var(--texte-gris);
+  font-style: italic;
+}
+.raid__case--terre {
+  filter: grayscale(1) brightness(0.7);
+}
+.raid__case--choix {
+  grid-template-columns: auto 1fr;
+}
+.raid__case--exclu {
+  opacity: 0.45;
+}
+.raid__infos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.raid__nom {
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.raid__vie {
+  height: 12px;
+}
+.raid__vie .barre__texte {
+  font-size: 10px;
+}
+.raid__vie--inconnue {
+  border-radius: 2px;
+  background: repeating-linear-gradient(45deg, #222 0 6px, #2c2c33 6px 12px);
+}
+.raid__init {
+  min-width: 32px;
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 18px;
+  text-align: center;
+}
+.raid__init--modifiable {
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  cursor: text;
+}
+.raid__init--modifiable:hover {
+  background: rgba(255, 209, 0, 0.15);
+}
+.raid__init-champ {
+  width: 56px;
+  padding: 2px 4px;
+}
+.raid__outils {
+  display: flex;
+  gap: 2px;
+}
+.raid__outil {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte-doux);
+  font-size: 11px;
+  cursor: pointer;
+}
+.raid__outil:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.raid__outil:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.raid__outil--retirer:hover:not(:disabled) {
+  border-color: #c41f1f;
+  color: #ff6a6a;
+}
+.raid__actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.raid__lancer {
+  display: block;
+  margin: 12px auto 0;
+}
+.raid__suivant {
+  min-width: 150px;
+}
+.raid__ajout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.raid__puce {
+  padding: 2px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte);
+  font-size: 12px;
+  cursor: pointer;
+}
+.raid__puce:hover {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+
+/* --- Fenetre "Carte" du MJ ------------------------------------------------------------- */
+.carte-mj {
+  width: 640px;
+}
+.carte-mj__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--metal-sombre);
+}
+.carte-mj__section:last-child {
+  border-bottom: 0;
+}
+.carte-mj__titre {
+  margin: 0;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  font-weight: normal;
+}
+.carte-mj__vignettes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.carte-mj__vignette {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte-doux);
+  font-size: 11px;
+  cursor: pointer;
+}
+.carte-mj__vignette img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.carte-mj__vignette span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.carte-mj__vide {
+  display: grid;
+  place-items: center;
+  height: 80px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(0deg, #555 0 1px, #777 1px 20px), #777;
+  color: #fff;
+}
+.carte-mj__vignette--choisie {
+  border-color: var(--or);
+  box-shadow: 0 0 10px rgba(255, 209, 0, 0.5);
+  color: var(--or);
+}
+.carte-mj__ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.carte-mj__reglage {
+  display: grid;
+  grid-template-columns: 150px 1fr 80px;
+  align-items: center;
+  gap: 10px;
+  color: var(--texte-doux);
+  font-size: 14px;
+}
+.carte-mj__reglage input[type="range"] {
+  accent-color: var(--or);
+}
+.carte-mj__nombre {
+  padding: 3px 6px;
+}
+.carte-mj__case {
+  color: var(--texte-doux);
+}
+
+/* --- Compendium du MJ --------------------------------------------------------------- */
+.compendium-mj {
+  width: 640px;
+}
+.compendium-mj__barre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.compendium-mj__barre .champ {
+  flex: 1;
+}
+.compendium-mj__onglets {
+  display: flex;
+  gap: 4px;
+}
+.compendium-mj__cible {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 10px 0;
+  color: var(--texte-doux);
+}
+.compendium-mj__cible label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.compendium-mj__cible select {
+  width: auto;
+}
+.compendium-mj__quantite {
+  width: 70px;
+}
+.compendium-mj__coffre {
+  color: var(--or);
+}
+.compendium-mj__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 440px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: var(--relief-creux);
+}
+.compendium-mj__ligne {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.compendium-mj__ligne:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.compendium-mj__icone {
+  --taille-case: 40px;
+}
+.compendium-mj__aura {
+  width: 32px;
+  height: 32px;
+  margin: 4px;
+}
+.compendium-mj__nom {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compendium-mj__nom small {
+  color: var(--texte-gris);
+  font-size: 12px;
+}
+.compendium-mj__action {
+  padding: 3px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte);
+  font-family: var(--police-ui);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.compendium-mj__action:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.compendium-mj__vide {
+  color: var(--texte-doux);
+}
+
+/* --- Menu MJ : ressources ; fenetre de butin : supprimer ------------------------------- */
+.menu-mj__ressource {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, auto);
+  align-items: center;
+  gap: 4px;
+  color: var(--texte-doux);
+}
+.butin__supprimer {
+  padding: 2px 6px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: none;
+  color: #ff6a6a;
+  font-size: 12px;
+  cursor: pointer;
+}

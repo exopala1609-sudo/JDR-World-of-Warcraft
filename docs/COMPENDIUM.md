@@ -1,6 +1,6 @@
 # Ecrire son compendium
 
-Le compendium est la bibliotheque du MJ : objets, sorts et auras. Ce sont de
+Le compendium est la bibliotheque du MJ : objets, sorts, auras et monstres. Ce sont de
 simples fichiers texte au format JSON, ranges dans le dossier `compendium/` de
 ton dossier cloud (`VTT_ASSETS`). Tu peux les ouvrir avec le Bloc-notes.
 
@@ -8,7 +8,7 @@ ton dossier cloud (`VTT_ASSETS`). Tu peux les ouvrir avec le Bloc-notes.
   Range comme tu veux : `armes.json`, `sorts/mage.json`...
 - Au tout premier lancement, trois fichiers `exemple-*.json` y sont deposes
   (donnees de test). Tu peux les modifier, les copier ou les supprimer.
-- Apres une modification : bouton **Recharger le compendium** (inutile de
+- Apres une modification : bouton **Recharger** de la barre MJ (inutile de
   relancer le serveur). Une erreur de saisie est signalee avec le fichier, la
   position et la raison ; les autres entrees restent utilisables.
 
@@ -18,10 +18,11 @@ ton dossier cloud (`VTT_ASSETS`). Tu peux les ouvrir avec le Bloc-notes.
 {
   "objets": [ ... ],
   "sorts": [ ... ],
-  "etats": [ ... ]
+  "etats": [ ... ],
+  "monstres": [ ... ]
 }
 ```
-Les trois listes sont facultatives. Attention aux virgules : il en faut une
+Les quatre listes sont facultatives. Attention aux virgules : il en faut une
 entre deux entrees (une virgule en trop apres la derniere est toleree).
 Les lignes qui commencent par `//` sont des commentaires, ignores par le jeu.
 
@@ -144,6 +145,42 @@ existent deja. Ajoute ici tes propres auras :
 | `nature` | oui | `buff` (benefique) ou `debuff` (nefaste) |
 | `icone` | non | nom d'un fichier du dossier `icones/`. Par defaut : l'`id` |
 | `dureeParDefaut` | non | en rounds ; sans ce champ, l'aura dure jusqu'a ce qu'on la retire |
+
+## Monstres (le Bestiaire)
+
+Dans le jeu, le MJ ouvre le **Bestiaire** (barre MJ) et **glisse** un monstre
+sur la carte : une fiche de PNJ est fabriquee d'apres le modele, et son pion
+est pose la ou on l'a lache, cache aux joueurs (clic droit > « Reveler »).
+Le fichier `exemple-bestiaire.json` (commente) montre tous les champs.
+
+```json
+{
+  "id": "gnoll",
+  "nom": "Gnoll",
+  "type": "Humanoide (gnoll)",
+  "puissance": "FP 1/2",
+  "pv": "5d8",
+  "classeArmure": 15,
+  "caracteristiques": { "force": 14, "dexterite": 12, "constitution": 11, "intelligence": 6, "sagesse": 10, "charisme": 7 },
+  "attaques": [{ "nom": "Lance", "toucher": 4, "degats": "1d6+2", "type": "perforant" }],
+  "butin": [{ "id": "potion-de-soins" }]
+}
+```
+
+| Champ | Obligatoire | Valeurs |
+|---|---|---|
+| `id`, `nom` | oui | plusieurs invocations : « Gnoll », « Gnoll 2 »... |
+| `pv` | oui | un nombre (`22`) ou une formule tiree a chaque invocation (`"5d8"`) |
+| `classeArmure` | oui | 1 a 40 |
+| `type`, `puissance`, `vitesse`, `description` | non | textes libres (affichage) |
+| `niveau` | non | 1 par defaut (bonus de maitrise) |
+| `caracteristiques` | non | 10 pour chaque caracteristique absente |
+| `attaques` | non | `nom`, `toucher`, `degats` (formule), `type` : affichees dans le bestiaire |
+| `butin` | non | objets du compendium (`id`, `quantite`) trouves sur son cadavre |
+| `icone` | non | image du dossier `icones/` (par defaut : l'`id`) |
+
+Si ton compendium ne contient encore aucun monstre, le serveur y depose
+`exemple-bestiaire.json` au demarrage (sans toucher a tes autres fichiers).
 
 ## Les icones et images
 

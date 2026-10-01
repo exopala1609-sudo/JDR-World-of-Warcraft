@@ -4,7 +4,9 @@ Ton PC est le serveur, et il ecoute sur le **port 3000**. Tout le probleme est
 de rendre ce port joignable par tes amis. Trois situations.
 
 ## 1. Meme reseau (soiree sur place, meme box)
-Donne l'adresse affichee au demarrage, par exemple `http://192.168.1.30:3000/test/`.
+Donne l'adresse affichee au demarrage, par exemple `http://192.168.1.30:3000/`.
+C'est la MEME adresse pour toi : le Maitre du Jeu entre par le lien discret
+« Connexion Maitre du Jeu » en bas de l'ecran de connexion.
 Rien a installer. Au premier lancement, autorise Node.js dans le pare-feu
 Windows (case **Reseaux prives**).
 
@@ -21,7 +23,7 @@ affiche un encadre :
   ************************************************************
    LIEN A ENVOYER A TES JOUEURS :
 
-     https://mots-au-hasard.trycloudflare.com/test/
+     https://mots-au-hasard.trycloudflare.com/
 
    Deja copie ! Colle-le dans Discord avec Ctrl + V.
   ************************************************************

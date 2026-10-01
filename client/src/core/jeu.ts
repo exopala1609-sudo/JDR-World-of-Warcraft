@@ -14,7 +14,7 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { ButinOuvert, Combat, Jet, LigneJournal, MessageChat, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
+import type { ButinOuvert, Combat, Compendium, Jet, LigneJournal, MessageChat, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
 import { audio } from "./audio";
 import { decrireCause, decrireCombat, decrireDes, decrireJet } from "./journal";
 
@@ -35,15 +35,39 @@ export type EtatJeu = {
   presence: { pseudo: string; role: string }[];
   journal: LigneJournal[];
   selection: string | null; // personnage cible (clic sur un cadre de groupe)
-  fenetres: { sacs: boolean; personnage: boolean; grimoire: boolean; quetes: boolean };
+  // Fenetres ouvertes. Les quatre dernieres sont des outils du MJ (jamais affichees a un joueur).
+  fenetres: {
+    sacs: boolean;
+    personnage: boolean;
+    grimoire: boolean;
+    quetes: boolean;
+    initiative: boolean;
+    bestiaire: boolean;
+    compendium: boolean;
+    carteMJ: boolean;
+  };
   quetes: Quete[]; // le journal de quetes du groupe
   jet: Jet | null; // la fenetre de resolution ouverte
   annonce: { id: number; titre: string; texte: string } | null; // "Nouvelle quete !" au centre de l'ecran
   butin: ButinOuvert | null; // la fenetre de butin ouverte (coffre, cadavre)
   menu: { idPersonnage: string; x: number; y: number } | null; // menu contextuel du MJ (clic droit)
   avis: string | null; // message affiche sur l'ecran de connexion (ex. expulsion)
+  compendium: Compendium | null; // MJ : objets, sorts, auras, monstres (charge a la demande)
+  invocationCachee: boolean; // MJ : un monstre pose depuis le Bestiaire arrive cache aux joueurs
+  rayonPinceau: number; // MJ : taille de la gomme / du pinceau de brouillard
   outil: OutilCarte; // ce que fait un clic gauche sur la carte
   couleurTrace: string | null; // null = sa propre couleur
+};
+
+export const FENETRES_FERMEES: EtatJeu["fenetres"] = {
+  sacs: false,
+  personnage: false,
+  grimoire: false,
+  quetes: false,
+  initiative: false,
+  bestiaire: false,
+  compendium: false,
+  carteMJ: false,
 };
 
 const ETAT_INITIAL: EtatJeu = {
@@ -59,13 +83,16 @@ const ETAT_INITIAL: EtatJeu = {
   presence: [],
   journal: [],
   selection: null,
-  fenetres: { sacs: false, personnage: false, grimoire: false, quetes: false },
+  fenetres: FENETRES_FERMEES,
   quetes: [],
   jet: null,
   annonce: null,
   butin: null,
   menu: null,
   avis: null,
+  compendium: null,
+  invocationCachee: true,
+  rayonPinceau: 60,
   outil: "deplacer",
   couleurTrace: null,
 };
@@ -79,6 +106,7 @@ class Jeu {
   private abonnes = new Set<() => void>();
   private ecouteursCarte = new Set<EcouteurCarte>();
   private compteurJournal = 0;
+  private jeton: string | null = null; // le "badge" de cette session (envoye au serveur, verifie par lui)
   socket: Socket | null = null;
   // Traces tactiques de la table : gardees hors du magasin (pas besoin de
   // redessiner l'interface), mais memorisees pour la carte qui s'ouvre.
@@ -163,6 +191,17 @@ class Jeu {
     if (r.ok || r.erreur === "Ce jet a deja ete valide.") this.modifier({ jet: null });
   }
 
+  // --- Outils du MJ ------------------------------------------------------------
+  /** Le compendium du MJ (refuse par le serveur a un joueur). Garde en memoire. */
+  async chargerCompendium(forcer = false) {
+    if (this.etat.compendium && !forcer) return;
+    const r = await this.demander(EVENEMENTS.COMPENDIUM_LISTER);
+    if (r.ok) {
+      const { ok: _ok, ...compendium } = r;
+      this.modifier({ compendium: compendium as unknown as Compendium });
+    }
+  }
+
   // --- Discussion -------------------------------------------------------------
   /** Dire / groupe : a toute la table. Murmure : au seul destinataire (le serveur trie). */
   envoyerMessage(canal: MessageChat["canal"], texte: string, destinataire?: string) {
@@ -217,6 +256,7 @@ class Jeu {
 
   /** Nom affiche d'une classe ou d'une race (celui du referentiel ; a defaut, l'identifiant). */
   nomClasse(id: string) {
+    if (id === "monstre") return "Monstre"; // PNJ invoque depuis le bestiaire
     return this.etat.referentiel?.classes.find((c) => c.id === id)?.nom ?? id;
   }
   nomRace(id: string | null) {
@@ -382,7 +422,24 @@ class Jeu {
     this.journaliser(`Bienvenue a la table "${(r.table as Table).nom}".`);
   }
 
+  /** MJ : televerse une image de carte (ecrite par le serveur dans cartes/ du cloud). */
+  async televerserCarte(fichier: File): Promise<{ fichier?: string; erreur?: string }> {
+    try {
+      const reponse = await fetch(`/api/cartes?nom=${encodeURIComponent(fichier.name)}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${this.jeton}`, "Content-Type": "application/octet-stream" },
+        body: fichier,
+      });
+      const donnees = await reponse.json().catch(() => ({ erreur: "Reponse illisible du serveur." }));
+      if (!reponse.ok) this.journaliser(donnees.erreur ?? "Televersement refuse.", "erreur");
+      return reponse.ok ? donnees : { erreur: donnees.erreur ?? "Televersement refuse." };
+    } catch {
+      return { erreur: "Serveur injoignable." };
+    }
+  }
+
   private demarrer(jeton: string, profil: Profil, idTable?: string) {
+    this.jeton = jeton;
     this.memoriser({ jeton, profil });
     this.modifier({ profil });
     const socket = io({ auth: { jeton } });
@@ -406,6 +463,12 @@ class Jeu {
     });
 
     socket.on(EVENEMENTS.TABLES_LISTE, ({ tables }) => this.modifier({ tables }));
+    // MJ : le compendium a ete recharge (fichiers modifies) -> on relit.
+    socket.on(EVENEMENTS.COMPENDIUM_MAJ, ({ rapport }) => {
+      if (this.etat.compendium) this.chargerCompendium(true);
+      this.journaliser(`Compendium recharge : ${rapport.objets} objets, ${rapport.sorts} sorts, ${rapport.monstres ?? 0} monstres.`);
+      for (const e of rapport.erreurs ?? []) this.journaliser(`compendium/${e.fichier} > ${e.emplacement} : ${e.message}`, "erreur");
+    });
     // Le MJ a recharge les fichiers du referentiel : l'ecran de creation se met a jour.
     socket.on(EVENEMENTS.REFERENTIEL_MAJ, ({ referentiel }) => this.modifier({ referentiel }));
     socket.on(EVENEMENTS.TABLE_PRESENCE, ({ connectes }) => this.modifier({ presence: connectes }));

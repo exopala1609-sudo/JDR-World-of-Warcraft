@@ -11,13 +11,14 @@ import { copyFileSync, existsSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { ETATS_DE_BASE } from "../../../shared/etats.js";
 import { lireJsonCommente, listerFichiersJson as fichiersJson } from "../fichiers.js";
-import { SchemaDefinitionEtat, SchemaEntreeObjet, SchemaEntreeSort } from "../modeles/compendium.js";
+import { SchemaDefinitionEtat, SchemaEntreeMonstre, SchemaEntreeObjet, SchemaEntreeSort } from "../modeles/compendium.js";
 import { nouvelId } from "../modeles/identifiants.js";
 
 const SECTIONS = {
   objets: SchemaEntreeObjet,
   sorts: SchemaEntreeSort,
   etats: SchemaDefinitionEtat,
+  monstres: SchemaEntreeMonstre, // le bestiaire du MJ
 };
 
 /**
@@ -36,13 +37,26 @@ export function installerExemples(dossierCompendium, dossierExemples) {
   return copies;
 }
 
+/**
+ * Un fichier d'exemple ajoute par une mise a jour (ex. le bestiaire) : on le
+ * depose dans un compendium DEJA rempli, s'il n'y est pas encore. Rien n'est
+ * jamais ecrase.
+ */
+export function installerFichierExemple(dossierCompendium, cheminExemple) {
+  const destination = join(dossierCompendium, basename(cheminExemple));
+  if (!existsSync(dossierCompendium) || !existsSync(cheminExemple) || existsSync(destination)) return false;
+  copyFileSync(cheminExemple, destination);
+  return true;
+}
+
 export function creerCompendium(dossier) {
   let objets = new Map();
   let sorts = new Map();
   let etats = new Map();
+  let monstres = new Map();
 
   function charger() {
-    const nouveaux = { objets: new Map(), sorts: new Map(), etats: new Map() };
+    const nouveaux = { objets: new Map(), sorts: new Map(), etats: new Map(), monstres: new Map() };
     const erreurs = [];
     const signaler = (fichier, emplacement, message) =>
       erreurs.push({ fichier: relative(dossier, fichier), emplacement, message });
@@ -56,7 +70,7 @@ export function creerCompendium(dossier) {
         continue;
       }
       if (!contenu || typeof contenu !== "object" || Array.isArray(contenu)) {
-        signaler(fichier, "fichier", 'Le fichier doit contenir { "objets": [...], "sorts": [...], "etats": [...] }.');
+        signaler(fichier, "fichier", 'Le fichier doit contenir { "objets": [...], "sorts": [...], "etats": [...], "monstres": [...] }.');
         continue;
       }
 
@@ -91,8 +105,8 @@ export function creerCompendium(dossier) {
     }
 
     // On ne remplace l'ancien contenu qu'une fois la lecture terminee.
-    ({ objets, sorts, etats } = nouveaux);
-    return { objets: objets.size, sorts: sorts.size, etats: etats.size, erreurs };
+    ({ objets, sorts, etats, monstres } = nouveaux);
+    return { objets: objets.size, sorts: sorts.size, etats: etats.size, monstres: monstres.size, erreurs };
   }
 
   /** Etats disponibles : les conditions officielles + les auras du compendium. */
@@ -108,7 +122,9 @@ export function creerCompendium(dossier) {
       objets: [...objets.values()],
       sorts: [...sorts.values()],
       etats: toutesLesDefinitionsEtat(),
+      monstres: [...monstres.values()],
     }),
+    obtenirMonstre: (id) => monstres.get(id) ?? null,
     obtenirObjet: (id) => objets.get(id) ?? null,
     obtenirSort: (id) => sorts.get(id) ?? null,
     obtenirDefinitionEtat: (cle) => toutesLesDefinitionsEtat().find((d) => d.cle === cle) ?? null,

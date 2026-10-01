@@ -17,20 +17,19 @@ entre ton PC fixe et ton portable : voir [docs/CONFIGURATION.md](docs/CONFIGURAT
 
 ## Lancer une partie
 ```bash
-npm run dev      # developpement : interface WoW sur http://localhost:5173
+npm run partie   # prepare l'interface, demarre, affiche (et copie) le lien pour les joueurs
 ```
-```bash
-npm run partie   # joueurs a distance : affiche (et copie) le lien a leur envoyer
-```
-Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
+Puis ouvre **http://localhost:3000/** : l'ecran de connexion World of Warcraft.
+C'est la porte UNIQUE, pour les joueurs comme pour toi : en bas de l'ecran, le
+lien discret **« Connexion Maitre du Jeu »** demande ton mot de passe. Tu arrives
+alors sur la meme interface que les joueurs, avec tes outils en plus (barre
+**MJ** au bord droit de l'ecran, clic droit sur un pion ou un cadre, bouton
+carte sur la minicarte).
 
-## Banc de test
-Une page brute (sans mise en forme) permet de tout verifier : connexion MJ /
-joueur, tables, personnages, points de vie, ressources, repos, compendium,
-inventaire, etats, combat, et la carte (grille, pions, brouillard), en temps reel.
-```
-http://localhost:3000/test/
-```
+Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
+Pour developper : `npm run dev` (interface sur http://localhost:5173 ; le port
+3000 y renvoie tout seul).
+
 Les tests automatiques des regles se lancent avec :
 ```bash
 npm test

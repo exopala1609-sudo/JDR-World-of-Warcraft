@@ -26,6 +26,7 @@ import { pionVisibleParLesJoueurs } from "../regles/scene.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import * as combat from "./combat.js";
 import * as compendium from "./compendium.js";
+import * as bestiaire from "./bestiaire.js";
 import * as butins from "./butins.js";
 import * as chat from "./chat.js";
 import * as des from "./des.js";
@@ -41,7 +42,7 @@ import * as sons from "./sons.js";
 import * as tables from "./tables.js";
 import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs, bestiaire];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;

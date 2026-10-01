@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   ajouterParticipant,
   creerCombat,
+  deplacerParticipant,
   fixerInitiative,
   retirerParticipant,
   tourPrecedent,
@@ -55,6 +56,17 @@ test("arrivee et depart en plein combat : le combattant actif ne change pas", ()
   assert.equal(combat.participants[combat.indexActif].nom, "B");
   assert.equal(combat.participants[0].nom, "C");
   assert.equal(retirerParticipant(creerCombat("t-0123456789", [a]), a.id), null);
+});
+
+test("le MJ reordonne a la main : l'ordre tient meme apres un nouveau tri", () => {
+  const a = participant("A", 20), b = participant("B", 15), c = participant("C", 10);
+  let combat = { ...creerCombat("t-0123456789", [a, b, c]), indexActif: 1 }; // c'est a B
+  combat = deplacerParticipant(combat, c.id, -1); // C passe devant B
+  assert.deepEqual(combat.participants.map((p) => p.nom), ["A", "C", "B"]);
+  assert.equal(combat.participants[combat.indexActif].nom, "B"); // le tour ne change pas de main
+  combat = fixerInitiative(combat, a.id, 1); // un nouveau tri ne defait pas l'ordre manuel
+  assert.deepEqual(combat.participants.map((p) => p.nom), ["C", "B", "A"]);
+  assert.equal(deplacerParticipant(combat, combat.participants[0].id, -1), combat); // deja en tete
 });
 
 const perso = () => ({ etats: [] });

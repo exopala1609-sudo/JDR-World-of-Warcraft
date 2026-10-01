@@ -33,23 +33,20 @@
   color: var(--or);
   font-size: 15px;
 }
-.accueil__roles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.accueil__role {
-  padding: 10px;
-  border: 1px solid var(--metal-sombre);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.5);
-  color: var(--texte-doux);
+/* Lien discret vers la connexion du Maitre du Jeu */
+.accueil__lien-mj {
+  align-self: center;
+  padding: 2px 6px;
+  border: 0;
+  background: none;
+  color: var(--texte-gris);
+  font-family: var(--police-ui);
+  font-size: 13px;
   cursor: pointer;
 }
-.accueil__role--actif {
-  border-color: var(--or-bordure);
+.accueil__lien-mj:hover {
   color: var(--or);
-  box-shadow: 0 0 10px rgba(255, 209, 0, 0.35);
+  text-decoration: underline;
 }
 .accueil__erreur {
   min-height: 20px;

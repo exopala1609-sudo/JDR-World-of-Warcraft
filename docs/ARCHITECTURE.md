@@ -79,7 +79,6 @@ JDR-World-of-Warcraft/
 │   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
 │   │       ├── tactique.js   Pings et traces tactiques (joueurs et MJ)
 │   │       └── des.js
-│   ├── public/test/          Banc de test brut (HTML + JS, sans CSS)
 │   └── test/                 Tests automatiques (npm test)
 │
 ├── exemples/compendium/      Donnees de test, copiees dans un compendium vide
@@ -91,6 +90,8 @@ JDR-World-of-Warcraft/
 │       ├── core/             Magasin d'etat (jeu.ts), liaison serveur, adresses des images
 │       ├── ui/               Briques : surface 1440p, barre, fenetre, infobulle
 │       ├── jeu/              Carte, cadres du groupe, minicarte, barre d'actions, sacs, fiche...
+│       │   └── mj/           Outils du MJ (charges SEULEMENT chez le MJ) : barre MJ, bestiaire,
+│       │                     compendium, fenetre carte, menu clic droit
 │       └── ecrans/           Connexion, choix de la table, creation du personnage, ecran de jeu
 ├── scripts/                  Utilitaires (creation du .env, detection du dossier cloud, verification du referentiel)
 └── docs/                     Documentation
@@ -387,7 +388,7 @@ doubles ; 1 naturel : rate.
 ### Journal de quetes (L)
 
 Le MJ ajoute une quete (fenetre L, bouton « + Nouvelle quete », ou
-`/quete Titre | Objectif` dans la discussion, ou la page /test/). Le serveur
+`/quete Titre | Objectif` dans la discussion). Le serveur
 l'enregistre (`quetes.json`, dans le dossier de la table sous `parties/`) et diffuse `quetes:etat` a toute la
 table : le journal se met a jour et « Nouvelle quete » s'affiche au centre de
 l'ecran. Les joueurs ne peuvent que lire.
@@ -470,4 +471,62 @@ temporaires), poser / retirer une alteration, cacher / reveler le pion,
 retirer de la carte, expulser / readmettre le joueur. Expulser : deconnexion
 immediate, jetons annules, table fermee a ce pseudo jusqu'a readmission ou
 redemarrage du serveur.
+
+## Une seule interface, deux roles (sprint 10)
+
+### Le point d'entree unique
+
+`http://localhost:3000/` (et toute adresse qui n'est ni `/api`, ni `/medias`,
+ni `/socket.io`) renvoie l'interface World of Warcraft, qui s'ouvre sur
+l'ecran de connexion. L'ancienne page blanche `/test/` n'existe plus (un ancien
+lien redirige vers `/`). Si l'interface n'est pas compilee, le serveur affiche
+une page sombre « lance npm run partie » ; en developpement (`npm run dev`),
+il renvoie vers Vite (port 5173). Le MJ entre par le lien discret « Connexion
+Maitre du Jeu » de l'ecran de connexion.
+
+### Roles : qui verifie quoi ?
+
+**Regle d'or : l'interface ne protege rien, le serveur protege tout.** Un
+joueur peut modifier n'importe quoi dans son navigateur (F12) : afficher les
+boutons MJ, changer `role: "joueur"` en `"mj"` dans la memoire de la page...
+Cela ne lui donne AUCUN pouvoir, pour trois raisons :
+
+1. **Le role vit sur le serveur.** A la connexion, le serveur verifie le mot
+   de passe MJ (comparaison a temps constant, 5 essais puis 15 minutes
+   d'attente) et remet un jeton aleatoire de 32 octets. Le role est attache
+   a ce jeton DANS LA MEMOIRE DU SERVEUR ; a chaque connexion temps reel, il
+   est relu la (`socket.data.profil`). Le navigateur ne fait que montrer le
+   jeton : il ne peut pas « dire » qu'il est MJ.
+2. **Chaque demande MJ est verifiee.** Toute action passe par le guichet
+   unique (`ctx.guichet`) et les actions MJ commencent par
+   `ctx.exigerMJ(socket)` : bestiaire, carte, grille, brouillard, pions,
+   combat, compendium, quetes, sons, expulsion, televersement (`/api/cartes`,
+   meme verification par l'en-tete `Authorization`). Le test « roles : un
+   joueur qui debloque l'interface MJ... » envoie 27 demandes MJ depuis un
+   compte joueur : toutes sont refusees, et rien ne change cote serveur.
+3. **Les donnees secretes ne partent jamais.** Fiches des PNJ, pions caches,
+   compendium, bestiaire, jets secrets : le serveur ne les envoie qu'au salon
+   du MJ. Meme une interface MJ « debloquee » chez un joueur serait vide.
+
+En plus (confort, pas securite) : le code des outils MJ est dans un fichier a
+part (`client/src/jeu/mj/`), charge a la demande (`React.lazy`) seulement
+quand le serveur a confirme le role MJ. Le navigateur d'un joueur ne le
+telecharge meme pas.
+
+### Les outils du MJ (dans l'interface WoW)
+
+| Outil | Ou | Ce qu'il fait |
+|---|---|---|
+| Barre MJ | bord droit, repliable | ouvre les outils, repos long de la table, recharger les fichiers |
+| Bestiaire | barre MJ | monstres du compendium ; glisser sur la carte = PNJ + pion (cache) ; coffre a glisser |
+| Compendium | barre MJ | donner un objet, apprendre un sort, poser une aura ; remplir le coffre ouvert |
+| Initiative | barre MJ, touche I (tous) | combattants = pions de la carte ; lancer, reordonner (▲ ▼), modifier une valeur, tour suivant / precedent, terminer ; le pion actif pulse sur la carte de tous |
+| Carte | bouton rond de la minicarte | televerser / choisir l'image, regler la grille, brouillard, placer les absents |
+| Pinceau / gomme | outils sous la minicarte | peindre / effacer le brouillard |
+| Menu clic droit | pion ou cadre | PV, ressources, alterations, repos, fiche et sac, combat, cacher / reveler, cadavre, supprimer, expulser |
+
+Le glisser-deposer du Bestiaire reutilise celui des objets (sprint 7) : la
+carte du jeu est simplement une nouvelle « cible » qui accepte les charges
+`bestiaire` et `coffre`, et convertit le point de lacher en coordonnees de
+carte (`moteur.versCarte`).
 

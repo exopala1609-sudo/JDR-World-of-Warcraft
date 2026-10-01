@@ -20,6 +20,8 @@ export function MenuMJ() {
   const pion = useJeu((e) => (e.menu ? e.scene?.pions.find((x) => x.idPersonnage === e.menu!.idPersonnage) : undefined));
   const enLigne = useJeu((e) => Boolean(p?.proprietaire && e.presence.some((c) => c.pseudo.toLocaleLowerCase("fr") === p.proprietaire!.toLocaleLowerCase("fr"))));
   const estMJ = useJeu((e) => e.profil?.role === "mj");
+  const auCombat = useJeu((e) => (e.combat ? (e.menu ? e.combat.participants.some((c) => c.idPersonnage === e.menu!.idPersonnage) : false) : null));
+  const [supprimer, setSupprimer] = useState(false);
   const { largeur, hauteur } = useEchelleInterface();
   const [montant, setMontant] = useState(5);
   const [etat, setEtat] = useState("");
@@ -31,6 +33,7 @@ export function MenuMJ() {
   useEffect(() => {
     if (!menu) return;
     setConfirmer(false);
+    setSupprimer(false);
     const dehors = (e: PointerEvent) => !refMenu.current?.contains(e.target as Node) && fermer();
     const echap = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -138,6 +141,52 @@ export function MenuMJ() {
         </div>
       </section>
 
+      {p.ressources.length > 0 && (
+        <section className="menu-mj__section">
+          <h3 className="menu-mj__titre">Ressources</h3>
+          {p.ressources.map((r) => (
+            <div key={r.cle} className="menu-mj__ressource">
+              <span>
+                {r.nom} {r.actuel} / {r.max}
+              </span>
+              {[-10, -1, 1, 10]
+                .filter((v) => Math.abs(v) === 1 || r.max >= 20)
+                .map((v) => (
+                  <button key={v} type="button" className="menu-mj__retirer" onClick={() => jeu.demander(EVENEMENTS.RESSOURCE_MODIFIER, { idPersonnage: p.id, cle: r.cle, variation: v })}>
+                    {v > 0 ? `+${v}` : v}
+                  </button>
+                ))}
+            </div>
+          ))}
+        </section>
+      )}
+
+      <section className="menu-mj__section">
+        <div className="menu-mj__ligne">
+          <button type="button" className="menu-mj__bouton" onClick={() => jeu.demander(EVENEMENTS.REPOS_COURT, { idPersonnage: p.id, desDeVie: Math.min(1, p.desDeVie.restants) })}>
+            Repos court (1 de de vie)
+          </button>
+          <button type="button" className="menu-mj__bouton" onClick={() => jeu.demander(EVENEMENTS.REPOS_LONG, { idPersonnage: p.id })}>
+            Repos long
+          </button>
+        </div>
+        <button
+          type="button"
+          className="menu-mj__action"
+          onClick={() => {
+            jeu.modifier((e) => ({ selection: p.id, fenetres: { ...e.fenetres, personnage: true, sacs: true } }));
+            fermer();
+          }}
+        >
+          Ouvrir sa fiche et son sac
+        </button>
+        {auCombat === false && (
+          <button type="button" className="menu-mj__action" onClick={() => jeu.demander(EVENEMENTS.COMBAT_AJOUTER, { idPersonnage: p.id })}>
+            Ajouter au combat
+          </button>
+        )}
+      </section>
+
       <section className="menu-mj__section">
         {pion && (
           <>
@@ -159,6 +208,31 @@ export function MenuMJ() {
         {!pion && (
           <button type="button" className="menu-mj__action" onClick={() => jeu.demander(EVENEMENTS.PION_PLACER, { idPersonnage: p.id })}>
             Placer sur la carte
+          </button>
+        )}
+        {!p.proprietaire && pion && (
+          <button
+            type="button"
+            className="menu-mj__action"
+            onClick={() => {
+              jeu.demander(EVENEMENTS.PION_EN_CADAVRE, { idPion: pion.id });
+              fermer();
+            }}
+          >
+            Tue : laisser un cadavre a fouiller
+          </button>
+        )}
+        {!p.proprietaire && (
+          <button
+            type="button"
+            className={`menu-mj__action menu-mj__action--danger${supprimer ? " menu-mj__action--confirmer" : ""}`}
+            onClick={() => {
+              if (!supprimer) return setSupprimer(true);
+              jeu.demander(EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: p.id });
+              fermer();
+            }}
+          >
+            {supprimer ? "Confirmer la suppression ?" : "Supprimer ce PNJ"}
           </button>
         )}
         {p.proprietaire && (

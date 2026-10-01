@@ -101,3 +101,22 @@ export function fixerInitiative(combat, idParticipant, valeur) {
   const participants = combat.participants.map((p) => (p.id === idParticipant ? { ...p, initiative: valeur } : p));
   return retrier(combat, participants);
 }
+
+/**
+ * Le MJ "trie l'ordre des tours" a la main : le combattant monte (sens -1) ou
+ * descend (sens +1) d'une place. On echange les valeurs qui servent au tri
+ * (initiative et departages) avec son voisin : l'ordre reste ainsi le meme
+ * apres tout nouveau tri (ex. initiative modifiee d'un autre combattant).
+ * Le combattant actif reste le meme.
+ */
+export function deplacerParticipant(combat, idParticipant, sens) {
+  const index = combat.participants.findIndex((p) => p.id === idParticipant);
+  if (index === -1) throw new ErreurRegle("Ce combattant n'est pas dans le combat.");
+  const voisin = index + sens;
+  if (voisin < 0 || voisin >= combat.participants.length) return combat; // deja en haut / en bas
+  const a = combat.participants[index];
+  const b = combat.participants[voisin];
+  const cles = ({ initiative, dexterite, departage }) => ({ initiative, dexterite, departage });
+  const participants = combat.participants.map((p) => (p.id === a.id ? { ...a, ...cles(b) } : p.id === b.id ? { ...b, ...cles(a) } : p));
+  return retrier(combat, participants);
+}

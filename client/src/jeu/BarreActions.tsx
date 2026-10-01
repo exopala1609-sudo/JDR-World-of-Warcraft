@@ -55,7 +55,7 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
         jeu.definirRaccourci(p.id, c.index, raccourci);
       } else if (c.origine === "grimoire") {
         jeu.definirRaccourci(p.id, index, { type: "sort", reference: c.sort.source ?? c.sort.id });
-      } else if (c.origine !== "butin") {
+      } else if (c.origine === "sac" || c.origine === "equipement") {
         jeu.definirRaccourci(p.id, index, { type: "objet", reference: referenceObjet(c.objet) });
       }
     },

@@ -47,8 +47,8 @@ Autre dossier que celui du cloud : `VTT_ASSETS_REFERENTIEL=...` dans le `.env`.
    ```
    Tu obtiens la liste des races par faction et des classes, puis
    `[ OK ] Aucune erreur.` ou la liste précise des erreurs.
-4. Si une partie est en cours : outils du MJ (`/test/`) > **Recharger le
-   référentiel**. Les joueurs reçoivent la nouvelle version immédiatement.
+4. Si une partie est en cours : barre d'outils du MJ (bord droit de l'écran)
+   > **Recharger**. Les joueurs reçoivent la nouvelle version immédiatement.
 
 ## Ce que le format accepte
 

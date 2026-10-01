@@ -16,7 +16,7 @@
     "dev:serveur": "node --watch server/src/index.js --dev",
     "dev:client": "npm run dev --workspace client",
     "build": "npm run build --workspace client",
-    "start": "node server/src/index.js",
+    "start": "npm run build && node server/src/index.js",
     "test": "node --test server/test/*.test.js",
     "partie": "npm run build && node server/src/index.js --tunnel"
   },

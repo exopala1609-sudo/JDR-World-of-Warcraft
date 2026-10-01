@@ -75,6 +75,7 @@ export class MoteurCarte {
     this.voirAtravers = true; // le MJ voit la carte sous le brouillard (en grise)
     this.aimanter = true;
     this.selection = null; // pion "cible" (cercle au sol)
+    this.actif = null; // idPersonnage dont c'est le tour (combat) : halo dore qui pulse
     this.geste = null; // geste en cours : glisser un pion, deplacer la vue, peindre
     this.souris = null;
 
@@ -86,7 +87,7 @@ export class MoteurCarte {
     this.brancherEvenements();
     const boucle = () => {
       this.animer();
-      if (this.effets.length) this.sale = true; // une animation est en cours
+      if (this.effets.length || this.actif) this.sale = true; // une animation est en cours
       if (this.sale) {
         this.dessiner();
         this.options.surChangement?.();
@@ -573,11 +574,31 @@ export class MoteurCarte {
     c.stroke();
   }
 
+  /** Combat : le personnage dont c'est le tour (son pion pulse). null hors combat. */
+  definirActif(idPersonnage) {
+    this.actif = idPersonnage ?? null;
+    this.sale = true;
+  }
+
   dessinerPion(pion) {
     const c = this.ctx;
     const { x, y } = this.affichage.get(pion.id) ?? pion;
     const r = this.rayonPion(pion);
     const z = this.vue.zoom;
+
+    // Tour en cours (combat) : un halo dore qui "respire" autour du pion.
+    if (this.actif && this.actif === pion.idPersonnage) {
+      const pulsation = 0.5 + 0.5 * Math.sin(performance.now() / 250);
+      c.save();
+      c.strokeStyle = `rgba(255, 209, 0, ${0.55 + 0.45 * pulsation})`;
+      c.lineWidth = (4 + 3 * pulsation) / z;
+      c.shadowColor = "#ffd100";
+      c.shadowBlur = 12 + 14 * pulsation;
+      c.beginPath();
+      c.arc(x, y, r * (1.35 + 0.08 * pulsation), 0, Math.PI * 2);
+      c.stroke();
+      c.restore();
+    }
 
     // Cercle de ciblage au sol (pion selectionne)
     if (this.selection === pion.id) {

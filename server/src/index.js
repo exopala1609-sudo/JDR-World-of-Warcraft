@@ -9,10 +9,11 @@ import { exigerMJ, routesAcces } from "./auth/routes.js";
 import { creerGestionnaireSessions } from "./auth/sessions.js";
 import { anciennesPartiesLocales, chargerConfig, RACINE } from "./config.js";
 import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers, installerLisezMoi } from "./diagnostic.js";
-import { creerCompendium, installerExemples } from "./donnees/compendium.js";
+import { creerCompendium, installerExemples, installerFichierExemple } from "./donnees/compendium.js";
 import { creerDepot } from "./donnees/depot.js";
 import { creerReferentiel, installerExemplesReferentiel, resumerReferentiel, situerErreur } from "./donnees/referentiel.js";
 import { routesMedias } from "./medias.js";
+import { routesTeleversement } from "./televersement.js";
 import { afficherBanniere, afficherLienDistant } from "./reseau.js";
 import { installerTempsReel } from "./temps-reel/index.js";
 import { copierDansPressePapiers, ouvrirTunnel } from "./tunnel.js";
@@ -57,7 +58,14 @@ const bilan = depot.charger();
 
 // Compendium : lecture de tous les fichiers JSON du dossier.
 const compendium = creerCompendium(config.dossiers.compendium);
-const rapportCompendium = compendium.charger();
+let rapportCompendium = compendium.charger();
+// Mise a jour : un compendium deja rempli, mais sans aucun monstre -> on y
+// ajoute le bestiaire d'exemple (sans toucher aux autres fichiers).
+let bestiaireInstalle = false;
+if (rapportCompendium.monstres === 0) {
+  bestiaireInstalle = installerFichierExemple(config.dossiers.compendium, resolve(RACINE, "exemples", "compendium", "exemple-bestiaire.json"));
+  if (bestiaireInstalle) rapportCompendium = compendium.charger();
+}
 
 // Referentiel : factions, races, classes et regles de creation de personnage.
 const referentiel = creerReferentiel(config.dossiers.referentiel);
@@ -81,6 +89,8 @@ app.use((_requete, reponse, suite) => {
 });
 
 app.use(routesAcces(sessions));
+// MJ : televerser une image de carte (ecrite dans cartes/ du cloud).
+app.use(routesTeleversement(config, sessions));
 
 app.get("/api/session", (_requete, reponse) => {
   reponse.json({ nomDeLaPartie: config.nomDeLaPartie, versionProtocole: VERSION_PROTOCOLE });
@@ -91,30 +101,29 @@ app.get("/api/diagnostic", exigerMJ(sessions), (_requete, reponse) => {
   reponse.json({ racineAssets: config.racineAssets, cloud: config.cloud, dossiers: rapportDossiers });
 });
 
-// Page de test brute du sprint 1 (HTML + JS, aucune compilation necessaire).
-app.use("/test", express.static(resolve(RACINE, "server", "public", "test")));
-// Vocabulaire et regles partages, lisibles par les navigateurs.
-app.use("/partage", express.static(resolve(RACINE, "shared")));
+// L'ancienne page de test blanche (/test/) n'existe plus : TOUT le monde, MJ
+// compris, passe par l'interface World of Warcraft. Un ancien lien y mene.
+app.get(["/test", "/test/*"], (_requete, reponse) => reponse.redirect(301, "/"));
 
 // Medias : servis directement depuis le dossier (cloud) du MJ, sans upload,
 // avec une image de remplacement grise pour tout fichier encore absent.
 app.use(routesMedias(config));
 
-// Interface principale (client compile), sinon un message d'orientation.
+// Une adresse d'API inconnue : une vraie erreur, pas la page du jeu.
+app.use("/api", (_requete, reponse) => reponse.status(404).json({ erreur: "Adresse inconnue." }));
+
+// POINT D'ENTREE UNIQUE : http://localhost:3000/ (et toute autre adresse)
+// renvoie l'interface World of Warcraft, qui s'ouvre sur l'ecran de connexion.
+// Joueurs et MJ y entrent par la meme porte ; seul le role change.
 const CLIENT_COMPILE = resolve(RACINE, "client", "dist");
-if (existsSync(CLIENT_COMPILE)) {
-  app.use(express.static(CLIENT_COMPILE));
-  app.get("*", (_requete, reponse) => reponse.sendFile(resolve(CLIENT_COMPILE, "index.html")));
-} else {
-  app.get("*", (_requete, reponse) => {
-    reponse
-      .type("html")
-      .send(
-        "<p>Interface de jeu non compilee : lance <code>npm run partie</code> (ou <code>npm run build</code>). " +
-          "Outils du MJ : <a href='/test/'>/test/</a></p>",
-      );
-  });
-}
+app.get("*", (requete, reponse, suite) => {
+  if (existsSync(resolve(CLIENT_COMPILE, "index.html"))) return suite();
+  // Developpement (npm run dev) : l'interface est servie par Vite, port 5173.
+  if (modeDev) return reponse.redirect(`${requete.protocol}://${requete.hostname}:5173${requete.originalUrl}`);
+  reponse.status(503).type("html").send(pageNonCompilee());
+});
+app.use(express.static(CLIENT_COMPILE));
+app.get("*", (_requete, reponse) => reponse.sendFile(resolve(CLIENT_COMPILE, "index.html")));
 
 // --- 5. Temps reel ---------------------------------------------------------------
 installerTempsReel(serveurHttp, { depot, sessions, compendium, referentiel, config });
@@ -123,8 +132,7 @@ installerTempsReel(serveurHttp, { depot, sessions, compendium, referentiel, conf
 let libererVerrou = () => {};
 let fermerTunnel = () => {};
 
-// Page d'arrivee des joueurs : l'interface World of Warcraft.
-// (Le MJ garde ses outils sur /test/, accessibles depuis le micro-menu.)
+// Page d'arrivee de TOUS (joueurs et MJ) : l'interface World of Warcraft.
 const CHEMIN_JOUEURS = "/";
 
 serveurHttp.listen(config.port, "0.0.0.0", () => {
@@ -154,8 +162,9 @@ serveurHttp.listen(config.port, "0.0.0.0", () => {
   if (exemplesInstalles.length) console.log(`  Compendium vide : exemples installes (${exemplesInstalles.join(", ")}).`);
   console.log(
     `  Compendium : ${rapportCompendium.objets} objet(s), ${rapportCompendium.sorts} sort(s), ` +
-      `${rapportCompendium.etats} aura(s) personnalisee(s).`,
+      `${rapportCompendium.etats} aura(s) personnalisee(s), ${rapportCompendium.monstres} monstre(s).`,
   );
+  if (bestiaireInstalle) console.log("  Bestiaire d'exemple ajoute au compendium : exemple-bestiaire.json.");
   for (const { fichier, emplacement, message } of rapportCompendium.erreurs) {
     console.log(`  !! compendium/${fichier} > ${emplacement} : ${message}`);
   }
@@ -190,6 +199,17 @@ serveurHttp.on("error", (erreur) => {
   }
   throw erreur;
 });
+
+/** Interface pas encore compilee : une page sombre qui dit quoi faire (pas une page blanche). */
+function pageNonCompilee() {
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>VTT</title></head>
+<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#0e0e11;color:#c8c8c8;font-family:Georgia,serif">
+<div style="padding:32px 40px;border:2px solid #c9a441;border-radius:8px;background:#17171b;max-width:560px">
+<h1 style="margin:0 0 12px;color:#ffd100;font-weight:normal">L'interface n'est pas encore prete</h1>
+<p>Arrete le serveur (Ctrl + C), puis lance :</p>
+<pre style="color:#fff;background:#000;padding:10px 14px;border-radius:4px">npm run partie</pre>
+<p>Cette commande prepare l'interface World of Warcraft, puis demarre la partie.</p></div></body></html>`;
+}
 
 // --- 7. Arret propre (Ctrl + C) : rien ne doit se perdre ----------------------------
 function arreter() {

@@ -29,7 +29,8 @@
 //     c'est de toute facon le serveur qui deplace reellement l'objet.
 import { useEffect, useSyncExternalStore } from "react";
 import { iconeObjet } from "@/core/medias";
-import type { Objet, SortConnu } from "@/core/types";
+import type { Monstre, Objet, SortConnu } from "@/core/types";
+import { urlIcone } from "@/core/medias";
 import { cacherInfobulle, versScene } from "./InfoBulle";
 
 /** Ce que l'on transporte, et d'ou cela vient. */
@@ -38,16 +39,22 @@ export type Charge =
   | { origine: "equipement"; objet: Objet; idPersonnage: string; emplacement: string }
   | { origine: "butin"; objet: Objet; idButin: string }
   | { origine: "grimoire"; sort: SortConnu; idPersonnage: string } // un sort tire du grimoire (P)
+  | { origine: "bestiaire"; monstre: Monstre } // MJ : un monstre a poser sur la carte
+  | { origine: "coffre" } // MJ : un coffre vide a poser sur la carte
   | { origine: "barre"; image: string; rarete?: string; idPersonnage: string; index: number };
 
 /** L'image du fantome : l'icone de l'objet ou du sort transporte. */
 function apparence(charge: Charge): { image: string; rarete?: string; quantite: number } {
   if (charge.origine === "grimoire") return { image: iconeObjet(charge.sort), quantite: 0 };
+  if (charge.origine === "bestiaire") return { image: urlIcone(charge.monstre.icone ?? charge.monstre.id), quantite: 0 };
+  if (charge.origine === "coffre") return { image: urlIcone("coffre"), rarete: "classique", quantite: 0 };
   if (charge.origine === "barre") return { image: charge.image, rarete: charge.rarete, quantite: 0 };
   return { image: iconeObjet(charge.objet), rarete: charge.objet.rarete, quantite: charge.objet.quantite };
 }
 
-type Cible = { accepte: (charge: Charge) => boolean; deposer: (charge: Charge) => void };
+/** Ou l'on a lache (coordonnees de l'ecran) : la carte en deduit la case visee. */
+export type PointLacher = { clientX: number; clientY: number };
+type Cible = { accepte: (charge: Charge) => boolean; deposer: (charge: Charge, point: PointLacher) => void };
 type EtatGlisser = { charge: Charge; x: number; y: number; cible: string | null; refusee: boolean } | null;
 
 const SEUIL_PX = 5;
@@ -118,7 +125,7 @@ export function preparerGlisser(e: React.PointerEvent, charge: Charge, surLacher
     setTimeout(() => window.removeEventListener("click", avalerClic, { capture: true }), 0);
     if (!deposer || !ev) return;
     const cible = cibleSous(ev.clientX, ev.clientY, charge);
-    if (cible?.accepte) cibles.get(cible.id)!.deposer(charge);
+    if (cible?.accepte) cibles.get(cible.id)!.deposer(charge, { clientX: ev.clientX, clientY: ev.clientY });
     else if (!cible) surLacherDehors?.();
   };
   const relacher = (ev: PointerEvent) => terminer(ev, true);

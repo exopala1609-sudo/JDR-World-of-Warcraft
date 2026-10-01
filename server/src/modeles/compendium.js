@@ -128,3 +128,43 @@ export const SchemaDefinitionEtat = z.strictObject({
   description: z.string().max(1000).default(""),
   dureeParDefaut: entier(1, 100).optional(), // en rounds
 });
+
+// --- Monstres (le bestiaire du MJ) -----------------------------------------------------
+// Un modele de monstre : chaque "invocation" (glisser depuis le Bestiaire vers
+// la carte) fabrique une fiche de PNJ a partir de ce modele.
+
+const schemaCaracMonstre = entier(1, 30).default(10);
+
+export const SchemaEntreeMonstre = z.strictObject({
+  id: schemaIdCompendium,
+  nom: z.string().trim().min(1).max(50),
+  type: z.string().trim().max(60).default(""), // ex. "Humanoide (gnoll)", "Bete", "Mort-vivant"
+  puissance: z.string().trim().max(20).default(""), // ex. "FP 1/2" (affichage seulement)
+  niveau: entier(1, 20).default(1), // sert au bonus de maitrise
+  // Points de vie : un nombre fixe (22), ou une formule tiree a chaque invocation ("5d8").
+  pv: z.union([entier(1, 999), schemaFormule], "pv : un nombre (22) ou une formule (\"5d8\")."),
+  classeArmure: entier(1, 40),
+  vitesse: z.string().trim().max(40).default("9 m"),
+  caracteristiques: z
+    .strictObject(Object.fromEntries(CARACTERISTIQUES.map((c) => [c, schemaCaracMonstre])))
+    .default(Object.fromEntries(CARACTERISTIQUES.map((c) => [c, 10]))),
+  // Attaques : affichees dans le bestiaire (le MJ lance avec le lanceur de des).
+  attaques: z
+    .array(
+      z.strictObject({
+        nom: z.string().trim().min(1).max(60),
+        toucher: entier(-5, 30),
+        degats: schemaFormule,
+        type: z.string().trim().max(30).default(""),
+      }),
+    )
+    .max(10)
+    .default([]),
+  // Objets du compendium portes par le monstre : on les trouve sur son cadavre.
+  butin: z
+    .array(z.strictObject({ id: schemaIdCompendium, quantite: entier(1, 999).default(1) }))
+    .max(20)
+    .default([]),
+  icone: schemaIcone.optional(), // image du dossier icones/ (par defaut : l'id)
+  description: z.string().max(2000).default(""),
+});

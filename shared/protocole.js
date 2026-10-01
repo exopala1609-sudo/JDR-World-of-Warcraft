@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 11;
+export const VERSION_PROTOCOLE = 12;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -73,6 +73,9 @@ export const EVENEMENTS = /** @type {const} */ ({
   BUTIN_SUPPRIMER: "butin:supprimer", // MJ
   PION_EN_CADAVRE: "pion:enCadavre", // MJ : le monstre tombe, son cadavre se fouille
 
+  // Bestiaire (MJ) : un monstre glisse sur la carte devient un PNJ + son pion
+  BESTIAIRE_INVOQUER: "bestiaire:invoquer",
+
   // Combat
   COMBAT_DEMARRER: "combat:demarrer", // MJ : lance l'initiative
   COMBAT_TOUR_SUIVANT: "combat:tourSuivant", // MJ, ou le joueur dont c'est le tour
@@ -80,6 +83,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   COMBAT_AJOUTER: "combat:ajouter", // MJ
   COMBAT_RETIRER: "combat:retirer", // MJ
   COMBAT_FIXER_INITIATIVE: "combat:fixerInitiative", // MJ
+  COMBAT_DEPLACER: "combat:deplacer", // MJ : monter / descendre un combattant dans l'ordre
   COMBAT_TERMINER: "combat:terminer", // MJ
 
   // Scene : carte, grille, pions, brouillard

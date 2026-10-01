@@ -269,6 +269,28 @@ export function fabriquerPersonnage(entree, { idTable, proprietaire, referentiel
 }
 
 /**
+ * Un monstre du bestiaire (compendium, section "monstres") devient une fiche
+ * de PNJ. Il n'a ni race ni classe jouable : sa "classe" est "monstre".
+ * "pv" : deja tires par l'appelant (un nombre, meme si le modele donne "5d8").
+ */
+export function fabriquerMonstre(modele, { idTable, nom, pv }) {
+  return ficheNeuve({
+    idTable,
+    proprietaire: null,
+    nom,
+    classe: { id: "monstre", deDeVie: 8 },
+    race: null,
+    faction: null,
+    portrait: null,
+    niveau: modele.niveau,
+    caracteristiques: modele.caracteristiques,
+    classeArmure: modele.classeArmure,
+    pvMaximum: Math.max(1, Math.min(999, pv)),
+    ressources: [],
+  });
+}
+
+/**
  * Version envoyee aux navigateurs : la fiche stockee + des valeurs CALCULEES
  * (modificateurs, bonus de maitrise). On ne stocke pas ce qui se deduit :
  * impossible ainsi d'avoir une Force de 16 avec un modificateur incoherent.

@@ -623,3 +623,59 @@ test("expulsion : le joueur est deconnecte, son jeton annule, la table lui est f
   assert.equal((await demander(revenue, EVENEMENTS.TABLE_REJOINDRE, { idTable })).ok, true);
   jaina = revenue;
 });
+
+test("bestiaire : le MJ invoque un monstre (fiche + pion cache + butin) ; un joueur ne peut pas", async () => {
+  assert.equal((await demander(thrall, EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: "gnoll", x: 500, y: 500 })).ok, false);
+  const espion = attendre(thrall, EVENEMENTS.SCENE_ETAT, 300, (m) => JSON.stringify(m).includes("Gnoll 2"));
+  const r = await demander(mj, EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: "gnoll", x: 500, y: 500 });
+  assert.equal(r.personnage.nom, "Gnoll 2"); // "Gnoll" est deja pris a cette table
+  assert.equal(r.personnage.proprietaire, null);
+  assert.ok(r.personnage.pointsDeVie.max >= 5 && r.personnage.pointsDeVie.max <= 40); // 5d8
+  assert.equal(r.personnage.classeArmure, 15);
+  assert.deepEqual(r.personnage.inventaire.map((o) => o.source), ["potion-de-soins"]);
+  const idTable = depot.listerTables()[0].id;
+  assert.equal(depot.obtenirScene(idTable).pions.find((p) => p.idPersonnage === r.personnage.id).cache, true);
+  assert.equal(await espion, null); // cache : les joueurs ne recoivent rien
+  await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: r.personnage.id });
+});
+
+test("roles : un joueur qui 'debloque' l'interface MJ dans son navigateur est refuse PAR LE SERVEUR, partout", async () => {
+  // Ce que ferait un tricheur : envoyer lui-meme les demandes des outils MJ.
+  const idTable = depot.listerTables()[0].id;
+  const avant = JSON.stringify({ tables: depot.listerTables(), scene: depot.obtenirScene(idTable), combat: depot.obtenirCombat(idTable) });
+  const tentatives = [
+    [EVENEMENTS.TABLE_CREER, { nom: "Ma table pirate" }],
+    [EVENEMENTS.PERSONNAGE_CREER, { donnees: { nom: "Dieu", classe: "guerrier", caracteristiques: CARAC } }],
+    [EVENEMENTS.COMPENDIUM_LISTER, {}],
+    [EVENEMENTS.COMPENDIUM_RECHARGER, {}],
+    [EVENEMENTS.REFERENTIEL_RECHARGER, {}],
+    [EVENEMENTS.MEDIAS_LISTER, { categorie: "cartes" }],
+    [EVENEMENTS.INVENTAIRE_AJOUTER, { idPersonnage: perso.Garrosh.id, idObjet: "lame-des-cendres" }],
+    [EVENEMENTS.GRIMOIRE_APPRENDRE, { idPersonnage: perso.Garrosh.id, idSort: "boule-de-feu" }],
+    [EVENEMENTS.RESSOURCE_AJOUTER, { idPersonnage: perso.Garrosh.id, modele: "mana" }],
+    [EVENEMENTS.REPOS_LONG, { idPersonnage: perso.Garrosh.id }],
+    [EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: "gnoll", x: 100, y: 100 }],
+    [EVENEMENTS.BUTIN_CREER, { nom: "Tresor", x: 100, y: 100 }],
+    [EVENEMENTS.COMBAT_DEMARRER, {}],
+    [EVENEMENTS.SCENE_CARTE, { fichier: null }],
+    [EVENEMENTS.SCENE_GRILLE, { taille: 50, decalageX: 0, decalageY: 0, visible: true }],
+    [EVENEMENTS.PION_CACHER, { idPion: perso.Gnoll.pion, cache: false }],
+    [EVENEMENTS.PION_RETIRER, { idPion: perso.Gnoll.pion }],
+    [EVENEMENTS.PIONS_PLACER_TOUS, {}],
+    [EVENEMENTS.BROUILLARD_TOUT, { mode: "reveler" }],
+    [EVENEMENTS.BROUILLARD_ACTIF, { actif: false }],
+    [EVENEMENTS.BROUILLARD_TRAIT, { mode: "reveler", rayon: 100, points: [[500, 500]] }],
+    [EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Antonidas.id, type: "degats", montant: 99 }],
+    [EVENEMENTS.ETAT_POSER, { idPersonnage: perso.Gnoll.id, cle: "paralyse" }],
+    [EVENEMENTS.QUETE_AJOUTER, { titre: "x", objectif: "y" }],
+    [EVENEMENTS.SON_DIFFUSER, { son: "combat" }],
+    [EVENEMENTS.JOUEUR_EXPULSER, { pseudo: "Jaina" }],
+    [EVENEMENTS.DES_LANCER, { formule: "1d20", secret: true }],
+  ];
+  for (const [evenement, donnees] of tentatives) {
+    const r = await demander(thrall, evenement, donnees);
+    assert.equal(r.ok, false, `${evenement} aurait du etre refuse a un joueur`);
+  }
+  const apres = JSON.stringify({ tables: depot.listerTables(), scene: depot.obtenirScene(idTable), combat: depot.obtenirCombat(idTable) });
+  assert.equal(apres, avant, "rien n'a change cote serveur");
+});

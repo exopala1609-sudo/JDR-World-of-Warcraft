@@ -11,6 +11,8 @@ export function decrireCause(p: Personnage, cause: any): string {
   switch (cause.action) {
     case "creation":
       return `${p.nom} rejoint l'aventure.`;
+    case "invocation":
+      return `${p.nom} (${p.pointsDeVie.max} PV) est pose sur la carte${cause.cache === false ? "" : ", cache aux joueurs"}.`;
     case "points-de-vie":
       if (cause.type === "degats") {
         const critique = cause.critique ? " (coup critique !)" : "";
@@ -55,6 +57,8 @@ export function decrireCombat(cause: any): string {
       return `${cause.nouveauRound ? `Round ${cause.round}. ` : ""}Au tour de ${cause.actif}.`;
     case "fin":
       return "Fin du combat.";
+    case "ordre":
+      return `Le MJ change l'ordre du combat (${cause.nom}).`;
     default:
       return "L'ordre du combat change.";
   }

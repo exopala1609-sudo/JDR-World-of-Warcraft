@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { jeu, useJeu, type EtatJeu } from "@/core/jeu";
+import { lazy, Suspense, useEffect } from "react";
+import { FENETRES_FERMEES, jeu, useJeu, type EtatJeu } from "@/core/jeu";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
 import { BarreActions, RACCOURCIS, utiliserRaccourci } from "@/jeu/BarreActions";
 import { Bandeau } from "@/jeu/Bandeau";
@@ -11,7 +11,7 @@ import { FichePersonnage } from "@/jeu/FichePersonnage";
 import { Grimoire } from "@/jeu/Grimoire";
 import { JournalQuetes } from "@/jeu/JournalQuetes";
 import { MicroMenu } from "@/jeu/MicroMenu";
-import { MenuMJ } from "@/jeu/MenuMJ";
+import { FenetreInitiative } from "@/jeu/FenetreInitiative";
 import { Minicarte } from "@/jeu/Minicarte";
 import { Annonce, ModaleResolution } from "@/jeu/ModaleResolution";
 import { Sacs } from "@/jeu/Sacs";
@@ -26,8 +26,15 @@ import { CoucheInfobulle } from "@/ui/InfoBulle";
  *   4. la modale (resolution des des)     - au-dessus des fenetres
  *   5. l'infobulle, puis l'icone glissee  - ne captent jamais la souris
  */
+// Les outils du MJ sont dans un fichier a part, charge SEULEMENT quand le
+// serveur a dit "tu es MJ" : le navigateur d'un joueur ne les telecharge pas.
+// (Ce n'est PAS ce qui protege le jeu : c'est le serveur qui refuse toute
+// demande MJ venant d'un joueur. Voir docs/ARCHITECTURE.md, "Roles".)
+const OutilsMJ = lazy(() => import("@/jeu/mj/OutilsMJ"));
+
 export function EcranJeu() {
   const fenetres = useJeu((e) => e.fenetres);
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
   const { largeur, hauteur } = useEchelleInterface();
 
   // Raccourcis clavier facon WoW. Ignores pendant qu'on ecrit dans un champ.
@@ -42,9 +49,10 @@ export function EcranJeu() {
       else if (touche === "c") basculer("personnage");
       else if (touche === "p") basculer("grimoire");
       else if (touche === "l") basculer("quetes");
+      else if (touche === "i") basculer("initiative");
       else if (touche === "escape") {
         jeu.fermerButin();
-        jeu.modifier({ fenetres: { sacs: false, personnage: false, grimoire: false, quetes: false } });
+        jeu.modifier({ fenetres: FENETRES_FERMEES });
       } else if (RACCOURCIS.includes(e.key)) utiliserRaccourci(RACCOURCIS.indexOf(e.key)); // touches 1 a =
       else if (touche === "enter") document.getElementById("saisie-discussion")?.focus();
       else return;
@@ -70,13 +78,18 @@ export function EcranJeu() {
         {fenetres.sacs && <Sacs position={{ x: largeur - 420, y: hauteur - 560 }} />}
         {fenetres.grimoire && <Grimoire position={{ x: Math.max(20, largeur / 2 - 560), y: 120 }} />}
         {fenetres.quetes && <JournalQuetes position={{ x: Math.max(20, largeur / 2 - 80), y: 140 }} />}
+        {fenetres.initiative && <FenetreInitiative position={{ x: largeur - 680, y: 430 }} />}
         <FenetreButin />
       </div>
       <div className="couche-modale">
         <Annonce />
         <ModaleResolution />
-        <MenuMJ />
       </div>
+      {estMJ && (
+        <Suspense fallback={null}>
+          <OutilsMJ />
+        </Suspense>
+      )}
       <CoucheInfobulle />
       <CoucheGlisser />
     </>

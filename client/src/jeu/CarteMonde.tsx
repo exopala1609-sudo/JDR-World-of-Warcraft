@@ -5,6 +5,7 @@ import { carte } from "@/core/carte";
 import { jeu, useJeu } from "@/core/jeu";
 import type { TexteCombat, Trace } from "@/core/types";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
+import { useCible, type Charge, type PointLacher } from "@/ui/glisser";
 import { versScene } from "@/ui/InfoBulle";
 
 /**
@@ -21,7 +22,23 @@ export function CarteMonde() {
   const scene = useJeu((e) => e.scene);
   const outil = useJeu((e) => e.outil);
   const couleurTrace = useJeu((e) => e.couleurTrace);
+  const rayonPinceau = useJeu((e) => e.rayonPinceau);
   const { largeur, hauteur } = useEchelleInterface();
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
+
+  // Zone de depot (MJ) : un monstre du Bestiaire, ou un coffre, lache sur la carte.
+  const depot = useCible("carte", {
+    accepte: (c: Charge) => estMJ && (c.origine === "bestiaire" || c.origine === "coffre"),
+    deposer: (c: Charge, point: PointLacher) => {
+      // Seulement si l'on a lache sur la carte elle-meme (pas sur la discussion posee dessus).
+      if (document.elementFromPoint(point.clientX, point.clientY) !== refCanvas.current || !carte.moteur) {
+        return jeu.journaliser("Lache le monstre sur la carte, pas sur un cadre de l'interface.", "erreur");
+      }
+      const { x, y } = carte.moteur.versCarte(point);
+      if (c.origine === "bestiaire") jeu.demander(EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: c.monstre.id, x, y, cache: jeu.lire().invocationCachee });
+      if (c.origine === "coffre") jeu.demander(EVENEMENTS.BUTIN_CREER, { genre: "coffre", nom: "Coffre", x, y });
+    },
+  });
 
   // 1. Creation du moteur (une seule fois) et branchement sur le serveur.
   useEffect(() => {
@@ -60,7 +77,8 @@ export function CarteMonde() {
       surMenuPion: (pion: { idPersonnage: string }, clientX: number, clientY: number) => {
         if (jeu.estMJ()) jeu.modifier({ menu: { idPersonnage: pion.idPersonnage, ...versScene(clientX, clientY) } });
       },
-      surTrait: () => {},
+      // Gomme / pinceau du MJ : chaque morceau de trait part au serveur (qui le diffuse).
+      surTrait: (trait: unknown) => jeu.demander(EVENEMENTS.BROUILLARD_TRAIT, trait),
       surInfo: () => {},
       surChangement: () => carte.signalerChangement(),
     });
@@ -104,16 +122,24 @@ export function CarteMonde() {
     if (scene) carte.moteur?.chargerScene(scene);
   }, [scene]);
 
+  // 3 bis. Combat : le pion du combattant actif pulse (chez tout le monde).
+  // (Un monstre cache est anonyme chez les joueurs : pas d'identifiant, pas de halo.)
+  const idActif = useJeu((e) => (e.combat ? (e.combat.participants[e.combat.indexActif]?.idPersonnage ?? null) : null));
+  useEffect(() => {
+    carte.moteur?.definirActif(idActif);
+  }, [idActif]);
+
   // 4. L'outil et la couleur choisis dans la barre d'outils de la carte.
   useEffect(() => {
     if (!carte.moteur) return;
     carte.moteur.choisirOutil(outil);
     carte.moteur.couleurTrace = couleurTrace;
-  }, [outil, couleurTrace]);
+    carte.moteur.rayonPinceau = rayonPinceau;
+  }, [outil, couleurTrace, rayonPinceau]);
 
   return (
-    <div className="monde">
-      <canvas ref={refCanvas} />
+    <div className="monde" {...depot.proprietes}>
+      <canvas ref={refCanvas} className={depot.survolee ? "monde__depot" : undefined} />
     </div>
   );
 }

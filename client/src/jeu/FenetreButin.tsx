@@ -1,3 +1,4 @@
+import { EVENEMENTS } from "@partage/protocole.js";
 import { jeu, useJeu } from "@/core/jeu";
 import { iconeObjet } from "@/core/medias";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
@@ -16,6 +17,7 @@ const HAUTEUR_LIGNE = 52;
  */
 export function FenetreButin() {
   const butin = useJeu((e) => e.butin);
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
   const { largeur, hauteur } = useEchelleInterface();
   if (!butin) return null;
 
@@ -31,6 +33,19 @@ export function FenetreButin() {
           {butin.genre === "cadavre" ? "☠" : "▣"}
         </span>
         <h2 className="titre-or butin__titre">{butin.nom}</h2>
+        {estMJ && (
+          <button
+            className="butin__supprimer"
+            type="button"
+            onClick={() => {
+              jeu.demander(EVENEMENTS.BUTIN_SUPPRIMER, { idButin: butin.id });
+              jeu.fermerButin();
+            }}
+            {...avecInfobulle(() => <div>Supprimer ce butin de la carte (MJ)</div>)}
+          >
+            ✕ Supprimer
+          </button>
+        )}
         <button className="bouton-fermer" type="button" onClick={() => jeu.fermerButin()} aria-label="Fermer">
           x
         </button>

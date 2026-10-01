@@ -53,6 +53,31 @@ export type SortConnu = {
   sauvegarde?: string;
 };
 
+/** Un modele de monstre du bestiaire (compendium, section "monstres"). MJ seulement. */
+export type Monstre = {
+  id: string;
+  nom: string;
+  type: string;
+  puissance: string;
+  niveau: number;
+  pv: number | string;
+  classeArmure: number;
+  vitesse: string;
+  caracteristiques: Record<string, number>;
+  attaques: { nom: string; toucher: number; degats: string; type: string }[];
+  butin: { id: string; quantite: number }[];
+  icone?: string;
+  description: string;
+};
+
+/** Le compendium du MJ (objets, sorts, auras, monstres) et ses erreurs de lecture. */
+export type Compendium = {
+  objets: (Objet & { id: string })[];
+  sorts: SortConnu[];
+  etats: { cle: string; nom: string; nature: "buff" | "debuff"; icone: string; description: string; officiel: boolean }[];
+  monstres: Monstre[];
+};
+
 export type Quete = { id: string; titre: string; objectif: string; description: string; statut: "en-cours" | "terminee" | "echouee"; creeLe: string };
 
 /** Une ligne de la fenetre de resolution : un d20 (ou des des) et ses modificateurs. */
@@ -198,7 +223,7 @@ export type TexteCombat = {
   absorbe: number;
 };
 
-export type OutilCarte = "deplacer" | "tracer" | "ping";
+export type OutilCarte = "deplacer" | "tracer" | "ping" | "gomme" | "pinceau"; // gomme / pinceau : MJ (brouillard)
 
 export type Scene = {
   carte: { fichier: string | null; largeur: number; hauteur: number };

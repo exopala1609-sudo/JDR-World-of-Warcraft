@@ -111,6 +111,9 @@ export function routesMedias(config) {
     });
   }
 
+  // Tout autre fichier absent (une police, par ex.) : "introuvable", et surtout
+  // pas la page du jeu (le navigateur passe alors a la police de substitution).
+  routeur.use("/medias", (_requete, reponse) => reponse.status(404).end());
   return routeur;
 }
 

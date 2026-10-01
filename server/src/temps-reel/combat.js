@@ -11,6 +11,7 @@ import { z } from "../modeles/zod.js";
 import {
   ajouterParticipant,
   creerCombat,
+  deplacerParticipant,
   fixerInitiative,
   lancerInitiative,
   retirerParticipant,
@@ -27,6 +28,7 @@ const Demandes = {
   ajouter: z.strictObject({ idPersonnage: schemaId("p") }),
   retirer: z.strictObject({ idParticipant: schemaId("c") }),
   fixer: z.strictObject({ idParticipant: schemaId("c"), valeur: z.int().min(-20).max(60) }),
+  deplacer: z.strictObject({ idParticipant: schemaId("c"), sens: z.literal([-1, 1]) }),
 };
 
 const resumeJet = (p) => ({ nom: p.nom, jet: p.jet, bonus: p.bonus, initiative: p.initiative });
@@ -129,6 +131,13 @@ export function brancher(socket, ctx) {
       return { combat: null };
     }
     return enregistrerEtPublier(suite, { action: "retrait", par: pseudo, nom });
+  });
+
+  ctx.guichet(socket, EVENEMENTS.COMBAT_DEPLACER, Demandes.deplacer, ({ idParticipant, sens }) => {
+    ctx.exigerMJ(socket, "changer l'ordre des tours");
+    const combat = exigerCombat();
+    const nom = combat.participants.find((p) => p.id === idParticipant)?.nom;
+    return enregistrerEtPublier(deplacerParticipant(combat, idParticipant, sens), { action: "ordre", par: pseudo, nom });
   });
 
   ctx.guichet(socket, EVENEMENTS.COMBAT_FIXER_INITIATIVE, Demandes.fixer, ({ idParticipant, valeur }) => {
