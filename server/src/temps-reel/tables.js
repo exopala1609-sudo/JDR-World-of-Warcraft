@@ -1,5 +1,6 @@
 // Domaine "tables" : lister, creer, rejoindre une table (et son salon).
 import { EVENEMENTS } from "../../../shared/protocole.js";
+import { normaliserPseudo } from "../auth/sessions.js";
 import { schemaId } from "../modeles/identifiants.js";
 import { fabriquerTable } from "../modeles/table.js";
 import { z } from "../modeles/zod.js";
@@ -28,6 +29,9 @@ export function brancher(socket, ctx) {
   ctx.guichet(socket, EVENEMENTS.TABLE_REJOINDRE, Rejoindre, async ({ idTable }) => {
     const table = depot.obtenirTable(idTable);
     if (!table) throw new ErreurRegle("Table introuvable.");
+    if (!ctx.estMJ(socket) && ctx.expulses(idTable).has(normaliserPseudo(socket.data.profil.pseudo))) {
+      throw new ErreurRegle("Le Maitre du Jeu t'a expulse de cette table.");
+    }
     await ctx.quitterTable(socket);
 
     if (!ctx.estMJ(socket) && !ctx.personnageDuJoueur(socket, idTable)) {

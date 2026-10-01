@@ -51,7 +51,12 @@ const coordonnee = z.number().min(-100_000).max(100_000);
 const Demandes = {
   carte: z.strictObject({ fichier: z.string().min(1).max(255).nullable() }),
   grille: SchemaGrille,
-  placer: z.strictObject({ idPersonnage: schemaId("p"), x: coordonnee.optional(), y: coordonnee.optional() }),
+  placer: z.strictObject({
+    idPersonnage: schemaId("p"),
+    x: coordonnee.optional(),
+    y: coordonnee.optional(),
+    cache: z.boolean().optional(), // par defaut : un monstre arrive cache, un heros visible
+  }),
   pion: z.strictObject({ idPion: schemaId("j") }),
   cacher: z.strictObject({ idPion: schemaId("j"), cache: z.boolean() }),
   deplacer: z.strictObject({
@@ -158,10 +163,10 @@ export function brancher(socket, ctx) {
 
   // --- Pions : placer, retirer, cacher (MJ) ------------------------------------------
 
-  ctx.guichet(socket, EVENEMENTS.PION_PLACER, Demandes.placer, ({ idPersonnage, x, y }) => {
+  ctx.guichet(socket, EVENEMENTS.PION_PLACER, Demandes.placer, ({ idPersonnage, x, y, cache }) => {
     ctx.exigerMJ(socket, "placer des pions");
     const personnage = ctx.exigerPersonnageVisible(socket, idPersonnage);
-    const { scene } = placerPion(sceneCourante(), personnage, x !== undefined && y !== undefined ? { x, y } : null);
+    const { scene } = placerPion(sceneCourante(), personnage, x !== undefined && y !== undefined ? { x, y } : null, cache === undefined ? {} : { cache });
     enregistrer(scene);
     ctx.publierScene(scene.idTable, { action: "pion-place", par: pseudo, nom: personnage.nom });
     return {};
@@ -242,10 +247,7 @@ export function brancher(socket, ctx) {
     if (visibleAvant !== visibleApres) {
       // Le pion entre ou sort du brouillard : les joueurs recoivent la nouvelle
       // liste de ce qu'ils voient (il apparait ou disparait).
-      io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.SCENE_ETAT, {
-        scene: ctx.vueDeLaScene(resultat.scene, false),
-        cause: { action: "visibilite" },
-      });
+      ctx.envoyerSceneAuxJoueurs(scene.idTable, resultat.scene, { action: "visibilite" });
     } else if (visibleApres) {
       io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.PION_POSITION, message);
     }
@@ -269,10 +271,7 @@ export function brancher(socket, ctx) {
     // (ou sur un coffre : il apparait / disparait lui aussi)
     const surUnButin = suite.butins.some((b) => propre.mode === "tout-reveler" || traitCouvre(propre, b.x, b.y));
     if (surUnButin || traitTouchePnj(suite, propre, (id) => depot.obtenirPersonnage(id))) {
-      io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.SCENE_ETAT, {
-        scene: ctx.vueDeLaScene(suite, false),
-        cause: { action: "visibilite" },
-      });
+      ctx.envoyerSceneAuxJoueurs(scene.idTable, suite, { action: "visibilite" });
     }
     return {};
   });

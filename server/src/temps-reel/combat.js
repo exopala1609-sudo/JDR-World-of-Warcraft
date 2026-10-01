@@ -19,6 +19,7 @@ import {
 } from "../regles/combat.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { ecoulerUnRound } from "../regles/etats.js";
+import { jouerSon } from "./sons.js";
 
 const Demandes = {
   demarrer: z.strictObject({ idsPersonnages: z.array(schemaId("p")).min(1).max(60).optional() }),
@@ -61,6 +62,7 @@ export function brancher(socket, ctx) {
     const combat = creerCombat(idTable, combattants.map((p) => lancerInitiative(p)));
     // Au combat, plus personne n'est "repose".
     for (const p of combattants) if (p.repose) ctx.publierPersonnage({ ...p, repose: false }, { action: "combat", par: pseudo });
+    jouerSon(ctx, idTable, "combat"); // tambours de guerre : le jet d'initiative est tombe
     return enregistrerEtPublier(combat, { action: "debut", par: pseudo, jets: combat.participants.map(resumeJet) });
   });
 

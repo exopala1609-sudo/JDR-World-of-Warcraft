@@ -7,6 +7,7 @@ export function EcranTables() {
   const tables = useJeu((e) => e.tables);
   const profil = useJeu((e) => e.profil);
   const liaison = useJeu((e) => e.liaison);
+  const avis = useJeu((e) => e.avis);
   const [nom, setNom] = useState("");
 
   const creer = async (e: FormEvent) => {
@@ -29,6 +30,7 @@ export function EcranTables() {
             </button>
           ))}
         </div>
+        {avis && <div className="accueil__erreur">{avis}</div>}
         {profil?.role === "mj" && (
           <form onSubmit={creer} style={{ display: "flex", gap: 8 }}>
             <input className="champ" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="Nouvelle table" maxLength={60} />

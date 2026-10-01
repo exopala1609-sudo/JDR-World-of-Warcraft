@@ -73,6 +73,9 @@ JDR-World-of-Warcraft/
 │   │       ├── combat.js     Initiative et tours (protection double clic)
 │   │       ├── resolution.js Lancer un sort, fenetre de resolution, "Valider"
 │   │       ├── quetes.js     Journal de quetes : le MJ ajoute / termine, diffusion a la table
+│   │       ├── chat.js       Discussion : dire, groupe, murmures (envoi cible socket par socket)
+│   │       ├── sons.js       Le MJ fait jouer un son a la table
+│   │       ├── joueurs.js    Expulser / readmettre un joueur (MJ)
 │   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
 │   │       ├── tactique.js   Pings et traces tactiques (joueurs et MJ)
 │   │       └── des.js
@@ -411,4 +414,60 @@ combat, sort lance, attaque, degat subi ou ressource depensee.
   `classes.json`) est lu dans la fiche par le serveur, et le jet passe par la
   fenetre de resolution comme une attaque. L'avantage revient a « Normal »
   apres chaque jet.
+
+## Discussion, sons, outils du MJ et securite (sprint 9)
+
+### Discussion (`server/src/temps-reel/chat.js`)
+
+| Canal | Commande | Couleur | Qui le recoit |
+|---|---|---|---|
+| Dire | texte simple, `/s` | blanc | toute la table (au nom du personnage) |
+| Groupe | `/g` (ou `/p`) | bleu clair | toute la table (au nom du joueur, hors jeu) |
+| Murmure | `/w Pseudo message`, `/w MJ ...` | rose | **les deux seuls concernes** |
+| Des, annonces | (systeme) | jaune | selon le cas |
+
+Le canal « colle » comme dans WoW (apres un `/g`, on reste en Groupe) ; un clic
+sur un `[Nom]` passe en murmure vers lui. Un murmure ne passe jamais par le
+salon de la table : le serveur cherche les sockets (onglets) du destinataire
+et de l'expediteur et leur envoie le message **un par un**
+(`io.to(socket.id)`). Les autres navigateurs ne le recoivent pas : il
+n'existe ni dans leur memoire, ni dans leur trafic reseau.
+
+### Sons (`client/src/core/audio.ts`, `server/src/temps-reel/sons.js`)
+
+Le serveur envoie `son:jouer { son: "combat" }` ; le navigateur lit
+`/medias/sons/combat` (dossier `sons/` du cloud) avec la Web Audio API, ou
+fabrique un son de remplacement. Politique d'autoplay : le contexte audio est
+deverrouille au premier clic / premiere touche ; avant cela, les sons sont
+ignores et le bouton haut-parleur clignote.
+
+### Ce que les joueurs ne recoivent JAMAIS
+
+Le filtrage est fait **au depart, par le serveur** : une donnee qui n'est pas
+envoyee ne peut etre ni affichee, ni lue dans les outils du navigateur (F12),
+ni « sniffee » sur le reseau.
+
+| Donnee | Protection |
+|---|---|
+| Fiche d'un PNJ / monstre (PV, stats) | envoyee au salon MJ seulement |
+| Pion cache ou dans le brouillard | retire de la scene envoyee aux joueurs ; ses deplacements ne leur sont pas transmis |
+| Monstre au combat mais invisible | anonymise : `???`, sans identifiant ni jet |
+| Nom d'un monstre invisible dans une annonce | remplace par `???` (`causePourJoueurs`) |
+| Jet d'un monstre invisible | automatiquement secret (MJ seul) |
+| Murmure | envoye socket par socket aux deux interlocuteurs |
+| Contenu d'un sac, d'un coffre | proprietaire / MJ ; coffre : a l'ouverture seulement |
+
+Un monstre pose sur la carte arrive **cache** par defaut : le MJ le revele
+(clic droit > « Reveler aux joueurs »). Le test automatique « securite : un
+joueur qui ecoute TOUT le reseau... » enregistre chaque message recu par un
+joueur pendant que le MJ manipule un monstre cache et verifie que ni son nom,
+ni son identifiant, ni celui de son pion n'y apparaissent.
+
+### Menu du MJ (clic droit)
+
+Sur un cadre du groupe ou sur un pion : PV (degats, soins, fixer, PV
+temporaires), poser / retirer une alteration, cacher / reveler le pion,
+retirer de la carte, expulser / readmettre le joueur. Expulser : deconnexion
+immediate, jetons annules, table fermee a ce pseudo jusqu'a readmission ou
+redemarrage du serveur.
 

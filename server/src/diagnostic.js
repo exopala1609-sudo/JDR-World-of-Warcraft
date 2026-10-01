@@ -1,7 +1,7 @@
 // Verification des dossiers au demarrage : sur deux PC differents, la panne
 // numero un sera "le chemin du .env ne correspond pas a ce poste".
 // Mieux vaut un message clair tout de suite qu'une carte qui ne charge pas.
-import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { CATEGORIES } from "./config.js";
 
@@ -25,6 +25,18 @@ export function creerSousDossiersManquants(config) {
   return crees;
 }
 
+/**
+ * Mode d'emploi des dossiers polices/ et sons/ : un LISEZ-MOI.txt y est
+ * depose s'il n'y est pas deja (les noms de fichiers attendus).
+ */
+export function installerLisezMoi(config, dossierExemples) {
+  for (const categorie of ["polices", "sons"]) {
+    const destination = join(config.dossiers[categorie], "LISEZ-MOI.txt");
+    const source = join(dossierExemples, categorie, "LISEZ-MOI.txt");
+    if (existsSync(config.dossiers[categorie]) && !existsSync(destination) && existsSync(source)) copyFileSync(source, destination);
+  }
+}
+
 export function diagnostiquerDossiers(config) {
   return Object.keys(CATEGORIES).map((categorie) => {
     const chemin = config.dossiers[categorie];
@@ -37,7 +49,7 @@ export function diagnostiquerDossiers(config) {
     }
 
     try {
-      const nbFichiers = readdirSync(chemin).filter((n) => !n.startsWith(".")).length;
+      const nbFichiers = readdirSync(chemin).filter((n) => !n.startsWith(".") && n !== "LISEZ-MOI.txt").length;
       return { categorie, chemin, etat: nbFichiers ? "ok" : "vide", nbFichiers };
     } catch (erreur) {
       return { categorie, chemin, etat: "illisible", nbFichiers: 0, message: erreur.message };

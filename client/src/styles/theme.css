@@ -16,6 +16,7 @@
   src:
     url("/medias/polices/FRIZQT__.TTF") format("truetype"),
     url("/medias/polices/FrizQuadrata.woff2") format("woff2"),
+    url("/medias/polices/FrizQuadrata.otf") format("opentype"),
     url("/medias/polices/FrizQuadrata.ttf") format("truetype");
   font-display: swap;
 }
@@ -24,6 +25,7 @@
   src:
     url("/medias/polices/MORPHEUS.TTF") format("truetype"),
     url("/medias/polices/Morpheus.woff2") format("woff2"),
+    url("/medias/polices/Morpheus.otf") format("opentype"),
     url("/medias/polices/Morpheus.ttf") format("truetype");
   font-display: swap;
 }
@@ -49,6 +51,12 @@
   --texte-gris: #808080;
   --texte-vert: #1eff00; /* effets "Utiliser :" des infobulles */
   --texte-rouge: #ff2020;
+
+  /* Canaux de discussion : les couleurs de WoW */
+  --chat-dire: #ffffff; /* Dire (Say) */
+  --chat-groupe: #aaaaff; /* Groupe (Party) */
+  --chat-murmure: #ff80ff; /* Murmure (Whisper) */
+  --chat-systeme: #ffff00; /* des, annonces du systeme */
   --ombre-texte: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
 
   /* Anthracite (fonds des cadres) */

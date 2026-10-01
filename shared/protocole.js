@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 10;
+export const VERSION_PROTOCOLE = 11;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -100,6 +100,16 @@ export const EVENEMENTS = /** @type {const} */ ({
   DESSIN_TRAIT: "dessin:trait", // un morceau de trace (envoye pendant qu'on dessine)
   DESSIN_EFFACER: "dessin:effacer", // ses propres traces (le MJ : toutes)
 
+  // Discussion : dire, groupe, murmure (/w)
+  CHAT_ENVOYER: "chat:envoyer",
+
+  // Sons : le MJ fait jouer un son a toute la table (tambours, cri...)
+  SON_DIFFUSER: "son:diffuser", // MJ
+
+  // Joueurs (MJ)
+  JOUEUR_EXPULSER: "joueur:expulser", // deconnecte un joueur et lui ferme la table
+  JOUEUR_READMETTRE: "joueur:readmettre", // lui rouvre la table
+
   // Des et medias
   DES_LANCER: "des:lancer",
   MEDIAS_LISTER: "medias:lister", // MJ
@@ -125,6 +135,9 @@ export const EVENEMENTS = /** @type {const} */ ({
   JET_EN_COURS: "jet:enCours", // MJ : un joueur vient de lancer (fenetre de resolution)
   JET_RESULTAT: "jet:resultat", // toute la table : le jet valide
   QUETES_ETAT: "quetes:etat", // le journal de quetes complet (apres un changement)
+  CHAT_MESSAGE: "chat:message", // un message de discussion (un murmure : aux 2 seuls concernes)
+  SON_JOUER: "son:jouer", // "joue ce son" (murmure recu, quete terminee, combat...)
+  JOUEUR_EXPULSE: "joueur:expulse", // au joueur expulse, juste avant la deconnexion
 });
 
 // Types de modification des points de vie (regles D&D 5e).

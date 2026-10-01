@@ -365,11 +365,57 @@
   text-shadow: 1px 1px 0 #000;
   user-select: text;
 }
-.discussion__ligne--systeme {
-  color: #ffff00;
-}
+.discussion__ligne--systeme,
 .discussion__ligne--des {
-  color: #ffffff;
+  color: var(--chat-systeme);
+}
+.discussion__ligne--dire {
+  color: var(--chat-dire);
+}
+.discussion__ligne--groupe {
+  color: var(--chat-groupe);
+}
+.discussion__ligne--murmure {
+  color: var(--chat-murmure);
+}
+/* [Nom] : se clique pour lui murmurer (meme couleur que la ligne) */
+.discussion__nom {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+.discussion__nom:hover {
+  text-decoration: underline;
+}
+/* La saisie prend la couleur du canal en cours, comme dans WoW */
+.discussion__saisie {
+  align-items: center;
+}
+.discussion__canal {
+  flex: none;
+  max-width: 140px;
+  overflow: hidden;
+  font-family: var(--police-chiffres);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 #000;
+}
+.discussion__saisie--dire .discussion__canal,
+.discussion__saisie--dire .champ {
+  color: var(--chat-dire);
+}
+.discussion__saisie--groupe .discussion__canal,
+.discussion__saisie--groupe .champ {
+  color: var(--chat-groupe);
+}
+.discussion__saisie--murmure .discussion__canal,
+.discussion__saisie--murmure .champ {
+  color: var(--chat-murmure);
 }
 .discussion__ligne--combat {
   color: #ff7f3f;

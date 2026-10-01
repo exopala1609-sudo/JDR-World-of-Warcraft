@@ -1,6 +1,6 @@
 # Personnaliser l'interface
 
-Toutes tes images et polices se deposent dans ton dossier cloud (`VTT_ASSETS`).
+Toutes tes images, polices et sons se deposent dans ton dossier cloud (`VTT_ASSETS`).
 Elles ne sont jamais envoyees sur GitHub. Rien a relancer : un simple F5 dans
 le navigateur suffit.
 
@@ -11,12 +11,40 @@ Copie les fichiers depuis ton installation du jeu
 
 | Fichier | Usage |
 |---|---|
-| `FRIZQT__.TTF` | Titres et interface (Friz Quadrata) |
-| `MORPHEUS.TTF` | Textes des parchemins (Morpheus) |
+| `FRIZQT__.TTF` | Titres, noms, boutons, toute l'interface (Friz Quadrata) |
+| `MORPHEUS.TTF` | Textes longs : pages du grimoire, journal de quetes (Morpheus) |
 | `ARIALN.TTF` | Chiffres des barres et discussion (Arial Narrow) |
+
+Noms acceptes aussi : `FrizQuadrata.woff2` / `.otf` / `.ttf` et
+`Morpheus.woff2` / `.otf` / `.ttf` (le fichier `polices\LISEZ-MOI.txt` de ton
+cloud les rappelle). Apres avoir depose une police : **Ctrl + F5**.
 
 Sans ces fichiers, l'interface utilise automatiquement Palatino Linotype, une
 police proche installee avec Windows.
+
+**Comment c'est branche** : `client/src/styles/theme.css` declare les polices
+(`@font-face`) avec l'adresse `/medias/polices/<fichier>`. Le serveur sert
+cette adresse depuis le dossier `polices` de **ton** `VTT_ASSETS` (celui du
+`.env` du PC qui lance la partie). Trois variables les distribuent partout :
+`--police-ui` (Friz Quadrata), `--police-texte` (Morpheus), `--police-chiffres`
+(Arial Narrow). Pour changer de police, on ne touche qu'a ces trois lignes.
+
+## Les sons
+
+Le dossier `sons\` de ton cloud (cree au premier lancement, avec un
+`LISEZ-MOI.txt`) accueille les effets sonores. Les noms attendus, sans
+tenir compte de l'extension (`.ogg`, `.mp3`, `.wav`, `.m4a`, `.webm`) :
+
+| Fichier | Quand |
+|---|---|
+| `murmure` | Un murmure (message prive) arrive |
+| `quete-nouvelle` | Le MJ donne une quete |
+| `quete-terminee` | Le MJ termine une quete |
+| `combat` | Debut d'un combat (jet d'initiative) |
+
+Un fichier absent est remplace par un petit son fabrique par le navigateur.
+Tout autre fichier (ex. `rugissement-dragon.ogg`) apparait dans la
+« soundboard » du MJ : bouton haut-parleur en bas a droite.
 
 ## Portraits des personnages
 

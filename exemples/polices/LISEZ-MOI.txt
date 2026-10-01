@@ -1,0 +1,26 @@
+==============================================================================
+  DOSSIER polices/ : les vraies polices de World of Warcraft
+==============================================================================
+
+Depose ici les fichiers de police. Le jeu essaie ces noms, dans l'ordre :
+
+  Friz Quadrata (titres, noms, boutons, toute l'interface) :
+      FRIZQT__.TTF   (nom du dossier Fonts de WoW)
+      FrizQuadrata.woff2, FrizQuadrata.otf, FrizQuadrata.ttf
+
+  Morpheus (textes longs : grimoire, journal de quetes) :
+      MORPHEUS.TTF   (nom du dossier Fonts de WoW)
+      Morpheus.woff2, Morpheus.otf, Morpheus.ttf
+
+  Arial Narrow (chiffres : barres de vie, des, discussion) :
+      ARIALN.TTF, ArialNarrow.ttf
+
+Respecte exactement ces noms (majuscules comprises) : ton cloud peut etre lu
+depuis un PC sous un autre systeme.
+
+Tant qu'un fichier manque, le navigateur utilise une police de substitution
+installee sur Windows (Palatino Linotype, Book Antiqua...). Apres avoir depose
+une police : recharge la page (Ctrl + F5) chez chaque joueur.
+
+Rappel : ces polices appartiennent a leurs editeurs. Elles restent dans TON
+cloud et ne sont jamais publiees sur GitHub.

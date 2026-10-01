@@ -56,6 +56,10 @@ export function CarteMonde() {
         jeu.demander(EVENEMENTS.DESSIN_TRAIT, morceau),
       // Clic sur un coffre ou un cadavre : la fenetre de butin s'ouvre a cote du curseur.
       surButin: (butin: { id: string }, clientX: number, clientY: number) => jeu.ouvrirButin(butin.id, versScene(clientX, clientY)),
+      // Clic droit sur un pion (MJ) : le menu contextuel (PV, etats, cacher...).
+      surMenuPion: (pion: { idPersonnage: string }, clientX: number, clientY: number) => {
+        if (jeu.estMJ()) jeu.modifier({ menu: { idPersonnage: pion.idPersonnage, ...versScene(clientX, clientY) } });
+      },
       surTrait: () => {},
       surInfo: () => {},
       surChangement: () => carte.signalerChangement(),

@@ -1,4 +1,5 @@
 import { jeu, useJeu, type EtatJeu } from "@/core/jeu";
+import { ReglageSon } from "@/jeu/ReglageSon";
 import { avecInfobulle } from "@/ui/InfoBulle";
 
 /** Bas droite : les petits boutons du micro-menu de WoW. */
@@ -26,6 +27,7 @@ export function MicroMenu() {
       {bouton("L", "Journal de quetes (L)", () => basculer("quetes"), fenetres.quetes)}
       {bouton("B", "Sacs (B)", () => basculer("sacs"), fenetres.sacs)}
       {estMJ && bouton("MJ", "Outils du MJ : ouvre la page de test dans un nouvel onglet", () => window.open("/test/", "_blank"))}
+      <ReglageSon />
       {bouton("X", "Quitter la partie", () => jeu.deconnecter())}
     </div>
   );

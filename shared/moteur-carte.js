@@ -54,6 +54,7 @@ export class MoteurCarte {
    *   prefixeTraces              : (facultatif) debut des identifiants de SES traces ("thrall:")
    *   police                     : (facultatif) police des textes de combat
    *   surButin(butin, clientX, clientY) : (facultatif) clic sur un coffre / cadavre
+   *   surMenuPion(pion, clientX, clientY) : (facultatif) clic droit sur un pion (menu du MJ)
    */
   constructor(canvas, options) {
     this.canvas = canvas;
@@ -671,9 +672,11 @@ export class MoteurCarte {
     const point = this.versCarte(e);
     this.canvas.setPointerCapture(e.pointerId);
 
-    // Clic droit / molette : toujours deplacer la vue.
+    // Clic droit / molette : toujours deplacer la vue. Un clic droit SANS
+    // bouger sur un pion ouvre le menu du MJ (voir relachement).
     if (e.button !== 0) {
-      this.geste = { type: "vue", ecran: { x: point.sx, y: point.sy }, vue: { ...this.vue } };
+      const menu = e.button === 2 ? this.pionSous(point) : null;
+      this.geste = { type: "vue", ecran: { x: point.sx, y: point.sy }, vue: { ...this.vue }, menu, client: { x: e.clientX, y: e.clientY } };
       return;
     }
 
@@ -922,8 +925,12 @@ export class MoteurCarte {
       clearTimeout(geste.minuterie);
       this.envoyerMorceau(geste);
     }
-    if (geste.type === "vue" && geste.butin && Math.hypot(e.clientX - geste.client.x, e.clientY - geste.client.y) < 5) {
+    const immobile = geste.client && Math.hypot(e.clientX - geste.client.x, e.clientY - geste.client.y) < 5;
+    if (geste.type === "vue" && geste.butin && immobile) {
       this.options.surButin?.(geste.butin, e.clientX, e.clientY);
+    }
+    if (geste.type === "vue" && geste.menu && immobile) {
+      this.options.surMenuPion?.(geste.menu, e.clientX, e.clientY);
     }
     this.geste = null;
     this.sale = true;

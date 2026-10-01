@@ -11,6 +11,7 @@ import { FichePersonnage } from "@/jeu/FichePersonnage";
 import { Grimoire } from "@/jeu/Grimoire";
 import { JournalQuetes } from "@/jeu/JournalQuetes";
 import { MicroMenu } from "@/jeu/MicroMenu";
+import { MenuMJ } from "@/jeu/MenuMJ";
 import { Minicarte } from "@/jeu/Minicarte";
 import { Annonce, ModaleResolution } from "@/jeu/ModaleResolution";
 import { Sacs } from "@/jeu/Sacs";
@@ -74,6 +75,7 @@ export function EcranJeu() {
       <div className="couche-modale">
         <Annonce />
         <ModaleResolution />
+        <MenuMJ />
       </div>
       <CoucheInfobulle />
       <CoucheGlisser />

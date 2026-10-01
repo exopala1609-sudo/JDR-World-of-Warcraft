@@ -14,6 +14,7 @@ import express from "express";
 import { CATEGORIES_PUBLIQUES } from "./config.js";
 
 const EXTENSIONS_IMAGE = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"];
+export const EXTENSIONS_SON = [".ogg", ".mp3", ".wav", ".m4a", ".webm"];
 // Categories d'images : un fichier absent y est remplace par un carre gris.
 // (Les polices, elles, repondent "introuvable" : le navigateur passe alors a
 // la police de substitution.)
@@ -73,6 +74,22 @@ export function routesMedias(config) {
     // 1. Le fichier existe tel quel : on l'envoie.
     routeur.use(`/medias/${categorie}`, express.static(dossier, { maxAge: "1h", dotfiles: "ignore" }));
 
+    // Sons : demandes sans extension (/medias/sons/murmure -> murmure.ogg, .mp3...).
+    // Absent : "introuvable" ; le navigateur joue alors son son de remplacement.
+    if (categorie === "sons") {
+      routeur.get("/medias/sons/:nom", (requete, reponse) => {
+        const { nom } = requete.params;
+        if (nomSur(nom) && !extname(nom)) {
+          for (const extension of EXTENSIONS_SON) {
+            const chemin = join(dossier, nom + extension);
+            if (existsSync(chemin)) return reponse.sendFile(chemin, { maxAge: 0 });
+          }
+        }
+        reponse.set("Cache-Control", "no-store").status(404).end();
+      });
+      continue;
+    }
+
     if (!CATEGORIES_IMAGES.includes(categorie)) continue;
 
     // 2. Sinon : recherche sans extension, puis image de remplacement.
@@ -97,12 +114,13 @@ export function routesMedias(config) {
   return routeur;
 }
 
-/** Liste les images d'une categorie (pour que le MJ choisisse une carte, etc.). */
+/** Liste les images (ou les sons) d'une categorie (pour que le MJ choisisse une carte, un son...). */
 export function listerImages(config, categorie) {
-  if (!CATEGORIES_IMAGES.includes(categorie)) return [];
+  const extensions = categorie === "sons" ? EXTENSIONS_SON : EXTENSIONS_IMAGE;
+  if (!CATEGORIES_IMAGES.includes(categorie) && categorie !== "sons") return [];
   try {
     return readdirSync(config.dossiers[categorie], { withFileTypes: true })
-      .filter((e) => e.isFile() && EXTENSIONS_IMAGE.includes(extname(e.name).toLowerCase()))
+      .filter((e) => e.isFile() && extensions.includes(extname(e.name).toLowerCase()))
       .map((e) => e.name)
       .sort((a, b) => a.localeCompare(b, "fr"));
   } catch {

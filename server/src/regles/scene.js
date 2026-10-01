@@ -17,7 +17,12 @@ export function positionValide(scene, x, y, { aimanter: avecAimant = true, taill
   return borner(surLaGrille.x, surLaGrille.y, scene.carte);
 }
 
-export function placerPion(scene, personnage, position) {
+/**
+ * Pose le pion d'un personnage. Un monstre / PNJ arrive CACHE aux joueurs
+ * (le MJ le revele quand il veut : clic droit > "Reveler") ; un heros, visible.
+ * "cache" permet de choisir explicitement.
+ */
+export function placerPion(scene, personnage, position, { cache = personnage.proprietaire === null } = {}) {
   if (scene.pions.some((p) => p.idPersonnage === personnage.id)) {
     throw new ErreurRegle(`${personnage.nom} est deja sur la carte.`);
   }
@@ -30,7 +35,7 @@ export function placerPion(scene, personnage, position) {
     y,
     taille: 1,
     couleur: couleurPour(personnage.proprietaire),
-    cache: false,
+    cache,
   };
   return { scene: { ...scene, pions: [...scene.pions, pion] }, pion };
 }

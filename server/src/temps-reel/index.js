@@ -27,18 +27,21 @@ import { ErreurRegle } from "../regles/erreurs.js";
 import * as combat from "./combat.js";
 import * as compendium from "./compendium.js";
 import * as butins from "./butins.js";
+import * as chat from "./chat.js";
 import * as des from "./des.js";
 import * as equipement from "./equipement.js";
+import * as joueurs from "./joueurs.js";
 import * as personnages from "./personnages.js";
 import * as quetes from "./quetes.js";
 import * as referentiel from "./referentiel.js";
 import * as repos from "./repos.js";
 import * as resolution from "./resolution.js";
 import * as scene from "./scene.js";
+import * as sons from "./sons.js";
 import * as tables from "./tables.js";
 import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
@@ -81,6 +84,14 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
 
     // Jets de la fenetre de resolution, en attente de "Valider" (idJet -> jet).
     jets: new Map(),
+
+    sessions,
+    // Joueurs expulses par le MJ, par table (pseudos normalises). En memoire.
+    expulsesParTable: new Map(),
+    expulses(idTable) {
+      if (!ctx.expulsesParTable.has(idTable)) ctx.expulsesParTable.set(idTable, new Set());
+      return ctx.expulsesParTable.get(idTable);
+    },
 
     /**
      * Anti-inondation : true tant que ce navigateur n'a pas fait cette action
@@ -137,7 +148,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
         table: depot.obtenirTable(idTable),
         creationRequise: false,
         personnages: ctx.personnagesVisibles(socket, idTable),
-        combat: depot.obtenirCombat(idTable),
+        combat: ctx.estMJ(socket) ? depot.obtenirCombat(idTable) : ctx.combatPourJoueurs(depot.obtenirCombat(idTable)),
         scene: ctx.vueDeLaScene(depot.obtenirScene(idTable), ctx.estMJ(socket)),
         traces: ctx.traces.get(idTable) ?? [],
         quetes: depot.obtenirQuetes(idTable),
@@ -225,8 +236,68 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       }
     },
 
+    /**
+     * Un PNJ / monstre est-il connu des joueurs ? Seulement si son pion est sur
+     * la carte ET visible (ni cache par le MJ, ni dans le brouillard).
+     */
+    pnjVisible(personnage) {
+      if (!personnage) return false;
+      if (personnage.proprietaire !== null) return true;
+      const scene = depot.obtenirScene(personnage.idTable);
+      const pion = scene.pions.find((p) => p.idPersonnage === personnage.id);
+      return Boolean(pion && pionVisibleParLesJoueurs(scene, pion, personnage));
+    },
+
+    /**
+     * Le combat tel que les joueurs ont le droit de le voir : un monstre cache
+     * garde sa place dans l'ordre (sinon les tours seraient decales), mais
+     * devient anonyme : ni nom, ni identifiant, ni jet. "Au tour de ???".
+     */
+    combatPourJoueurs(combat) {
+      if (!combat) return combat;
+      return {
+        ...combat,
+        participants: combat.participants.map((p) =>
+          ctx.pnjVisible(depot.obtenirPersonnage(p.idPersonnage))
+            ? p
+            : { id: p.id, idPersonnage: null, nom: "???", masque: true, jet: null, bonus: null, initiative: null },
+        ),
+      };
+    },
+
     publierCombat(idTable, cause) {
-      io.to(salleTable(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: depot.obtenirCombat(idTable), cause });
+      const combat = depot.obtenirCombat(idTable);
+      io.to(salleMJ(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat, cause });
+      if (!cause) return io.to(salleJoueurs(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: ctx.combatPourJoueurs(combat), cause: null });
+      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: ctx.combatPourJoueurs(combat), cause: ctx.causePourJoueurs(idTable, cause) });
+    },
+
+    /**
+     * La "cause" d'un message, filtree pour les joueurs : les noms des monstres
+     * qu'ils ne voient pas deviennent "???" et leurs jets d'initiative
+     * disparaissent. (Tous les PNJ invisibles de la table, meme ceux qui ne
+     * sont plus au combat : un monstre retire ne doit pas se trahir non plus.)
+     */
+    causePourJoueurs(idTable, cause) {
+      if (!cause) return cause;
+      const caches = new Set(depot.personnagesDeLaTable(idTable).filter((p) => !ctx.pnjVisible(p)).map((p) => p.nom));
+      const anonyme = (nom) => (caches.has(nom) ? "???" : nom);
+      return {
+        ...cause,
+        ...(cause.jets && { jets: cause.jets.filter((j) => !caches.has(j.nom)) }),
+        ...(cause.actif && { actif: anonyme(cause.actif) }),
+        ...(cause.finDeTour && { finDeTour: anonyme(cause.finDeTour) }),
+        ...(cause.nom && { nom: anonyme(cause.nom) }),
+      };
+    },
+
+    /**
+     * Envoie aux joueurs la scene qu'ils ont le droit de voir. Un monstre a pu
+     * apparaitre ou disparaitre : l'ordre du combat (anonymise) suit.
+     */
+    envoyerSceneAuxJoueurs(idTable, scene, cause) {
+      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, false), cause: ctx.causePourJoueurs(idTable, cause) });
+      if (depot.obtenirCombat(idTable)) ctx.publierCombat(idTable, null);
     },
 
     /** Un pion, complete du nom et du proprietaire de son personnage. */
@@ -257,7 +328,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     publierScene(idTable, cause) {
       const scene = depot.obtenirScene(idTable);
       io.to(salleMJ(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, true), cause });
-      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, false), cause });
+      ctx.envoyerSceneAuxJoueurs(idTable, scene, cause);
     },
 
     async diffuserPresence(idTable) {

@@ -88,6 +88,8 @@ before(async () => {
     const nom = Object.keys(perso).find((n) => perso[n].id === pion.idPersonnage);
     perso[nom].pion = pion.id;
   }
+  // Un monstre arrive cache : le MJ revele le gnoll (il reste dans le brouillard).
+  await demander(mj, EVENEMENTS.PION_CACHER, { idPion: perso.Gnoll.pion, cache: false });
 });
 
 after(() => {
@@ -529,4 +531,95 @@ test("repos long : le portrait passe 'repose' ; le premier coup recu y met fin",
   assert.equal(fiche("Garrosh").repose, true);
   await demander(mj, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Garrosh.id, type: "degats", montant: 1 });
   assert.equal(fiche("Garrosh").repose, false);
+});
+
+test("discussion : dire et groupe pour toute la table, murmure aux deux seuls concernes", async () => {
+  const chezMJ = attendre(mj, EVENEMENTS.CHAT_MESSAGE);
+  await demander(thrall, EVENEMENTS.CHAT_ENVOYER, { canal: "dire", texte: "Pour la Horde !" });
+  const dit = await chezMJ;
+  assert.equal(dit.nom, "Garrosh"); // "dire" : au nom de son personnage
+  assert.equal(dit.canal, "dire");
+
+  // Murmure Thrall -> Jaina : Jaina le recoit (avec le tintement), le MJ NON.
+  const chezJaina = attendre(jaina, EVENEMENTS.CHAT_MESSAGE, 400, (m) => m.canal === "murmure");
+  const tintement = attendre(jaina, EVENEMENTS.SON_JOUER);
+  const espionMJ = attendre(mj, EVENEMENTS.CHAT_MESSAGE, 200, (m) => m.canal === "murmure");
+  const retour = attendre(thrall, EVENEMENTS.CHAT_MESSAGE, 400, (m) => m.canal === "murmure");
+  assert.equal((await demander(thrall, EVENEMENTS.CHAT_ENVOYER, { canal: "murmure", destinataire: "jaina", texte: "Rdv a Orgrimmar" })).ok, true);
+  assert.deepEqual([(await chezJaina).texte, (await chezJaina).vers], ["Rdv a Orgrimmar", "Jaina"]);
+  assert.equal((await tintement).son, "murmure");
+  assert.equal(await espionMJ, null);
+  assert.equal((await retour).canal, "murmure"); // l'expediteur voit "A Jaina : ..."
+
+  // "/w MJ" : au MJ, quel que soit son pseudo. Un absent : refus clair.
+  const auMJ = attendre(mj, EVENEMENTS.CHAT_MESSAGE);
+  await demander(jaina, EVENEMENTS.CHAT_ENVOYER, { canal: "murmure", destinataire: "MJ", texte: "Je triche ?" });
+  assert.equal((await auMJ).de, "Jaina");
+  const absent = await demander(jaina, EVENEMENTS.CHAT_ENVOYER, { canal: "murmure", destinataire: "Arthas", texte: "?" });
+  assert.equal(absent.erreur, "Arthas n'est pas connecte a cette table.");
+});
+
+test("securite : un joueur qui ecoute TOUT le reseau ne decouvre rien d'un monstre cache", async () => {
+  // Thrall "sniffe" : on enregistre absolument tout ce que son navigateur recoit.
+  const recu = [];
+  const espion = (evenement, ...donnees) => recu.push(JSON.stringify([evenement, donnees]));
+  thrall.onAny(espion);
+
+  const { personnage: liche } = await demander(mj, EVENEMENTS.PERSONNAGE_CREER, {
+    donnees: { nom: "Liche-Secrete", classe: "magicien", niveau: 5, caracteristiques: CARAC },
+  });
+  await demander(mj, EVENEMENTS.PION_PLACER, { idPersonnage: liche.id, x: 600, y: 600 });
+  const idTable = depot.listerTables()[0].id;
+  const pion = depot.obtenirScene(idTable).pions.find((p) => p.idPersonnage === liche.id);
+  assert.equal(pion.cache, true); // un monstre arrive cache : rien n'a filtre jusqu'ici
+  await demander(mj, EVENEMENTS.PION_CACHER, { idPion: pion.id, cache: true });
+  await demander(mj, EVENEMENTS.PION_SAISIR, { idPion: pion.id });
+  await demander(mj, EVENEMENTS.PION_DEPLACER, { idPion: pion.id, x: 700, y: 650, final: false });
+  await demander(mj, EVENEMENTS.PION_DEPLACER, { idPion: pion.id, x: 700, y: 650, final: true });
+  await demander(mj, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: liche.id, type: "degats", montant: 4 });
+  await demander(mj, EVENEMENTS.ETAT_POSER, { idPersonnage: liche.id, cle: "invisible" });
+
+  // Combat : la liche a sa place dans l'ordre, mais anonyme chez les joueurs.
+  const combatChezThrall = attendre(thrall, EVENEMENTS.COMBAT_ETAT);
+  await demander(mj, EVENEMENTS.COMBAT_DEMARRER, {});
+  const { combat } = await combatChezThrall;
+  assert.ok(combat.participants.some((p) => p.masque && p.nom === "???"));
+  // Le MJ fait lancer une sauvegarde a la liche : le resultat reste secret.
+  const { jet } = await demander(mj, EVENEMENTS.TEST_LANCER, { idPersonnage: liche.id, genre: "sauvegarde", caracteristique: "sagesse" });
+  assert.equal(jet.secret, true);
+  await demander(mj, EVENEMENTS.JET_VALIDER, { idJet: jet.id });
+  await demander(mj, EVENEMENTS.COMBAT_TERMINER, {});
+  await new Promise((ok) => setTimeout(ok, 100));
+  thrall.offAny(espion);
+
+  const tout = recu.join("\n");
+  assert.ok(recu.length > 0, "l'espion a bien recu des messages");
+  for (const indice of ["Liche-Secrete", liche.id, pion.id]) {
+    const ligne = recu.find((r) => r.includes(indice));
+    assert.ok(!ligne, `fuite : "${indice}" est arrive chez un joueur : ${ligne?.slice(0, 300)}`);
+  }
+  await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: liche.id });
+});
+
+test("sons : le MJ en fait jouer un a la table ; un joueur ne peut pas", async () => {
+  const chezThrall = attendre(thrall, EVENEMENTS.SON_JOUER);
+  await demander(mj, EVENEMENTS.SON_DIFFUSER, { son: "tambours" });
+  assert.equal((await chezThrall).son, "tambours");
+  assert.equal((await demander(jaina, EVENEMENTS.SON_DIFFUSER, { son: "tambours" })).ok, false);
+});
+
+test("expulsion : le joueur est deconnecte, son jeton annule, la table lui est fermee", async () => {
+  assert.equal((await demander(thrall, EVENEMENTS.JOUEUR_EXPULSER, { pseudo: "Jaina" })).ok, false); // MJ seulement
+  const message = attendre(jaina, EVENEMENTS.JOUEUR_EXPULSE);
+  const deconnexion = new Promise((ok) => jaina.once("disconnect", ok));
+  assert.equal((await demander(mj, EVENEMENTS.JOUEUR_EXPULSER, { pseudo: "Jaina" })).ok, true);
+  assert.match((await message).message, /expulse/);
+  await deconnexion;
+  // Nouveau jeton (elle se reconnecte) : la table reste fermee.
+  const revenue = await connecter(sessions, { role: "joueur", pseudo: "Jaina" });
+  const idTable = depot.listerTables()[0].id;
+  assert.equal((await demander(revenue, EVENEMENTS.TABLE_REJOINDRE, { idTable })).erreur, "Le Maitre du Jeu t'a expulse de cette table.");
+  await demander(mj, EVENEMENTS.JOUEUR_READMETTRE, { pseudo: "Jaina" });
+  assert.equal((await demander(revenue, EVENEMENTS.TABLE_REJOINDRE, { idTable })).ok, true);
+  jaina = revenue;
 });

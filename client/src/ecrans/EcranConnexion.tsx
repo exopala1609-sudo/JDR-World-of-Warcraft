@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { jeu } from "@/core/jeu";
+import { jeu, useJeu } from "@/core/jeu";
 
 /** Ecran d'accueil : joueur (pseudo) ou Maitre du Jeu (mot de passe). */
 export function EcranConnexion() {
@@ -8,6 +8,7 @@ export function EcranConnexion() {
   const [motDePasse, setMotDePasse] = useState("");
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
+  const avis = useJeu((e) => e.avis); // ex. "Le Maitre du Jeu t'a expulse de la table."
 
   const entrer = async (e: FormEvent) => {
     e.preventDefault();
@@ -44,7 +45,7 @@ export function EcranConnexion() {
             <input className="champ" type="password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} autoFocus />
           </label>
         )}
-        <div className="accueil__erreur">{erreur}</div>
+        <div className="accueil__erreur">{erreur || avis}</div>
         <button className="bouton" type="submit" disabled={envoi}>
           Entrer dans le monde
         </button>

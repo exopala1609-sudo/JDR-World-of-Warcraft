@@ -14,7 +14,8 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { ButinOuvert, Combat, Jet, LigneJournal, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
+import type { ButinOuvert, Combat, Jet, LigneJournal, MessageChat, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
+import { audio } from "./audio";
 import { decrireCause, decrireCombat, decrireDes, decrireJet } from "./journal";
 
 export type Avantage = "normal" | "avantage" | "desavantage";
@@ -39,6 +40,8 @@ export type EtatJeu = {
   jet: Jet | null; // la fenetre de resolution ouverte
   annonce: { id: number; titre: string; texte: string } | null; // "Nouvelle quete !" au centre de l'ecran
   butin: ButinOuvert | null; // la fenetre de butin ouverte (coffre, cadavre)
+  menu: { idPersonnage: string; x: number; y: number } | null; // menu contextuel du MJ (clic droit)
+  avis: string | null; // message affiche sur l'ecran de connexion (ex. expulsion)
   outil: OutilCarte; // ce que fait un clic gauche sur la carte
   couleurTrace: string | null; // null = sa propre couleur
 };
@@ -61,6 +64,8 @@ const ETAT_INITIAL: EtatJeu = {
   jet: null,
   annonce: null,
   butin: null,
+  menu: null,
+  avis: null,
   outil: "deplacer",
   couleurTrace: null,
 };
@@ -95,8 +100,8 @@ class Jeu {
     for (const rappel of this.abonnes) rappel();
   }
 
-  journaliser(texte: string, type: LigneJournal["type"] = "systeme") {
-    const ligne = { id: ++this.compteurJournal, texte, type };
+  journaliser(texte: string, type: LigneJournal["type"] = "systeme", message?: LigneJournal["message"]) {
+    const ligne = { id: ++this.compteurJournal, texte, type, ...(message && { message }) };
     this.modifier((e) => ({ journal: [...e.journal.slice(-199), ligne] }));
   }
 
@@ -156,6 +161,19 @@ class Jeu {
     if (!jet || jet.statut === "valide") return this.modifier({ jet: null });
     const r = await this.demander(EVENEMENTS.JET_VALIDER, { idJet: jet.id });
     if (r.ok || r.erreur === "Ce jet a deja ete valide.") this.modifier({ jet: null });
+  }
+
+  // --- Discussion -------------------------------------------------------------
+  /** Dire / groupe : a toute la table. Murmure : au seul destinataire (le serveur trie). */
+  envoyerMessage(canal: MessageChat["canal"], texte: string, destinataire?: string) {
+    return this.demander(EVENEMENTS.CHAT_ENVOYER, { canal, texte, ...(destinataire ? { destinataire } : {}) });
+  }
+
+  private recevoirMessage(m: MessageChat) {
+    const moi = this.etat.profil?.pseudo.toLocaleLowerCase("fr");
+    const envoye = m.canal === "murmure" && m.de.toLocaleLowerCase("fr") === moi;
+    const heure = new Date(m.horodatage).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" });
+    this.journaliser(m.texte, m.canal, { pseudo: envoye ? m.vers! : m.de, nom: envoye ? m.vers! : m.nom, vers: m.vers, envoye, heure });
   }
 
   // --- Journal de quetes (MJ seulement : le serveur refuse les joueurs) ---------
@@ -297,7 +315,7 @@ class Jeu {
     }
   }
 
-  deconnecter() {
+  deconnecter(avis: string | null = null) {
     this.socket?.disconnect();
     this.socket = null;
     try {
@@ -305,7 +323,7 @@ class Jeu {
     } catch {
       /* rien a effacer */
     }
-    this.etat = ETAT_INITIAL;
+    this.etat = { ...ETAT_INITIAL, avis };
     for (const rappel of this.abonnes) rappel();
   }
 
@@ -318,8 +336,10 @@ class Jeu {
     const r = await this.demander(EVENEMENTS.TABLE_REJOINDRE, { idTable });
     if (!r.ok) {
       this.memoriser({ idTable: null });
+      this.modifier({ avis: r.erreur ?? null }); // ex. "Le Maitre du Jeu t'a expulse de cette table."
       return;
     }
+    this.modifier({ avis: null });
     this.memoriser({ idTable });
     if (r.creationRequise) {
       this.modifier({ table: r.table as Table, creationRequise: true, personnages: {}, scene: null, combat: null });
@@ -437,8 +457,13 @@ class Jeu {
 
     socket.on(EVENEMENTS.COMBAT_ETAT, ({ combat, cause }) => {
       this.modifier({ combat });
-      this.journaliser(decrireCombat(cause), "combat");
+      if (cause) this.journaliser(decrireCombat(cause), "combat"); // sans cause : simple mise a jour (un monstre apparait)
     });
+
+    // Discussion, sons, expulsion.
+    socket.on(EVENEMENTS.CHAT_MESSAGE, (m: MessageChat) => this.recevoirMessage(m));
+    socket.on(EVENEMENTS.SON_JOUER, ({ son }: { son: string }) => audio.jouer(son));
+    socket.on(EVENEMENTS.JOUEUR_EXPULSE, ({ message }: { message: string }) => this.deconnecter(message));
     socket.on(EVENEMENTS.DES_RESULTAT, (resultat) => this.journaliser(decrireDes(resultat), "des"));
 
     // La carte : l'etat complet passe par le magasin, le reste va direct au moteur.

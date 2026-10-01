@@ -804,6 +804,11 @@ function brancherSocket(jeton) {
     afficherPersonnages();
   });
 
+  socket.on(EVENEMENTS.CHAT_MESSAGE, (m) => {
+    if (m.canal === "murmure") journal(`[Murmure] ${m.de} -> ${m.vers} : ${m.texte}`);
+    else journal(`[${m.canal === "groupe" ? "Groupe" : "Dire"}] ${m.nom} : ${m.texte}`);
+  });
+  socket.on(EVENEMENTS.SON_JOUER, ({ son }) => journal(`(Son joue chez les joueurs : ${son})`));
   socket.on(EVENEMENTS.QUETES_ETAT, ({ quetes, cause }) => {
     afficherQuetes(quetes);
     if (cause) journal(`Quete ${cause.action} : "${cause.titre}" (par ${cause.par}).`);

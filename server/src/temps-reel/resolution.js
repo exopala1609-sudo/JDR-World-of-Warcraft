@@ -55,7 +55,9 @@ export function proposerJet(ctx, socket, personnage, jet, { secret = false } = {
     par: pseudo,
     idSocket: socket.id,
     statut: "en-attente",
-    secret, // jet secret du MJ : le resultat ne va qu'au MJ
+    // Jet secret : demande par le MJ, ou jet d'un monstre que les joueurs ne
+    // voient pas (cache, ou dans le brouillard) : le resultat ne va qu'au MJ.
+    secret: secret || Boolean(personnage && !ctx.pnjVisible(personnage)),
     ...jet,
   };
   ctx.jets.set(complet.id, complet);

@@ -3,7 +3,7 @@ import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone, urlPortrait } from "@/core/medias";
 import type { Personnage, Ressource } from "@/core/types";
 import { Barre } from "@/ui/Barre";
-import { avecInfobulle } from "@/ui/InfoBulle";
+import { avecInfobulle, versScene } from "@/ui/InfoBulle";
 
 // Couleurs de barre prevues par theme.css (fiches d'avant le referentiel).
 const APPARENCES_DU_THEME = new Set(["mana", "rage", "energie", "focalisation", "puissance-runique", "eclats-ame", "points-combo", "puissance-sacree"]);
@@ -63,6 +63,12 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
       className={classes.join(" ")}
       // Clic : ce personnage devient la "cible" (ses sacs / sa fiche s'ouvrent avec B / C).
       onClick={() => jeu.modifier((e) => ({ selection: e.selection === p.id ? null : p.id }))}
+      // Clic droit (MJ) : le menu contextuel (PV, alterations, expulser...).
+      onContextMenu={(e) => {
+        if (!jeu.estMJ()) return;
+        e.preventDefault();
+        jeu.modifier({ menu: { idPersonnage: p.id, ...versScene(e.clientX, e.clientY) } });
+      }}
       {...avecInfobulle(() => (
         <>
           <div className="infobulle__titre infobulle__ligne--or">{p.nom}</div>

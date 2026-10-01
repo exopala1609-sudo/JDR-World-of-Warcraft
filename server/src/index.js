@@ -8,7 +8,7 @@ import express from "express";
 import { exigerMJ, routesAcces } from "./auth/routes.js";
 import { creerGestionnaireSessions } from "./auth/sessions.js";
 import { anciennesPartiesLocales, chargerConfig, RACINE } from "./config.js";
-import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers } from "./diagnostic.js";
+import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers, installerLisezMoi } from "./diagnostic.js";
 import { creerCompendium, installerExemples } from "./donnees/compendium.js";
 import { creerDepot } from "./donnees/depot.js";
 import { creerReferentiel, installerExemplesReferentiel, resumerReferentiel, situerErreur } from "./donnees/referentiel.js";
@@ -34,6 +34,7 @@ if (config.problemes.length) {
 const modeDev = process.argv.includes("--dev");
 const avecTunnel = process.argv.includes("--tunnel"); // npm run partie
 const dossiersCrees = creerSousDossiersManquants(config);
+installerLisezMoi(config, resolve(RACINE, "exemples"));
 // Compendium vide (premier lancement) : on y depose les fichiers d'exemple.
 const exemplesInstalles = installerExemples(config.dossiers.compendium, resolve(RACINE, "exemples", "compendium"));
 // Referentiel vide (premier lancement) : races, classes... provisoires, a remplacer.

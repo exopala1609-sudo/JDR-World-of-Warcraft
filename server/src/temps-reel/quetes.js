@@ -8,6 +8,7 @@ import { STATUTS_QUETE } from "../modeles/quete.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { salleTable } from "./index.js";
+import { jouerSon } from "./sons.js";
 
 const Demandes = {
   ajouter: z.strictObject({
@@ -25,6 +26,9 @@ export function brancher(socket, ctx) {
 
   function publier(idTable, quetes, cause) {
     io.to(salleTable(idTable)).emit(EVENEMENTS.QUETES_ETAT, { quetes, cause });
+    // Le son de WoW : "quete acceptee" a l'ajout, la fanfare a la fin.
+    if (cause.action === "nouvelle") jouerSon(ctx, idTable, "quete-nouvelle");
+    if (cause.action === "terminee") jouerSon(ctx, idTable, "quete-terminee");
   }
   function exigerQuete(idTable, idQuete) {
     const quete = depot.obtenirQuetes(idTable).find((q) => q.id === idQuete);

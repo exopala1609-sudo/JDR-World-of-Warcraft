@@ -123,6 +123,7 @@ export type Personnage = {
 export type Pion = {
   id: string;
   idPersonnage: string;
+  cache?: boolean; // MJ : pion cache aux joueurs (ils ne le recoivent meme pas)
   x: number;
   y: number;
   couleur: string;
@@ -210,7 +211,17 @@ export type Scene = {
 export type Combat = {
   round: number;
   indexActif: number;
-  participants: { id: string; idPersonnage: string; nom: string; initiative: number }[];
+  // masque : un monstre que les joueurs ne voient pas ("???", ni identifiant ni jet)
+  participants: { id: string; idPersonnage: string | null; nom: string; initiative: number | null; masque?: boolean }[];
 } | null;
 
-export type LigneJournal = { id: number; texte: string; type: "systeme" | "des" | "combat" | "butin" | "erreur" };
+export type LigneJournal = {
+  id: number;
+  texte: string;
+  type: "systeme" | "des" | "combat" | "butin" | "erreur" | "dire" | "groupe" | "murmure";
+  // Messages de joueurs : qui parle (son pseudo, pour lui murmurer d'un clic) et sous quel nom.
+  message?: { pseudo: string; nom: string; vers?: string; envoye?: boolean; heure: string };
+};
+
+/** Un message de la discussion, tel que le serveur le diffuse. */
+export type MessageChat = { canal: "dire" | "groupe" | "murmure"; de: string; nom: string; texte: string; vers?: string; horodatage: string };

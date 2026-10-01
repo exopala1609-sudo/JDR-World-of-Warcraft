@@ -102,6 +102,14 @@ export function creerGestionnaireSessions({ motDePasseMJ }) {
       throw new ErreurAcces("Role inconnu.", 400);
     },
 
+    /** Annule tous les jetons d'un joueur (expulsion) : il doit se reconnecter. */
+    revoquerPseudo(pseudo) {
+      const cible = normaliserPseudo(pseudo);
+      for (const [jeton, session] of jetons) {
+        if (session.role === ROLES.JOUEUR && normaliserPseudo(session.pseudo) === cible) jetons.delete(jeton);
+      }
+    },
+
     /** Renvoie le profil associe a un jeton valide, sinon null. */
     verifier(jeton) {
       if (typeof jeton !== "string") return null;

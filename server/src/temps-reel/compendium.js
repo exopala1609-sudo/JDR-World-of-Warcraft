@@ -22,7 +22,7 @@ const Demandes = {
   retirerObjet: z.strictObject({ idPersonnage, idObjet: schemaId("o"), quantite: z.int().min(1).max(QUANTITE_MAX).optional() }),
   apprendre: z.strictObject({ idPersonnage, idSort: schemaIdCompendium }),
   oublier: z.strictObject({ idPersonnage, idSort: schemaId("s") }),
-  medias: z.strictObject({ categorie: z.enum(["cartes", "jetons", "portraits", "icones"]) }),
+  medias: z.strictObject({ categorie: z.enum(["cartes", "jetons", "portraits", "icones", "sons"]) }),
 };
 
 export function brancher(socket, ctx) {
