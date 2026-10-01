@@ -30,6 +30,7 @@ function FicheMonstre({ m }: { m: Monstre }) {
         </span>
         <span>
           <strong>Vitesse</strong> {m.vitesse}
+          {m.taille > 1 ? ` - pion ${m.taille} x ${m.taille} cases` : ""}
         </span>
       </div>
       <div className="bestiaire__caracs">

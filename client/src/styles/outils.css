@@ -875,3 +875,14 @@
   border-color: #6b1b0d;
   background: rgba(255, 250, 235, 0.8);
 }
+.menu-mj__tailles {
+  align-items: center;
+  color: var(--texte-doux);
+}
+.menu-mj__retirer--actif {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.menu-mj__action small {
+  font-size: 11px;
+}

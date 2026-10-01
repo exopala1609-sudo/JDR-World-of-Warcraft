@@ -13,7 +13,7 @@ import { fabriquerMonstre } from "../modeles/personnage.js";
 import { z } from "../modeles/zod.js";
 import { lancerDes } from "../regles/des.js";
 import { ErreurRegle } from "../regles/erreurs.js";
-import { placerPion, positionValide } from "../regles/scene.js";
+import { placerPion } from "../regles/scene.js";
 import { SALLE_MJ } from "./index.js";
 
 const coordonnee = z.number().finite().min(-100_000).max(100_000);
@@ -124,8 +124,7 @@ export function brancher(socket, ctx) {
     const personnage = ctx.publierPersonnage(fiche, { action: "invocation", par: pseudo, cache }); // PNJ : au MJ seul
 
     const scene = depot.obtenirScene(idTable);
-    const position = positionValide(scene, x, y);
-    depot.enregistrerScene(placerPion(scene, personnage, position, { cache }).scene);
+    depot.enregistrerScene(placerPion(scene, personnage, { x, y }, { cache, taille: modele.taille }).scene);
     ctx.publierScene(idTable, { action: "pion-place", par: pseudo, nom });
     return { personnage };
   });

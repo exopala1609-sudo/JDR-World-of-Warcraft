@@ -76,6 +76,8 @@ const ETAPES = {
 
   // Version 4 (sprint 7) -> version 5 (sprint 8 : etat "repose").
   4: (fiche) => ({ ...fiche, versionSchema: 5, repose: fiche.repose ?? false }),
+  // Sprint 11 : attaques des monstres, image du pion.
+  5: (fiche) => ({ ...fiche, versionSchema: 6, attaquesMonstre: fiche.attaquesMonstre ?? [], jeton: fiche.jeton ?? null }),
 };
 
 /**

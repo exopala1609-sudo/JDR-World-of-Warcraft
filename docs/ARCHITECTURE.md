@@ -532,3 +532,22 @@ carte du jeu est simplement une nouvelle « cible » qui accepte les charges
 `bestiaire` et `coffre`, et convertit le point de lacher en coordonnees de
 carte (`moteur.versCarte`).
 
+## Monstres jouables, pions illustres, carnet, repos court (sprint 11)
+
+- **Fiches en version 6** (migration automatique au demarrage) : `attaquesMonstre`
+  (copiees du bestiaire a l'invocation, et rangees sur la barre du monstre) et
+  `jeton` (image du pion).
+- **Attaque d'un monstre** : `monstre:attaquer` -> `jetAttaqueMonstre`
+  (`server/src/regles/resolution.js`) -> fenetre de resolution, comme une arme.
+  Un monstre invisible des joueurs attaque en secret (MJ seul).
+- **Image du pion** : le serveur ajoute `image` a chaque pion (`jetons/<jeton>`,
+  sinon le portrait) ; le moteur de carte la charge une fois et la dessine dans
+  le rond, avec les initiales en secours. **Taille** : 1 a 4 cases (bestiaire,
+  ou clic droit > Taille).
+- **Carnet de notes** (touche N, onglet du grimoire, outil du MJ) :
+  `parties/<table>/notes.json`, un carnet par auteur. Le serveur ne l'envoie
+  qu'a son auteur : ni les autres joueurs, ni le MJ ne lisent le carnet d'un
+  joueur.
+- **Repos court** : sur la fiche (C), le joueur choisit ses des de vie ; le
+  serveur les lance (1d<faces> + Constitution chacun).
+

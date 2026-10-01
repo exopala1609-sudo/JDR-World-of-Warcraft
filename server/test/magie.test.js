@@ -121,3 +121,14 @@ test("des libres du lanceur : un d20 (avec avantage) ou des des quelconques, det
   assert.equal(ligne.des.jets.length, 3);
   assert.equal(ligne.total, ligne.des.jets.reduce((a, b) => a + b, 0));
 });
+
+test("attaque de monstre : bonus de degats affiche a part ; un critique ne double que les des", async () => {
+  const { jetAttaqueMonstre } = await import("../src/regles/resolution.js");
+  const attaque = { nom: "Lance", toucher: 4, degats: "1d6+2", type: "perforant" };
+  const normal = jetAttaqueMonstre({ nom: "Gnoll" }, attaque, desTruques(12, 5));
+  assert.equal(normal.lignes[1].des.formule, "1d6");
+  assert.deepEqual(normal.lignes[1].modificateurs, [{ nom: "Bonus", valeur: 2 }]);
+  assert.equal(normal.lignes[1].total, 7);
+  const critique = jetAttaqueMonstre({ nom: "Gnoll" }, attaque, desTruques(20, 5));
+  assert.equal(critique.lignes[1].des.formule, "2d6"); // le +2 n'est pas double
+});

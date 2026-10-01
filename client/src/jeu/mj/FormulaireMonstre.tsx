@@ -7,6 +7,13 @@ import type { Monstre } from "@/core/types";
 
 type Attaque = Monstre["attaques"][number];
 
+export const TAILLES: [number, string][] = [
+  [1, "Petite / moyenne (1 case)"],
+  [2, "Grande (2 x 2)"],
+  [3, "Tres grande (3 x 3)"],
+  [4, "Gigantesque (4 x 4)"],
+];
+
 const VIDE: Omit<Monstre, "id"> = {
   nom: "",
   type: "",
@@ -15,6 +22,7 @@ const VIDE: Omit<Monstre, "id"> = {
   pv: 10,
   classeArmure: 12,
   vitesse: "9 m",
+  taille: 1,
   caracteristiques: Object.fromEntries(CARACTERISTIQUES.map((c) => [c, 10])),
   attaques: [],
   butin: [],
@@ -86,6 +94,26 @@ export function FormulaireMonstre({ modele, surFin }: { modele: Monstre | null; 
         <label>
           Vitesse
           <input className="champ-parchemin" value={m.vitesse} maxLength={40} onChange={(e) => changer({ vitesse: e.target.value })} />
+        </label>
+        <label>
+          Taille du pion
+          <select className="champ-parchemin" value={m.taille} onChange={(e) => changer({ taille: Number(e.target.value) })}>
+            {TAILLES.map(([valeur, nom]) => (
+              <option key={valeur} value={valeur}>
+                {nom}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Jeton (image)
+          <input
+            className="champ-parchemin"
+            value={m.jeton ?? ""}
+            maxLength={80}
+            placeholder="nom du fichier dans jetons/"
+            onChange={(e) => changer({ jeton: e.target.value.replace(/\.[a-z0-9]+$/i, "").trim() || undefined })}
+          />
         </label>
       </div>
 

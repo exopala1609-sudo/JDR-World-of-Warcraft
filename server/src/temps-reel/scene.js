@@ -33,6 +33,7 @@ import { ErreurRegle } from "../regles/erreurs.js";
 import {
   ajouterTrait,
   changerCarte,
+  changerTaillePion,
   deplacerPion,
   pionVisibleParLesJoueurs,
   placerPion,
@@ -59,6 +60,7 @@ const Demandes = {
   }),
   pion: z.strictObject({ idPion: schemaId("j") }),
   cacher: z.strictObject({ idPion: schemaId("j"), cache: z.boolean() }),
+  taille: z.strictObject({ idPion: schemaId("j"), taille: z.int().min(1).max(4) }),
   deplacer: z.strictObject({
     idPion: schemaId("j"),
     x: coordonnee,
@@ -191,6 +193,14 @@ export function brancher(socket, ctx) {
     const scene = enregistrer(retirerPion(sceneCourante(), idPion));
     verrous.delete(idPion);
     ctx.publierScene(scene.idTable, { action: "pion-retire", par: pseudo });
+    return {};
+  });
+
+  ctx.guichet(socket, EVENEMENTS.PION_TAILLE, Demandes.taille, ({ idPion, taille }) => {
+    ctx.exigerMJ(socket, "changer la taille d'un pion");
+    const scene = sceneCourante();
+    enregistrer(changerTaillePion(scene, idPion, taille));
+    ctx.publierScene(scene.idTable, { action: "pion-taille", par: pseudo });
     return {};
   });
 

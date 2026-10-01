@@ -148,6 +148,10 @@ export function Grimoire({ position }: { position: { x: number; y: number } }) {
         <span>Attaque de sort {signe(stats.attaque)}</span>
         <span>DD des sauvegardes {stats.dd}</span>
         <span>{maximum === 0 ? "Sorts mineurs seulement" : `Sorts jusqu'au niveau ${maximum}`}</span>
+        {/* Le marque-page du grimoire : le carnet de notes personnel. */}
+        <button type="button" className="grimoire__signet" onClick={() => jeu.modifier((e) => ({ fenetres: { ...e.fenetres, carnet: true } }))}>
+          Carnet de notes (N)
+        </button>
       </div>
       <div className="livre">
         {pages.map((page, i) => (

@@ -177,7 +177,15 @@ Le fichier `exemple-bestiaire.json` (commente) montre tous les champs.
 | `caracteristiques` | non | 10 pour chaque caracteristique absente |
 | `attaques` | non | `nom`, `toucher`, `degats` (formule), `type` : affichees dans le bestiaire |
 | `butin` | non | objets du compendium (`id`, `quantite`) trouves sur son cadavre |
+| `taille` | non | taille du pion en cases : 1 (defaut), 2 (grande : ogre), 3, 4 (dragon) |
+| `jeton` | non | image du pion, dossier `jetons/` (par defaut : l'`id`, ex. `jetons/gnoll.png`) |
 | `icone` | non | image du dossier `icones/` (par defaut : l'`id`) |
+
+Les `attaques` sont **jouables** : une fois le monstre pose, clic droit sur
+son pion > Attaques, ou cible-le et passe ta barre en page 2 (elles y sont
+deja rangees). La fenetre de des s'ouvre : d20 + `toucher`, puis les degats
+(le bonus fixe de la formule est affiche a part ; un critique ne double que
+les des).
 
 **Creer un monstre sans ouvrir de fichier** : dans le Bestiaire, bouton
 **« + Nouveau monstre / PNJ »** (ou « Dupliquer pour modifier » sur un monstre

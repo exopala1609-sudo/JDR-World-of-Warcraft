@@ -32,6 +32,7 @@ import * as chat from "./chat.js";
 import * as des from "./des.js";
 import * as equipement from "./equipement.js";
 import * as joueurs from "./joueurs.js";
+import * as notes from "./notes.js";
 import * as personnages from "./personnages.js";
 import * as quetes from "./quetes.js";
 import * as referentiel from "./referentiel.js";
@@ -42,7 +43,7 @@ import * as sons from "./sons.js";
 import * as tables from "./tables.js";
 import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs, bestiaire];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs, bestiaire, notes];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
@@ -56,6 +57,20 @@ export const salleDuJoueur = (idTable, pseudo) => `table:${idTable}:joueur:${nor
  * n'est envoye qu'a son proprietaire et au MJ.
  */
 const vuePublique = (fiche) => ({ ...fiche, inventaire: [], sacPrive: true });
+
+/**
+ * L'image dessinee dans le pion (adresse sous /medias/, sans le prefixe) :
+ * son jeton (dossier jetons/), sinon son portrait, sinon portraits/<nom>.
+ * Absente du dossier : le pion garde ses initiales.
+ */
+export function imageDuPion(personnage) {
+  if (!personnage) return null;
+  if (personnage.jeton) return `jetons/${personnage.jeton}`;
+  if (personnage.portrait) return `portraits/${personnage.portrait}`;
+  if (!personnage.proprietaire) return null;
+  const nom = personnage.nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return nom ? `portraits/${nom}` : null;
+}
 
 export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, referentiel: regles, config }) {
   const io = new Server(serveurHttp, {
@@ -304,7 +319,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     /** Un pion, complete du nom et du proprietaire de son personnage. */
     presenterPion(pion) {
       const personnage = depot.obtenirPersonnage(pion.idPersonnage);
-      return { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null };
+      return { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null, image: imageDuPion(personnage) };
     },
 
     /**

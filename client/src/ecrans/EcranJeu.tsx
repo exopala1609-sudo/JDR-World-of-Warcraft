@@ -11,6 +11,7 @@ import { FichePersonnage } from "@/jeu/FichePersonnage";
 import { Grimoire } from "@/jeu/Grimoire";
 import { JournalQuetes } from "@/jeu/JournalQuetes";
 import { MicroMenu } from "@/jeu/MicroMenu";
+import { Carnet } from "@/jeu/Carnet";
 import { FenetreInitiative } from "@/jeu/FenetreInitiative";
 import { Minicarte } from "@/jeu/Minicarte";
 import { Annonce, ModaleResolution } from "@/jeu/ModaleResolution";
@@ -50,6 +51,7 @@ export function EcranJeu() {
       else if (touche === "p") basculer("grimoire");
       else if (touche === "l") basculer("quetes");
       else if (touche === "i") basculer("initiative");
+      else if (touche === "n") basculer("carnet");
       else if (touche === "escape") {
         jeu.fermerButin();
         jeu.modifier({ fenetres: FENETRES_FERMEES });
@@ -78,6 +80,7 @@ export function EcranJeu() {
         {fenetres.sacs && <Sacs position={{ x: largeur - 420, y: hauteur - 560 }} />}
         {fenetres.grimoire && <Grimoire position={{ x: Math.max(20, largeur / 2 - 560), y: 120 }} />}
         {fenetres.quetes && <JournalQuetes position={{ x: Math.max(20, largeur / 2 - 80), y: 140 }} />}
+        {fenetres.carnet && <Carnet position={{ x: Math.max(20, largeur / 2 - 450), y: 150 }} />}
         {fenetres.initiative && <FenetreInitiative position={{ x: largeur - 680, y: 430 }} />}
         <FenetreButin />
       </div>

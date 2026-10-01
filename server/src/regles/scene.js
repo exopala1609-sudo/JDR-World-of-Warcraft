@@ -22,18 +22,18 @@ export function positionValide(scene, x, y, { aimanter: avecAimant = true, taill
  * (le MJ le revele quand il veut : clic droit > "Reveler") ; un heros, visible.
  * "cache" permet de choisir explicitement.
  */
-export function placerPion(scene, personnage, position, { cache = personnage.proprietaire === null } = {}) {
+export function placerPion(scene, personnage, position, { cache = personnage.proprietaire === null, taille = 1 } = {}) {
   if (scene.pions.some((p) => p.idPersonnage === personnage.id)) {
     throw new ErreurRegle(`${personnage.nom} est deja sur la carte.`);
   }
   // Sans position precise : au centre de la carte.
-  const { x, y } = positionValide(scene, position?.x ?? scene.carte.largeur / 2, position?.y ?? scene.carte.hauteur / 2);
+  const { x, y } = positionValide(scene, position?.x ?? scene.carte.largeur / 2, position?.y ?? scene.carte.hauteur / 2, { taille });
   const pion = {
     id: nouvelId("j"),
     idPersonnage: personnage.id,
     x,
     y,
-    taille: 1,
+    taille, // en cases : 2 = un ogre (2 x 2), 4 = un dragon
     couleur: couleurPour(personnage.proprietaire),
     cache,
   };
@@ -68,6 +68,14 @@ export function deplacerPion(scene, idPion, x, y, options) {
   const position = positionValide(scene, x, y, { ...options, taille: pion.taille });
   const deplace = { ...pion, ...position };
   return { scene: { ...scene, pions: scene.pions.map((p) => (p.id === idPion ? deplace : p)) }, pion: deplace };
+}
+
+/** Taille d'un pion (1 a 4 cases de cote) : il se recale sur la grille. */
+export function changerTaillePion(scene, idPion, taille) {
+  const pion = scene.pions.find((p) => p.id === idPion);
+  if (!pion) throw new ErreurRegle("Ce pion n'est plus sur la carte.");
+  const position = positionValide(scene, pion.x, pion.y, { taille });
+  return { ...scene, pions: scene.pions.map((p) => (p.id === idPion ? { ...p, ...position, taille } : p)) };
 }
 
 export function retirerPion(scene, idPion) {

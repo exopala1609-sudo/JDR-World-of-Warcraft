@@ -17,12 +17,13 @@ import { nouvelId, schemaId } from "../modeles/identifiants.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { modifierRessource } from "../regles/ressources.js";
-import { jetSort, jetTest } from "../regles/resolution.js";
+import { jetAttaqueMonstre, jetSort, jetTest } from "../regles/resolution.js";
 import { salleMJ, salleTable } from "./index.js";
 
 const Demandes = {
   lancer: z.strictObject({ idPersonnage: schemaId("p"), reference: z.string().min(1).max(80) }),
   valider: z.strictObject({ idJet: schemaId("r") }),
+  attaque: z.strictObject({ idPersonnage: schemaId("p"), reference: z.string().min(1).max(60) }),
   test: z.strictObject({
     idPersonnage: schemaId("p"),
     genre: z.enum(["caracteristique", "sauvegarde"]),
@@ -112,6 +113,14 @@ export function brancher(socket, ctx) {
     const classe = ctx.referentiel.obtenirClasse(personnage.classe);
     const jet = proposerJet(ctx, socket, personnage, { ...jetTest(personnage, genre, caracteristique, classe, avantage), cout: null });
     return { jet };
+  });
+
+  // Attaque d'un monstre du bestiaire (menu du MJ, ou barre d'actions du monstre).
+  ctx.guichet(socket, EVENEMENTS.MONSTRE_ATTAQUER, Demandes.attaque, ({ idPersonnage, reference }) => {
+    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    const attaque = personnage.attaquesMonstre.find((a) => a.nom === reference);
+    if (!attaque) throw new ErreurRegle(`${personnage.nom} ne connait pas l'attaque "${reference}".`);
+    return { jet: proposerJet(ctx, socket, personnage, { ...jetAttaqueMonstre(personnage, attaque), cout: null }) };
   });
 
   // "Valider" : le lanceur (ou le MJ) annonce le resultat a la table.

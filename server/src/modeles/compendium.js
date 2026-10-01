@@ -166,5 +166,8 @@ export const SchemaEntreeMonstre = z.strictObject({
     .max(20)
     .default([]),
   icone: schemaIcone.optional(), // image du dossier icones/ (par defaut : l'id)
+  jeton: schemaIcone.optional(), // image du pion, dossier jetons/ (par defaut : l'id)
+  // Taille du pion en cases : 1 (petite / moyenne), 2 (grande), 3 (tres grande), 4 (gigantesque).
+  taille: entier(1, 4).default(1),
   description: z.string().max(2000).default(""),
 });

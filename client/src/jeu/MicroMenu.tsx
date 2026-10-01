@@ -25,6 +25,7 @@ export function MicroMenu() {
       {bouton("P", "Grimoire (P)", () => basculer("grimoire"), fenetres.grimoire)}
       {bouton("L", "Journal de quetes (L)", () => basculer("quetes"), fenetres.quetes)}
       {bouton("I", "Initiative (I)", () => basculer("initiative"), fenetres.initiative)}
+      {bouton("N", "Carnet de notes (N)", () => basculer("carnet"), fenetres.carnet)}
       {bouton("B", "Sacs (B)", () => basculer("sacs"), fenetres.sacs)}
       <ReglageSon />
       {bouton("X", "Quitter la partie", () => jeu.deconnecter())}

@@ -56,6 +56,7 @@ export class MoteurCarte {
    *   surButin(butin, clientX, clientY) : (facultatif) clic sur un coffre / cadavre
    *   surMenuPion(pion, clientX, clientY) : (facultatif) clic droit sur un pion (menu du MJ)
    *   surDeplacementButin(butin, x, y) : (facultatif, MJ) un coffre / cadavre glisse ailleurs
+   *   surSelection(pion)         : (facultatif) clic sur un pion : il devient la "cible"
    */
   constructor(canvas, options) {
     this.canvas = canvas;
@@ -77,6 +78,7 @@ export class MoteurCarte {
     this.aimanter = true;
     this.selection = null; // pion "cible" (cercle au sol)
     this.actif = null; // idPersonnage dont c'est le tour (combat) : halo dore qui pulse
+    this.images = new Map(); // adresse -> Image chargee, ou "absente" (on garde alors les initiales)
     this.geste = null; // geste en cours : glisser un pion, deplacer la vue, peindre
     this.souris = null;
 
@@ -621,16 +623,36 @@ export class MoteurCarte {
     c.beginPath();
     c.arc(x, y, r, 0, Math.PI * 2);
     c.fill();
-    c.strokeStyle = "#fff";
-    c.lineWidth = 3 / z;
-    c.stroke();
 
-    const initiales = pion.nom.split(/\s+/).map((mot) => mot[0]).join("").slice(0, 2).toUpperCase();
-    c.fillStyle = "#fff";
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    c.font = `bold ${r * 0.8}px sans-serif`;
-    c.fillText(initiales, x, y);
+    // Son portrait / jeton dans le rond, s'il existe ; sinon ses initiales.
+    const image = this.imageDuPion(pion);
+    if (image) {
+      c.save();
+      c.beginPath();
+      c.arc(x, y, r - 1.5 / z, 0, Math.PI * 2);
+      c.clip();
+      const cote = Math.min(image.naturalWidth, image.naturalHeight); // "cover" : on remplit le rond
+      c.drawImage(image, (image.naturalWidth - cote) / 2, (image.naturalHeight - cote) / 2, cote, cote, x - r, y - r, r * 2, r * 2);
+      c.restore();
+    } else {
+      const initiales = pion.nom.split(/\s+/).map((mot) => mot[0]).join("").slice(0, 2).toUpperCase();
+      c.fillStyle = "#fff";
+      c.textAlign = "center";
+      c.textBaseline = "middle";
+      c.font = `bold ${r * 0.8}px sans-serif`;
+      c.fillText(initiales, x, y);
+    }
+    // Liseré : la couleur du joueur (blanc pour les monstres), comme un cadre de portrait.
+    c.beginPath();
+    c.arc(x, y, r, 0, Math.PI * 2);
+    c.strokeStyle = pion.proprietaire ? pion.couleur : "#fff";
+    c.lineWidth = (image ? 4 : 3) / z;
+    c.stroke();
+    if (image) {
+      c.strokeStyle = "#000";
+      c.lineWidth = 1 / z;
+      c.stroke();
+    }
     // Nom sous le pion : blanc cerne de noir, lisible sur une carte claire comme dans le brouillard.
     const nom = pion.nom + (pion.cache ? " (cache)" : "");
     const yNom = y + r + Math.max(r * 0.3, 10 / z);
@@ -642,6 +664,28 @@ export class MoteurCarte {
     c.fillStyle = "#fff";
     c.fillText(nom, x, yNom);
     c.globalAlpha = 1;
+  }
+
+  /**
+   * L'image d'un pion (portrait, jeton), chargee une seule fois. Tant qu'elle
+   * charge, ou si le fichier n'existe pas, on renvoie null (initiales).
+   */
+  imageDuPion(pion) {
+    if (!pion.image) return null;
+    const adresse = `/medias/${pion.image.split("/").map(encodeURIComponent).join("/")}?remplacement=non`;
+    const connue = this.images.get(adresse);
+    if (connue === undefined) {
+      const image = new Image();
+      this.images.set(adresse, "chargement");
+      image.onload = () => {
+        this.images.set(adresse, image);
+        this.sale = true;
+      };
+      image.onerror = () => this.images.set(adresse, "absente");
+      image.src = adresse;
+      return null;
+    }
+    return typeof connue === "string" ? null : connue;
   }
 
   /** Pendant un glisser : ou le pion va tomber (aimante) + distance parcourue. */
@@ -730,7 +774,10 @@ export class MoteurCarte {
     }
 
     const pion = this.pionSous(point);
-    if (pion) this.selection = pion.id; // cercle de ciblage
+    if (pion) {
+      this.selection = pion.id; // cercle de ciblage
+      this.options.surSelection?.(pion);
+    }
     if (pion && this.options.peutDeplacer(pion)) {
       this.commencerGlisser(pion, point);
     } else {

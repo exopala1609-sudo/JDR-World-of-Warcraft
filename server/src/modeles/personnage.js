@@ -21,7 +21,7 @@ import { z } from "./zod.js";
 
 // Version du format des fiches. Si elle change, modeles/migrations.js sait
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
-export const VERSION_FICHE = 5;
+export const VERSION_FICHE = 6;
 
 const entier = (min, max) => z.int().min(min).max(max);
 
@@ -73,11 +73,20 @@ export const SchemaEquipement = z.partialRecord(z.enum(IDS_EMPLACEMENTS), Schema
 
 // Barre d'actions : 12 cases, vides (null) ou un raccourci vers un objet.
 export const SchemaRaccourci = z.strictObject({
-  type: z.enum(["objet", "sort"]),
+  type: z.enum(["objet", "sort", "attaque"]), // "attaque" : une attaque de monstre (son nom)
   reference: z.string().min(1).max(80), // l'origine dans le compendium, ou l'identifiant de l'objet / du sort
 });
 export const SchemaBarreActions = z.array(SchemaRaccourci.nullable()).length(TAILLE_BARRE);
 export const barreVide = () => Array(TAILLE_BARRE).fill(null);
+
+// Attaque d'un monstre (copiee du bestiaire a l'invocation) : jouable depuis
+// le menu du MJ ou la barre d'actions du monstre.
+export const SchemaAttaqueMonstre = z.strictObject({
+  nom: z.string().trim().min(1).max(60),
+  toucher: entier(-5, 30),
+  degats: z.string().min(1).max(40),
+  type: z.string().trim().max(30).default(""),
+});
 
 // Un sort connu (le "grimoire"), copie depuis le compendium.
 export const SchemaSortConnu = z.strictObject({
@@ -128,6 +137,9 @@ export const SchemaPersonnage = z
     // "Repose" facon WoW : vrai apres un repos long, jusqu'a la prochaine action
     // epuisante (degats subis, ressource depensee, sort lance, combat).
     repose: z.boolean(),
+    // Monstres : leurs attaques ; tous : l'image du pion (dossier jetons/, sans extension).
+    attaquesMonstre: z.array(SchemaAttaqueMonstre).max(10),
+    jeton: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/).nullable(),
     creeLe: z.iso.datetime(),
     modifieLe: z.iso.datetime(),
   })
@@ -206,6 +218,8 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
     grimoire: [],
     etats: [],
     repose: false,
+    attaquesMonstre: [],
+    jeton: null,
     creeLe: maintenant,
     modifieLe: maintenant,
   });
@@ -274,7 +288,7 @@ export function fabriquerPersonnage(entree, { idTable, proprietaire, referentiel
  * "pv" : deja tires par l'appelant (un nombre, meme si le modele donne "5d8").
  */
 export function fabriquerMonstre(modele, { idTable, nom, pv }) {
-  return ficheNeuve({
+  const fiche = ficheNeuve({
     idTable,
     proprietaire: null,
     nom,
@@ -288,6 +302,10 @@ export function fabriquerMonstre(modele, { idTable, nom, pv }) {
     pvMaximum: Math.max(1, Math.min(999, pv)),
     ressources: [],
   });
+  // Ses attaques, deja posees sur sa barre d'actions (le MJ n'a plus qu'a cliquer).
+  const attaquesMonstre = modele.attaques.slice(0, 10).map(({ nom: n, toucher, degats, type }) => ({ nom: n, toucher, degats, type }));
+  const barreActions = barreVide().map((_, i) => (attaquesMonstre[i] ? { type: "attaque", reference: attaquesMonstre[i].nom } : null));
+  return SchemaPersonnage.parse({ ...fiche, attaquesMonstre, barreActions, jeton: modele.jeton ?? modele.id });
 }
 
 /**

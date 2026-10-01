@@ -29,7 +29,9 @@ export type Objet = {
   emplacement?: string;
 };
 
-export type Raccourci = { type: "objet" | "sort"; reference: string };
+export type Raccourci = { type: "objet" | "sort" | "attaque"; reference: string };
+/** Une attaque de monstre (copiee du bestiaire sur sa fiche). */
+export type AttaqueMonstre = { nom: string; toucher: number; degats: string; type: string };
 
 /** Un sort du grimoire (copie de l'entree du compendium). */
 export type SortConnu = {
@@ -67,6 +69,8 @@ export type Monstre = {
   attaques: { nom: string; toucher: number; degats: string; type: string }[];
   butin: { id: string; quantite: number }[];
   icone?: string;
+  jeton?: string;
+  taille: number;
   description: string;
   modifiable?: boolean; // cree depuis le jeu (mes-monstres.json) : modifiable et supprimable ici
 };
@@ -78,6 +82,9 @@ export type Compendium = {
   etats: { cle: string; nom: string; nature: "buff" | "debuff"; icone: string; description: string; officiel: boolean }[];
   monstres: Monstre[];
 };
+
+/** Une note du carnet PRIVE (seul son auteur la recoit). */
+export type Note = { id: string; titre: string; texte: string; modifieLe: string };
 
 export type Quete = { id: string; titre: string; objectif: string; description: string; statut: "en-cours" | "terminee" | "echouee"; creeLe: string };
 
@@ -131,6 +138,8 @@ export type Personnage = {
   faction: string | null;
   portrait: string | null; // fichier du dossier portraits/
   repose: boolean; // apres un repos long : portrait "repose" facon WoW (Zzz)
+  attaquesMonstre: AttaqueMonstre[]; // monstres du bestiaire : leurs attaques
+  jeton: string | null; // image du pion (dossier jetons/), sinon le portrait
   sacPrive?: boolean; // fiche d'un autre joueur : le serveur n'envoie pas le contenu de son sac
   niveau: number;
   caracteristiques: Record<string, number>;
@@ -150,6 +159,8 @@ export type Pion = {
   id: string;
   idPersonnage: string;
   cache?: boolean; // MJ : pion cache aux joueurs (ils ne le recoivent meme pas)
+  taille: number; // en cases de cote (2 = un ogre)
+  image: string | null; // image dessinee dans le pion (sous /medias/), sinon les initiales
   x: number;
   y: number;
   couleur: string;

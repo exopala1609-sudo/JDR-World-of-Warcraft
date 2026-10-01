@@ -26,6 +26,11 @@
 //    "butin"         (facultatif) objets du compendium portes par le monstre :
 //                    on les trouve en fouillant son cadavre.
 //                    { "id": "potion-de-soins", "quantite": 1 }
+//    "taille"        (facultatif, 1 par defaut) taille du pion en cases :
+//                    1 = petite ou moyenne, 2 = grande (ogre), 3 = tres grande,
+//                    4 = gigantesque (dragon).
+//    "jeton"         (facultatif) image du pion, dossier jetons/ (par defaut :
+//                    l'id, ex. jetons/gnoll.png). Sans image : ses initiales.
 //    "icone"         (facultatif) image du dossier icones/ (par defaut : l'id).
 //    "description"   (facultatif) texte libre.
 //
@@ -102,6 +107,7 @@
       "type": "Geant",
       "puissance": "FP 2",
       "niveau": 4,
+      "taille": 2,
       "pv": "7d10+21",
       "classeArmure": 11,
       "caracteristiques": { "force": 19, "dexterite": 8, "constitution": 16, "intelligence": 9, "sagesse": 7, "charisme": 7 },

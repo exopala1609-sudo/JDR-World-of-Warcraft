@@ -727,3 +727,47 @@ test("table : le MJ la renomme, tout le monde le voit ; un joueur ne peut pas", 
   assert.equal((await chezThrall).table.nom, "Foret d'Elwynn");
   assert.equal(depot.listerTables()[0].nom, "Foret d'Elwynn");
 });
+
+test("monstres : attaques jouables (fenetre de resolution), taille du pion, image du jeton", async () => {
+  const idTable = depot.listerTables()[0].id;
+  const { personnage: ogre } = await demander(mj, EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: "ogre-mage", x: 1000, y: 1000, cache: false });
+  assert.deepEqual(ogre.attaquesMonstre.map((a) => a.nom), ["Massue"]);
+  assert.deepEqual(ogre.barreActions[0], { type: "attaque", reference: "Massue" }); // deja sur sa barre
+  const pion = depot.obtenirScene(idTable).pions.find((p) => p.idPersonnage === ogre.id);
+  assert.equal(pion.taille, 2); // un geant : 2 x 2 cases
+  // L'image du pion : jetons/<id du modele> (initiales si le fichier manque).
+  const vue = await demander(thrall, EVENEMENTS.TABLE_REJOINDRE, { idTable });
+  assert.equal(vue.scene.pions.find((p) => p.idPersonnage === ogre.id).image, "jetons/ogre-mage");
+
+  assert.equal((await demander(thrall, EVENEMENTS.MONSTRE_ATTAQUER, { idPersonnage: ogre.id, reference: "Massue" })).ok, false);
+  const { jet } = await demander(mj, EVENEMENTS.MONSTRE_ATTAQUER, { idPersonnage: ogre.id, reference: "Massue" });
+  assert.deepEqual(jet.lignes[0].modificateurs, [{ nom: "Toucher", valeur: 6 }]);
+  assert.equal(jet.secret, false); // visible des joueurs : le resultat leur est annonce
+  const chezThrall = attendre(thrall, EVENEMENTS.JET_RESULTAT);
+  await demander(mj, EVENEMENTS.JET_VALIDER, { idJet: jet.id });
+  assert.equal((await chezThrall).jet.action.nom, "Massue");
+
+  await demander(mj, EVENEMENTS.PION_TAILLE, { idPion: pion.id, taille: 3 });
+  assert.equal(depot.obtenirScene(idTable).pions.find((p) => p.id === pion.id).taille, 3);
+  await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: ogre.id });
+});
+
+test("carnet de notes : prive (ni les autres joueurs ni le MJ ne le lisent), sauvegarde", async () => {
+  const idTable = depot.listerTables()[0].id;
+  const fuite = attendre(jaina, EVENEMENTS.NOTES_ETAT, 200);
+  const fuiteMJ = attendre(mj, EVENEMENTS.NOTES_ETAT, 200);
+  const { note } = await demander(thrall, EVENEMENTS.NOTE_ENREGISTRER, { titre: "Soupcons", texte: "Le tavernier ment." });
+  assert.equal(await fuite, null);
+  assert.equal(await fuiteMJ, null);
+  assert.deepEqual((await demander(thrall, EVENEMENTS.NOTES_LIRE)).notes.map((n) => n.titre), ["Soupcons"]);
+  assert.deepEqual((await demander(jaina, EVENEMENTS.NOTES_LIRE)).notes, []); // son carnet a elle
+  assert.deepEqual((await demander(mj, EVENEMENTS.NOTES_LIRE)).notes, []); // le carnet du MJ, pas celui de Thrall
+  // Modifier, puis supprimer ; une note d'un autre est introuvable.
+  await demander(thrall, EVENEMENTS.NOTE_ENREGISTRER, { idNote: note.id, titre: "Soupcons", texte: "Le tavernier est un Defias !" });
+  assert.equal(depot.obtenirNotes(idTable, "joueur:thrall")[0].texte, "Le tavernier est un Defias !");
+  assert.equal((await demander(jaina, EVENEMENTS.NOTE_ENREGISTRER, { idNote: note.id, titre: "piratage" })).ok, false);
+  await demander(mj, EVENEMENTS.NOTE_ENREGISTRER, { titre: "Secret du MJ", texte: "VanCleef est dans la mine." });
+  assert.equal(depot.obtenirNotes(idTable, "mj").length, 1);
+  await demander(thrall, EVENEMENTS.NOTE_SUPPRIMER, { idNote: note.id });
+  assert.deepEqual(depot.obtenirNotes(idTable, "joueur:thrall"), []);
+});

@@ -141,6 +141,25 @@ export function MenuMJ() {
         </div>
       </section>
 
+      {p.attaquesMonstre.length > 0 && (
+        <section className="menu-mj__section">
+          <h3 className="menu-mj__titre">Attaques</h3>
+          {p.attaquesMonstre.map((a) => (
+            <button
+              key={a.nom}
+              type="button"
+              className="menu-mj__action"
+              onClick={() => {
+                jeu.attaquerMonstre(p.id, a.nom);
+                fermer();
+              }}
+            >
+              ⚔ {a.nom} <small className="menu-mj__detail">({a.toucher >= 0 ? "+" : ""}{a.toucher}, {a.degats} {a.type})</small>
+            </button>
+          ))}
+        </section>
+      )}
+
       {p.ressources.length > 0 && (
         <section className="menu-mj__section">
           <h3 className="menu-mj__titre">Ressources</h3>
@@ -190,6 +209,19 @@ export function MenuMJ() {
       <section className="menu-mj__section">
         {pion && (
           <>
+            <div className="menu-mj__ligne menu-mj__tailles">
+              <span>Taille :</span>
+              {[1, 2, 3, 4].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={`menu-mj__retirer${pion.taille === t ? " menu-mj__retirer--actif" : ""}`}
+                  onClick={() => jeu.demander(EVENEMENTS.PION_TAILLE, { idPion: pion.id, taille: t })}
+                >
+                  {t}x{t}
+                </button>
+              ))}
+            </div>
             <button type="button" className="menu-mj__action" onClick={() => jeu.demander(EVENEMENTS.PION_CACHER, { idPion: pion.id, cache: !pion.cache })}>
               {pion.cache ? "Reveler aux joueurs" : "Cacher aux joueurs"}
             </button>

@@ -28,6 +28,7 @@ export function utiliserRaccourci(index: number) {
   const raccourci = p?.barreActions[index];
   if (!p || !raccourci || jeu.lire().jet) return; // un jet attend deja "Valider"
   if (raccourci.type === "sort") jeu.lancerSort(p.id, raccourci.reference);
+  else if (raccourci.type === "attaque") jeu.attaquerMonstre(p.id, raccourci.reference);
   else jeu.utiliser(p.id, raccourci.reference);
 }
 
@@ -39,7 +40,10 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
   const estSort = raccourci?.type === "sort";
   const sort = p && raccourci && estSort ? sortDuRaccourci(p, raccourci) : undefined;
   const sortVerrouille = Boolean(p && sort && !etatDuSort(p, sort).debloque);
-  const objet: Objet | undefined = estSort ? undefined : (exemplaires?.dansLeSac[0] ?? exemplaires?.equipes[0]?.[1]);
+  // Attaque d'un monstre du bestiaire (barre du monstre, cote MJ).
+  const estAttaque = raccourci?.type === "attaque";
+  const attaque = p && estAttaque ? p.attaquesMonstre.find((a) => a.nom === raccourci!.reference) : undefined;
+  const objet: Objet | undefined = estSort || estAttaque ? undefined : (exemplaires?.dansLeSac[0] ?? exemplaires?.equipes[0]?.[1]);
   const quantite = exemplaires ? exemplaires.dansLeSac.reduce((t, o) => t + o.quantite, 0) : 0;
   const image = sort ? iconeObjet(sort) : objet ? iconeObjet(objet) : raccourci ? urlIcone(raccourci.reference) : "";
 
@@ -71,7 +75,7 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
     preparerGlisser(e, charge, () => jeu.definirRaccourci(p.id, index, null));
   };
 
-  const indisponible = raccourci && (estSort ? !sort || sortVerrouille : !objet);
+  const indisponible = raccourci && (estAttaque ? !attaque : estSort ? !sort || sortVerrouille : !objet);
   const classes = ["case", raccourci && "case--deplacable", indisponible && "case--epuisee", depot.possible && "case--possible", depot.survolee && "case--survolee"];
   return (
     <div
@@ -81,7 +85,18 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
       onPointerDown={glisser}
       onClick={() => utiliserRaccourci(index)}
       {...avecInfobulle(() =>
-        raccourci && estSort ? (
+        raccourci && estAttaque ? (
+          <>
+            <div className="infobulle__titre">{raccourci.reference}</div>
+            {attaque && (
+              <div>
+                {attaque.toucher >= 0 ? "+" : ""}
+                {attaque.toucher} au toucher - {attaque.degats} {attaque.type}
+              </div>
+            )}
+            <div className="infobulle__ligne--vert">Clic ou touche {touche} : attaquer (fenetre de des).</div>
+          </>
+        ) : raccourci && estSort ? (
           <>
             {sort ? <InfobulleSort sort={sort} p={p} /> : <div className="infobulle__titre">Ce sort n'est plus dans le grimoire</div>}
             {sort && !sortVerrouille && <div className="infobulle__ligne--vert">Clic ou touche {touche} : lancer.</div>}
@@ -101,7 +116,7 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
         ),
       )}
     >
-      {raccourci && <img src={image} alt="" />}
+      {raccourci && (estAttaque ? <span className="case-outil-mj__symbole">⚔</span> : <img src={image} alt="" />)}
       {objet?.soins && <span className="case__quantite">{quantite}</span>}
       <span className="actions__raccourci">{touche}</span>
     </div>

@@ -54,6 +54,8 @@ export function brancher(socket, ctx) {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
     if (raccourci?.type === "sort") {
       if (!sortDuGrimoire(personnage, raccourci.reference)) throw new ErreurRegle("Ce sort n'est pas dans le grimoire.");
+    } else if (raccourci?.type === "attaque") {
+      if (!personnage.attaquesMonstre.some((a) => a.nom === raccourci.reference)) throw new ErreurRegle("Cette attaque n'existe pas.");
     } else if (raccourci) {
       const { dansLeSac, equipes } = exemplairesDuRaccourci(personnage, raccourci.reference);
       const objet = dansLeSac[0] ?? equipes[0]?.[1];

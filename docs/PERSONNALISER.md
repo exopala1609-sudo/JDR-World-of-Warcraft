@@ -75,6 +75,17 @@ personnage en minuscules, sans accents, les espaces remplaces par des tirets :
 Le portrait apparait dans les cadres du groupe et au centre de la fiche de
 personnage. Sans image, les initiales s'affichent.
 
+## Images des pions (jetons)
+
+Chaque pion de la carte affiche une image dans son rond (sinon ses initiales) :
+
+- un **heros** : son portrait (celui choisi a la creation, ou `portraits/<nom>.png`) ;
+- un **monstre** : `jetons/<id du monstre>.png` (ex. `jetons/gnoll.png`), ou le
+  fichier indique par le champ `"jeton"` du bestiaire.
+
+Une image carree (ou presque), vue de dessus ou en buste, rend le mieux : elle
+est recadree en rond automatiquement. Apres avoir depose un fichier : F5.
+
 ## Icones (objets, sorts, auras, races, classes, factions)
 
 Dans `icones\`, une image par icone, du nom indique dans le compendium (champ

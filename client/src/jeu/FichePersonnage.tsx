@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { CARACTERISTIQUES } from "@partage/dnd5e.js";
+import { EVENEMENTS } from "@partage/protocole.js";
 import { EMPLACEMENTS, peutAllerDans } from "@partage/equipement.js";
 import { signe } from "@/core/journal";
 import { jeu, useJeu } from "@/core/jeu";
@@ -75,6 +77,42 @@ function Stat({ nom, valeur, variation }: { nom: string; valeur: string | number
   );
 }
 
+/**
+ * Repos court (une heure de pause, regles D&D 5e) : le joueur choisit combien
+ * de des de vie depenser ; chacun rend 1d<faces> + modificateur de
+ * Constitution PV. Le SERVEUR lance les des et applique les regles de repos
+ * des ressources (ex. emplacements de l'Occultiste).
+ */
+function ReposCourt({ p }: { p: Personnage }) {
+  const restants = p.desDeVie.restants;
+  const [nombre, setNombre] = useState(Math.min(1, restants));
+  const enCombat = useJeu((e) => Boolean(e.combat));
+  const valeur = Math.min(nombre, restants);
+  return (
+    <div className="repos-court">
+      <span className="repos-court__titre">Repos court</span>
+      <button type="button" className="bouton-page" disabled={valeur <= 0} onClick={() => setNombre(Math.max(0, valeur - 1))} aria-label="Un de de moins">
+        -
+      </button>
+      <span className="repos-court__nombre" title="Des de vie a depenser">
+        {valeur} d{p.desDeVie.faces}
+      </span>
+      <button type="button" className="bouton-page" disabled={valeur >= restants} onClick={() => setNombre(Math.min(restants, valeur + 1))} aria-label="Un de de plus">
+        +
+      </button>
+      <button
+        type="button"
+        className="bouton repos-court__bouton"
+        title={enCombat ? "Un repos court dure une heure : pas en plein combat !" : `Depense ${valeur} de(s) de vie (1d${p.desDeVie.faces} + Constitution chacun)`}
+        disabled={enCombat}
+        onClick={() => jeu.demander(EVENEMENTS.REPOS_COURT, { idPersonnage: p.id, desDeVie: valeur })}
+      >
+        Se reposer
+      </button>
+    </div>
+  );
+}
+
 export function FichePersonnage({ position }: { position: { x: number; y: number } }) {
   const p = useJeu((e) => jeu.personnageActif(e));
   // On equipe son propre personnage (le MJ : n'importe lequel). Les autres, on les "inspecte".
@@ -147,6 +185,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
             <Stat nom="Points de vie" valeur={`${pv.actuels} / ${pv.max}`} />
             {pv.temporaires > 0 && <Stat nom="PV temporaires" valeur={pv.temporaires} variation={1} />}
             <Stat nom="Des de vie" valeur={`${p.desDeVie.restants} / ${p.niveau} (d${p.desDeVie.faces})`} />
+            {modifiable && <ReposCourt p={p} />}
           </details>
           <details open>
             <summary>Combat</summary>

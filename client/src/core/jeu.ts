@@ -14,7 +14,7 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { ButinOuvert, Combat, Compendium, Jet, LigneJournal, MessageChat, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
+import type { ButinOuvert, Combat, Compendium, Jet, LigneJournal, MessageChat, Note, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
 import { audio } from "./audio";
 import { decrireCause, decrireCombat, decrireDes, decrireJet } from "./journal";
 
@@ -45,7 +45,9 @@ export type EtatJeu = {
     bestiaire: boolean;
     compendium: boolean;
     carteMJ: boolean;
+    carnet: boolean;
   };
+  notes: Note[] | null; // MON carnet de notes (charge a l'ouverture)
   quetes: Quete[]; // le journal de quetes du groupe
   jet: Jet | null; // la fenetre de resolution ouverte
   annonce: { id: number; titre: string; texte: string } | null; // "Nouvelle quete !" au centre de l'ecran
@@ -69,6 +71,7 @@ export const FENETRES_FERMEES: EtatJeu["fenetres"] = {
   bestiaire: false,
   compendium: false,
   carteMJ: false,
+  carnet: false,
 };
 
 const ETAT_INITIAL: EtatJeu = {
@@ -86,6 +89,7 @@ const ETAT_INITIAL: EtatJeu = {
   selection: null,
   fenetres: FENETRES_FERMEES,
   quetes: [],
+  notes: null,
   jet: null,
   annonce: null,
   butin: null,
@@ -166,6 +170,13 @@ class Jeu {
     return r;
   }
 
+  /** MJ : une attaque de monstre du bestiaire (fenetre de resolution). */
+  async attaquerMonstre(idPersonnage: string, reference: string) {
+    if (this.etat.jet?.statut === "en-attente") return;
+    const r = await this.demander(EVENEMENTS.MONSTRE_ATTAQUER, { idPersonnage, reference });
+    if (r.ok) this.modifier({ jet: r.jet as Jet });
+  }
+
   /** Test de caracteristique ou sauvegarde : le serveur lit le bonus dans la fiche. */
   async lancerTest(idPersonnage: string, genre: "caracteristique" | "sauvegarde", caracteristique: string, avantage: Avantage) {
     if (this.etat.jet) return; // un jet attend deja "Valider"
@@ -202,6 +213,21 @@ class Jeu {
       const { ok: _ok, ...compendium } = r;
       this.modifier({ compendium: compendium as unknown as Compendium });
     }
+  }
+
+  // --- Carnet de notes prive -----------------------------------------------------
+  async chargerNotes() {
+    const r = await this.demander(EVENEMENTS.NOTES_LIRE);
+    if (r.ok) this.modifier({ notes: r.notes as Note[] });
+  }
+  async enregistrerNote(titre: string, texte: string, idNote?: string) {
+    const r = await this.demander(EVENEMENTS.NOTE_ENREGISTRER, { titre, texte, ...(idNote ? { idNote } : {}) });
+    if (r.ok) this.modifier({ notes: r.notes as Note[] });
+    return r.ok ? (r.note as Note) : null;
+  }
+  async supprimerNote(idNote: string) {
+    const r = await this.demander(EVENEMENTS.NOTE_SUPPRIMER, { idNote });
+    if (r.ok) this.modifier({ notes: r.notes as Note[] });
   }
 
   // --- Discussion -------------------------------------------------------------
@@ -415,6 +441,7 @@ class Jeu {
     const personnages = Object.fromEntries((r.personnages as Personnage[]).map((p) => [p.id, p]));
     this.modifier({
       quetes: (r.quetes as Quete[] | undefined) ?? [],
+      notes: null, // le carnet de CETTE table se chargera a l'ouverture
       table: r.table as Table,
       creationRequise: false,
       personnages,
@@ -528,6 +555,7 @@ class Jeu {
 
     // Discussion, sons, expulsion.
     socket.on(EVENEMENTS.CHAT_MESSAGE, (m: MessageChat) => this.recevoirMessage(m));
+    socket.on(EVENEMENTS.NOTES_ETAT, ({ notes }: { notes: Note[] }) => this.modifier({ notes })); // mes autres onglets
     socket.on(EVENEMENTS.SON_JOUER, ({ son }: { son: string }) => audio.jouer(son));
     socket.on(EVENEMENTS.JOUEUR_EXPULSE, ({ message }: { message: string }) => this.deconnecter(message));
     socket.on(EVENEMENTS.DES_RESULTAT, (resultat) => this.journaliser(decrireDes(resultat), "des"));

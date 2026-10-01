@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 13;
+export const VERSION_PROTOCOLE = 15;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -58,7 +58,13 @@ export const EVENEMENTS = /** @type {const} */ ({
   OBJET_UTILISER: "objet:utiliser", // boire une potion, attaquer avec une arme
   SORT_LANCER: "sort:lancer", // lancer un sort du grimoire (fenetre de resolution)
   TEST_LANCER: "test:lancer", // test de caracteristique / sauvegarde (lanceur de des)
+  MONSTRE_ATTAQUER: "monstre:attaquer", // MJ : une attaque du bestiaire (fenetre de resolution)
   JET_VALIDER: "jet:valider", // "Valider" dans la fenetre de resolution
+
+  // Carnet de notes PRIVE (chacun le sien, MJ compris)
+  NOTES_LIRE: "notes:lire",
+  NOTE_ENREGISTRER: "note:enregistrer", // creer ou modifier une note
+  NOTE_SUPPRIMER: "note:supprimer",
 
   // Journal de quetes (MJ)
   QUETE_AJOUTER: "quete:ajouter",
@@ -97,6 +103,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   PIONS_PLACER_TOUS: "pions:placerTous", // MJ
   PION_RETIRER: "pion:retirer", // MJ
   PION_CACHER: "pion:cacher", // MJ : cacher / montrer un pion aux joueurs
+  PION_TAILLE: "pion:taille", // MJ : taille du pion (1 a 4 cases de cote)
   PION_SAISIR: "pion:saisir", // debut d'un glisser : "je prends ce pion"
   PION_DEPLACER: "pion:deplacer", // pendant (final: false) et a la fin (final: true)
   BROUILLARD_TRAIT: "brouillard:trait", // MJ : un morceau de trait de gomme / pinceau
@@ -144,6 +151,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   JET_EN_COURS: "jet:enCours", // MJ : un joueur vient de lancer (fenetre de resolution)
   JET_RESULTAT: "jet:resultat", // toute la table : le jet valide
   QUETES_ETAT: "quetes:etat", // le journal de quetes complet (apres un changement)
+  NOTES_ETAT: "notes:etat", // SON carnet, a jour (a ses autres onglets ouverts seulement)
   CHAT_MESSAGE: "chat:message", // un message de discussion (un murmure : aux 2 seuls concernes)
   SON_JOUER: "son:jouer", // "joue ce son" (murmure recu, quete terminee, combat...)
   JOUEUR_EXPULSE: "joueur:expulse", // au joueur expulse, juste avant la deconnexion

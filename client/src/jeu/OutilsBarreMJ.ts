@@ -43,5 +43,6 @@ export const OUTILS_MJ: OutilMJ[] = [
   { symbole: "☁", nom: "Cacher (pinceau)", aide: "Repeindre le brouillard sur la carte.", action: () => outilCarte("pinceau"), actif: (e) => e.outil === "pinceau" },
   { symbole: "!", nom: "Journal de quetes", aide: "Donner une quete au groupe (aussi : touche L).", action: () => basculer("quetes"), actif: (e) => e.fenetres.quetes },
   { symbole: "☾", nom: "Repos long (table)", aide: "Repos long pour toute la table. Deux appuis pour confirmer.", action: reposLongTable },
+  { symbole: "✎", nom: "Carnet du MJ", aide: "Tes notes privees (aussi : touche N).", action: () => basculer("carnet"), actif: (e) => e.fenetres.carnet },
   { symbole: "↻", nom: "Recharger", aide: "Relire les fichiers du compendium et du referentiel apres modification.", action: recharger },
 ];

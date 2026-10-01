@@ -353,3 +353,112 @@
 .bouton--discret {
   background: linear-gradient(180deg, #4a4a52 0%, #2c2c33 48%, #1c1c22 52%, #2a2a31 100%);
 }
+
+/* --- Carnet de notes prive (touche N) : un livret de cuir ---------------------------- */
+.carnet {
+  width: 900px;
+}
+.carnet__prive {
+  margin: 0 0 8px;
+  color: var(--texte-doux);
+  font-size: 13px;
+  text-align: center;
+}
+.carnet__livre {
+  height: 540px;
+  background: var(--texture-bruit), linear-gradient(180deg, #3b2a17, #1d1309); /* cuir brun, plus sombre que le grimoire */
+}
+.carnet__sommaire {
+  gap: 4px;
+  overflow-y: auto;
+}
+.carnet__nouvelle,
+.carnet__entree {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px dashed rgba(92, 68, 33, 0.4);
+  background: none;
+  color: var(--encre);
+  font-family: var(--police-texte);
+  text-align: left;
+  cursor: pointer;
+}
+.carnet__nouvelle {
+  color: #6b1b0d;
+  font-family: var(--police-ui);
+  font-size: 15px;
+}
+.carnet__entree:hover,
+.carnet__nouvelle:hover {
+  background: rgba(255, 250, 235, 0.35);
+}
+.carnet__entree--ouverte {
+  background: rgba(255, 250, 235, 0.55);
+  box-shadow: inset 3px 0 0 #6b1b0d;
+}
+.carnet__entree-titre {
+  font-size: 17px;
+}
+.carnet__entree-date {
+  color: #5c4421;
+  font-size: 12px;
+}
+.carnet__vide {
+  color: #5c4421;
+}
+.carnet__page-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.carnet__titre,
+.carnet__texte {
+  border: 0;
+  background: transparent;
+  color: #000;
+  font-family: var(--police-texte);
+  outline: none;
+}
+.carnet__titre {
+  padding: 2px 0 6px;
+  border-bottom: 1px solid rgba(92, 68, 33, 0.5);
+  color: #6b1b0d;
+  font-size: 22px;
+}
+.carnet__texte {
+  flex: 1;
+  resize: none;
+  font-size: 17px;
+  line-height: 1.5;
+  /* Lignes de cahier */
+  background-image: repeating-linear-gradient(transparent 0 24.5px, rgba(92, 68, 33, 0.18) 24.5px 25.5px);
+  background-attachment: local;
+}
+.carnet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.carnet__etat {
+  color: #5c4421;
+  font-size: 12px;
+}
+/* Le marque-page du grimoire vers le carnet */
+.grimoire__signet {
+  margin-left: 12px;
+  padding: 2px 10px;
+  border: 1px solid var(--or-bordure-sombre);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #6b1b0d, #3c0a03);
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+.grimoire__signet:hover {
+  filter: brightness(1.3);
+}

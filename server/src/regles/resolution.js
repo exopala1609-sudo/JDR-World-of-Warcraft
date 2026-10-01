@@ -136,6 +136,27 @@ export function jetTest(fiche, genre, caracteristique, classe, avantage = "norma
   };
 }
 
+/**
+ * Attaque d'un monstre (bestiaire) : d20 + son bonus au toucher, puis ses
+ * degats (la formule du bestiaire inclut deja son bonus, ex. "1d6+2").
+ * 20 naturel : des de degats doubles ; 1 naturel : rate.
+ */
+export function jetAttaqueMonstre(fiche, attaque, lancer = lancerDes) {
+  const toucher = ligneD20("Jet d'attaque", [modif("Toucher", attaque.toucher)], lancer);
+  // "1d6+2" : les des d'un cote, le bonus fixe de l'autre (affiche a part ;
+  // un critique ne double que les des, comme dans les regles).
+  const [, des, bonus] = attaque.degats.replace(/\s+/g, "").match(/^(.*?)((?:[+-]\d+)*)$/);
+  const constante = (bonus.match(/[+-]\d+/g) ?? []).reduce((t, n) => t + Number(n), 0);
+  const formuleDes = des || attaque.degats;
+  const formule = toucher.critique ? doublerDes(formuleDes) : formuleDes;
+  const degats = ligneDes(`Degats${attaque.type ? ` (${attaque.type})` : ""}`, formule, des && constante ? [modif("Bonus", constante)] : [], lancer);
+  return {
+    action: { genre: "arme", nom: attaque.nom, icone: null, rarete: null, detail: `Attaque - ${fiche.nom}` },
+    lignes: toucher.echec ? [toucher] : [toucher, degats],
+    note: toucher.critique ? "Coup critique : les des de degats sont doubles." : toucher.echec ? "Echec critique : l'attaque rate." : null,
+  };
+}
+
 /** Lancer un sort du grimoire. "classe" : l'entree du referentiel (caracteristique d'incantation). */
 export function jetSort(fiche, sort, classe, lancer = lancerDes) {
   const carac = caracteristiqueIncantation(classe);
