@@ -1,5 +1,12 @@
 import { useRef, useState, type ReactNode, type PointerEvent } from "react";
 
+// Ordre des fenetres ENTRE ELLES : chaque fenetre prend un numero de "plan" ;
+// un clic dessus lui donne le plus grand numero (elle passe devant les autres,
+// comme dans WoW). Ces numeros ne valent qu'A L'INTERIEUR de la couche
+// .fenetres (z-index --z-fenetres) : quelle que soit sa valeur, une fenetre ne
+// passera jamais au-dessus de la modale de resolution ni de l'infobulle.
+let premierPlan = 0;
+
 /**
  * Fenetre facon WoW : barre de titre (qu'on peut tirer pour la deplacer) et
  * bouton de fermeture. Les coordonnees sont celles de la surface de jeu
@@ -19,6 +26,8 @@ export function Fenetre({
   children: ReactNode;
 }) {
   const [position, setPosition] = useState(positionInitiale);
+  const [plan, setPlan] = useState(() => ++premierPlan); // une fenetre qui s'ouvre arrive devant
+  const passerDevant = () => plan !== premierPlan && setPlan(++premierPlan);
   const tirage = useRef<{ x: number; y: number; depart: { x: number; y: number }; echelle: number } | null>(null);
 
   const appui = (e: PointerEvent<HTMLDivElement>) => {
@@ -35,7 +44,7 @@ export function Fenetre({
   };
 
   return (
-    <section className={`fenetre cadre ${classe}`} style={{ left: position.x, top: position.y }}>
+    <section className={`fenetre cadre ${classe}`} style={{ left: position.x, top: position.y, zIndex: plan }} onPointerDownCapture={passerDevant}>
       <div
         className="fenetre__entete"
         onPointerDown={appui}

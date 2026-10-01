@@ -356,6 +356,26 @@ function afficherListesDePersonnages() {
 
 // --- Combat -------------------------------------------------------------------------------
 
+// --- Journal de quetes : le MJ en donne, ajoutees en direct chez tous les joueurs ---------
+const STATUTS_QUETE = { "en-cours": "en cours", terminee: "terminee", echouee: "echouee" };
+function afficherQuetes(quetes) {
+  const ul = $("liste-quetes");
+  ul.replaceChildren();
+  if (!quetes.length) ul.append(el("li", "Aucune quete."));
+  for (const q of quetes) {
+    const actions = estMJ()
+      ? [
+          " ",
+          q.statut !== "terminee" ? bouton("Terminer", () => demander(EVENEMENTS.QUETE_MODIFIER, { idQuete: q.id, statut: "terminee" })) : "",
+          q.statut !== "echouee" ? bouton("Echec", () => demander(EVENEMENTS.QUETE_MODIFIER, { idQuete: q.id, statut: "echouee" })) : "",
+          q.statut !== "en-cours" ? bouton("Rouvrir", () => demander(EVENEMENTS.QUETE_MODIFIER, { idQuete: q.id, statut: "en-cours" })) : "",
+          bouton("Retirer", () => confirm(`Retirer la quete "${q.titre}" ?`) && demander(EVENEMENTS.QUETE_SUPPRIMER, { idQuete: q.id })),
+        ]
+      : [];
+    ul.append(el("li", el("strong", q.titre), ` (${STATUTS_QUETE[q.statut]}) : ${q.objectif}`, ...actions));
+  }
+}
+
 function afficherCombat() {
   const ol = $("liste-combat");
   ol.replaceChildren();
@@ -644,6 +664,7 @@ async function rejoindre(idTable) {
   personnages.clear();
   for (const p of reponse.personnages) personnages.set(p.id, p);
   combat = reponse.combat;
+  afficherQuetes(reponse.quetes ?? []);
   afficherZone("jeu");
   recevoirScene(reponse.scene);
   afficherPersonnages();
@@ -781,6 +802,15 @@ function brancherSocket(jeton) {
     referentiel = nouveau;
     remplirListesReferentiel();
     afficherPersonnages();
+  });
+
+  socket.on(EVENEMENTS.QUETES_ETAT, ({ quetes, cause }) => {
+    afficherQuetes(quetes);
+    if (cause) journal(`Quete ${cause.action} : "${cause.titre}" (par ${cause.par}).`);
+  });
+  socket.on(EVENEMENTS.JET_RESULTAT, ({ jet }) => {
+    const lignes = jet.lignes.map((l) => `${l.libelle} ${l.total}${l.critique ? " (critique)" : ""}`).join(", ");
+    journal(`${jet.personnage} - ${jet.action.nom} : ${lignes || "lance"}.${jet.note ? ` ${jet.note}` : ""}`);
   });
 
   socket.on(EVENEMENTS.COMBAT_ETAT, ({ combat: nouveau, cause }) => {
@@ -964,6 +994,16 @@ $("bouton-tout-reveler").addEventListener("click", () => demander(EVENEMENTS.BRO
 $("brouillard-actif").addEventListener("change", () =>
   demander(EVENEMENTS.BROUILLARD_ACTIF, { actif: $("brouillard-actif").checked }),
 );
+$("bouton-quete").addEventListener("click", async () => {
+  const titre = $("titre-quete").value.trim();
+  const objectif = $("objectif-quete").value.trim();
+  if (!titre || !objectif) return journal("Indique un titre ET un objectif.");
+  const r = await demander(EVENEMENTS.QUETE_AJOUTER, { titre, objectif });
+  if (r.ok) {
+    $("titre-quete").value = "";
+    $("objectif-quete").value = "";
+  }
+});
 $("bouton-placer-tous").addEventListener("click", () => demander(EVENEMENTS.PIONS_PLACER_TOUS, {}));
 $("bouton-creer-butin").addEventListener("click", () =>
   demander(EVENEMENTS.BUTIN_CREER, { nom: $("nom-butin").value.trim() || "Coffre", genre: $("genre-butin").value }),

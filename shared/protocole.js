@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 8;
+export const VERSION_PROTOCOLE = 9;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -55,6 +55,13 @@ export const EVENEMENTS = /** @type {const} */ ({
   DESEQUIPER: "equipement:desequiper", // de la fiche vers le sac
   BARRE_DEFINIR: "barre:definir", // poser / retirer un raccourci
   OBJET_UTILISER: "objet:utiliser", // boire une potion, attaquer avec une arme
+  SORT_LANCER: "sort:lancer", // lancer un sort du grimoire (fenetre de resolution)
+  JET_VALIDER: "jet:valider", // "Valider" dans la fenetre de resolution
+
+  // Journal de quetes (MJ)
+  QUETE_AJOUTER: "quete:ajouter",
+  QUETE_MODIFIER: "quete:modifier", // terminee, echouee, en cours
+  QUETE_SUPPRIMER: "quete:supprimer",
 
   // Butin : coffres et cadavres
   BUTIN_OUVRIR: "butin:ouvrir", // voir le contenu (il faut etre a cote)
@@ -114,6 +121,9 @@ export const EVENEMENTS = /** @type {const} */ ({
   DESSINS_ETAT: "dessins:etat", // la liste complete des traces (apres un effacement)
   COMBAT_TEXTE: "combat:texte", // texte de combat flottant : degats, soins
   BUTIN_MAJ: "butin:maj", // le contenu d'un butin ouvert a change (quelqu'un s'est servi)
+  JET_EN_COURS: "jet:enCours", // MJ : un joueur vient de lancer (fenetre de resolution)
+  JET_RESULTAT: "jet:resultat", // toute la table : le jet valide
+  QUETES_ETAT: "quetes:etat", // le journal de quetes complet (apres un changement)
 });
 
 // Types de modification des points de vie (regles D&D 5e).

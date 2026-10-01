@@ -6,6 +6,7 @@
 //   └── t-3f9a0c1b2d/              <- une table (session de jeu)
 //       ├── table.json             <- nom, date de creation
 //       ├── combat.json            <- present seulement pendant un combat
+//       ├── quetes.json            <- le journal de quetes du groupe
 //       ├── scene.json             <- carte, grille, pions, brouillard
 //       ├── personnages/
 //       │   ├── p-8e21aa04c7.json  <- UN fichier par personnage
@@ -23,6 +24,7 @@ import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from "node
 import { join } from "node:path";
 import { ecrireJsonAtomique, lireJson } from "../fichiers.js";
 import { SchemaCombat } from "../modeles/combat.js";
+import { SchemaJournalQuetes } from "../modeles/quete.js";
 import { migrerPersonnage } from "../modeles/migrations.js";
 import { SchemaPersonnage } from "../modeles/personnage.js";
 import { SchemaScene, sceneVide } from "../modeles/scene.js";
@@ -37,6 +39,7 @@ export function creerDepot(dossierParties) {
   /** @type {Map<string, object>} */ const tables = new Map();
   /** @type {Map<string, object>} */ const personnages = new Map();
   /** @type {Map<string, object>} */ const combats = new Map(); // idTable -> combat
+  /** @type {Map<string, object[]>} */ const quetes = new Map(); // idTable -> quetes
   /** @type {Map<string, object>} */ const scenes = new Map(); // idTable -> scene
   /** @type {Map<string, {minuterie: NodeJS.Timeout, donnees: object}>} */
   const ecrituresEnAttente = new Map();
@@ -45,6 +48,7 @@ export function creerDepot(dossierParties) {
   const cheminFicheTable = (idTable) => join(cheminTable(idTable), "table.json");
   const cheminPersonnage = (p) => join(cheminTable(p.idTable), "personnages", `${p.id}.json`);
   const cheminCombat = (idTable) => join(cheminTable(idTable), "combat.json");
+  const cheminQuetes = (idTable) => join(cheminTable(idTable), "quetes.json");
   const cheminScene = (idTable) => join(cheminTable(idTable), "scene.json");
 
   function annulerEcriture(chemin) {
@@ -119,6 +123,14 @@ export function creerDepot(dossierParties) {
           const scene = SchemaScene.safeParse(brutScene);
           if (scene.success && scene.data.idTable === table.data.id) scenes.set(table.data.id, scene.data);
           else ignores.push(cheminScene(table.data.id));
+        }
+
+        // Le journal de quetes du groupe.
+        const brutQuetes = lireJson(cheminQuetes(table.data.id));
+        if (brutQuetes) {
+          const journal = SchemaJournalQuetes.safeParse(brutQuetes);
+          if (journal.success && journal.data.idTable === table.data.id) quetes.set(table.data.id, journal.data.quetes);
+          else ignores.push(cheminQuetes(table.data.id));
         }
 
         // Combat en cours au moment de l'arret ? On le reprend.
@@ -201,6 +213,17 @@ export function creerDepot(dossierParties) {
       scenes.set(aJour.idTable, aJour);
       planifierEcriture(cheminScene(aJour.idTable), aJour, DELAI_ECRITURE_SCENE_MS);
       return aJour;
+    },
+
+    // --- Quetes -------------------------------------------------------------
+    obtenirQuetes(idTable) {
+      return quetes.get(idTable) ?? [];
+    },
+    enregistrerQuetes(idTable, liste) {
+      const valide = SchemaJournalQuetes.parse({ idTable, quetes: liste });
+      quetes.set(idTable, valide.quetes);
+      planifierEcriture(cheminQuetes(idTable), valide);
+      return valide.quetes;
     },
 
     // --- Combats ------------------------------------------------------------

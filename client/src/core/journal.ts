@@ -60,6 +60,15 @@ export function decrireCombat(cause: any): string {
   }
 }
 
+/** Une ligne de chat pour un jet valide : "Garrosh - Epee longue : Jet d'attaque 19 (14 +2 +2), Degats 6." */
+export function decrireJet(jet: { personnage: string; action: { nom: string }; lignes: any[]; note: string | null }) {
+  const lignes = jet.lignes.map((l) => {
+    const detail = [l.d20 ?? (l.des ? l.des.jets.join("+") : null), ...l.modificateurs.map((m: any) => signe(m.valeur))].filter((x) => x !== null).join(" ");
+    return `${l.libelle} ${l.total}${l.critique ? " (CRITIQUE !)" : ""} [${detail}]`;
+  });
+  return `${jet.personnage} - ${jet.action.nom} : ${lignes.join(", ") || "lance"}.${jet.note ? ` ${jet.note}` : ""}`;
+}
+
 export function decrireDes(r: any): string {
   const detail = r.termes
     .map((t: any) => (t.type === "des" ? `${t.expression}(${t.gardes.map((i: number) => t.jets[i]).join("+")})` : t.expression))

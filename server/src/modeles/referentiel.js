@@ -126,6 +126,9 @@ export const SchemaClasse = z.strictObject({
   deDeVie: z.literal([6, 8, 10, 12], "Le de de vie doit etre 6, 8, 10 ou 12."),
   caracteristiquesPrincipales: z.array(schemaCaracteristique).max(6).default([]),
   defenseSansArmure: z.array(schemaCaracteristique).max(2).default([]),
+  // Magie : caracteristique des sorts (jet d'attaque, DD) et rythme de progression.
+  caracteristiqueIncantation: schemaCaracteristique.optional(),
+  progressionSorts: z.enum(["complete", "demi"], 'progressionSorts : "complete" ou "demi".').default("complete"),
   ressources: z
     .array(
       z.strictObject({

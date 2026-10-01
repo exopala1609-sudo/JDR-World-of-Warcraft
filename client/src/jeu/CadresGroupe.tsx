@@ -20,7 +20,7 @@ function couleurRessource(r: Ressource) {
   return APPARENCES_DU_THEME.has(r.apparence) ? `var(--ressource-${r.apparence})` : "var(--ressource-autre)";
 }
 
-function Portrait({ nom, niveau, fichier }: { nom: string; niveau: number; fichier: string | null }) {
+function Portrait({ nom, niveau, fichier, repose }: { nom: string; niveau: number; fichier: string | null; repose: boolean }) {
   const [absent, setAbsent] = useState(false);
   const initiales = nom
     .split(/\s+/)
@@ -29,7 +29,9 @@ function Portrait({ nom, niveau, fichier }: { nom: string; niveau: number; fichi
     .slice(0, 2)
     .toUpperCase();
   return (
-    <div className="portrait">
+    // "Repose" (apres un repos long) : le portrait luit doucement et le niveau
+    // laisse la place a "Zzz", comme l'etat "Reposé" de WoW.
+    <div className={`portrait${repose ? " portrait--repose" : ""}`}>
       <div className="portrait__initiales">{initiales}</div>
       {/* Ton image portraits/<nom>.png si elle existe ; sinon les initiales. */}
       {!absent && (
@@ -40,7 +42,7 @@ function Portrait({ nom, niveau, fichier }: { nom: string; niveau: number; fichi
           style={{ position: "relative" }}
         />
       )}
-      <div className="portrait__niveau">{niveau}</div>
+      <div className="portrait__niveau">{repose ? <span className="portrait__zzz">Zzz</span> : niveau}</div>
     </div>
   );
 }
@@ -75,10 +77,11 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
             PV {pv.actuels}/{pv.max}
             {pv.temporaires ? ` (+${pv.temporaires})` : ""} - CA {p.classeArmure}
           </div>
+          {p.repose && <div className="infobulle__ligne--bleu">Repose : il a profite d'un repos long et n'a pas encore combattu.</div>}
         </>
       ))}
     >
-      <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} />
+      <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} repose={p.repose} />
       <div className="cadre-unite__infos">
         <div className="plaque-nom">
           <span className="plaque-nom__nom">{p.nom}</span>
@@ -100,22 +103,29 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
           />
         )}
         {p.etats.length > 0 && (
-          <div className="cadre-unite__etats">
-            {p.etats.map((etat) => (
-              <img
-                key={etat.id}
-                className={`etat--${etat.nature}`}
-                src={urlIcone(etat.icone)}
-                alt={etat.nom}
-                {...avecInfobulle(() => (
-                  <>
-                    <div className={etat.nature === "buff" ? "infobulle__ligne--vert" : "infobulle__ligne--or"}>{etat.nom}</div>
-                    <div>{etat.description}</div>
-                    {etat.roundsRestants && <div className="infobulle__ligne--gris">{etat.roundsRestants} round(s)</div>}
-                  </>
-                ))}
-              />
-            ))}
+          // Les auras, facon WoW : de petites icones carrees sous le nom. Liseré
+          // sombre pour un buff, rouge pour un debuff ; les rounds restants en bas.
+          // Elles arrivent en direct : le serveur renvoie la fiche a chaque changement.
+          <div className="auras">
+            {[...p.etats]
+              .sort((a, b) => Number(a.nature === "debuff") - Number(b.nature === "debuff"))
+              .map((etat) => (
+                <span
+                  key={etat.id}
+                  className={`aura aura--${etat.nature}`}
+                  {...avecInfobulle(() => (
+                    <>
+                      <div className={`infobulle__titre ${etat.nature === "buff" ? "infobulle__ligne--vert" : "infobulle__ligne--rouge"}`}>{etat.nom}</div>
+                      <div className="infobulle__ligne--gris">{etat.nature === "buff" ? "Effet benefique" : "Effet nefaste"}</div>
+                      {etat.description && <div>{etat.description}</div>}
+                      {etat.roundsRestants !== null && <div className="infobulle__ligne--or">Encore {etat.roundsRestants} round(s)</div>}
+                    </>
+                  ))}
+                >
+                  <img src={urlIcone(etat.icone)} alt={etat.nom} />
+                  {etat.roundsRestants !== null && <span className="aura__duree">{etat.roundsRestants}</span>}
+                </span>
+              ))}
           </div>
         )}
       </div>

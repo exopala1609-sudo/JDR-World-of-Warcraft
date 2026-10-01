@@ -25,6 +25,12 @@
 //    "defenseSansArmure"
 //                    Caractéristiques AJOUTÉES à la classe d'armure sans armure
 //                    (10 + Dextérité + ...). Ex. le Moine : ["sagesse"].
+//    "caracteristiqueIncantation"
+//                    (facultatif) Caractéristique des sorts : jet d'attaque de
+//                    sort et DD de sauvegarde. Ex. "intelligence" pour le Mage.
+//    "progressionSorts"
+//                    (facultatif) "complete" (par défaut : sorts de niveau 2 au
+//                    niveau 3...) ou "demi" (Paladin, Chasseur : deux fois plus lent).
 //    "ressources"    Ressources reçues à la création (voir ressources.json) :
 //                      { "ressource": "mana" }  -> le modèle tel quel ;
 //                      { "ressource": "emplacements-niveau-1", "max": 1 }
@@ -57,6 +63,8 @@
       "couleur": "#f48cba",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["force", "charisme"],
+      "caracteristiqueIncantation": "charisme",
+      "progressionSorts": "demi",
       "ressources": [{ "ressource": "mana" }, { "ressource": "puissance-sacree" }]
     },
     {
@@ -67,6 +75,8 @@
       "couleur": "#aad372",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["dexterite", "sagesse"],
+      "caracteristiqueIncantation": "sagesse",
+      "progressionSorts": "demi",
       "ressources": [{ "ressource": "focalisation" }]
     },
     {
@@ -87,6 +97,7 @@
       "couleur": "#ffffff",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["sagesse"],
+      "caracteristiqueIncantation": "sagesse",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
     {
@@ -105,6 +116,7 @@
       "couleur": "#0070dd",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["sagesse", "constitution"],
+      "caracteristiqueIncantation": "sagesse",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
     {
@@ -115,6 +127,7 @@
       "couleur": "#3fc7eb",
       "deDeVie": 6,
       "caracteristiquesPrincipales": ["intelligence"],
+      "caracteristiqueIncantation": "intelligence",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
     {
@@ -125,6 +138,7 @@
       "couleur": "#8788ee",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["charisme"],
+      "caracteristiqueIncantation": "charisme",
       "ressources": [
         { "ressource": "mana" },
         { "ressource": "eclats-ame" },
@@ -149,6 +163,7 @@
       "couleur": "#ff7c0a",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["sagesse"],
+      "caracteristiqueIncantation": "sagesse",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
     {
@@ -167,6 +182,7 @@
       "couleur": "#33937f",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["intelligence", "charisme"],
+      "caracteristiqueIncantation": "intelligence",
       "ressources": [{ "ressource": "mana" }, { "ressource": "essence" }]
     },
 
@@ -188,6 +204,7 @@
       "couleur": "#d6a2e8",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["charisme"],
+      "caracteristiqueIncantation": "charisme",
       "ressources": [
         { "ressource": "mana" },
         // Autant d'inspirations que le modificateur de Charisme (au moins 1).
@@ -202,6 +219,7 @@
       "couleur": "#e35d9a",
       "deDeVie": 6,
       "caracteristiquesPrincipales": ["charisme"],
+      "caracteristiqueIncantation": "charisme",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     }
   ]

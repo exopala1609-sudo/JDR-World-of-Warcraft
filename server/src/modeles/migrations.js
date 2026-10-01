@@ -73,6 +73,9 @@ const ETAPES = {
     equipement: fiche.equipement ?? {},
     barreActions: fiche.barreActions ?? Array(12).fill(null),
   }),
+
+  // Version 4 (sprint 7) -> version 5 (sprint 8 : etat "repose").
+  4: (fiche) => ({ ...fiche, versionSchema: 5, repose: fiche.repose ?? false }),
 };
 
 /**

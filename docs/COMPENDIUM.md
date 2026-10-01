@@ -102,6 +102,8 @@ Exemple : armure de cuir (11) + DEX +2 + bouclier (2) + cape (1) = CA 16.
   "composantes": "V, S, M",
   "description": "Une explosion de flammes de 6 metres de rayon.",
   "degats": { "formule": "8d6", "type": "feu" },
+  "resolution": "sauvegarde",
+  "sauvegarde": "dexterite",
   "cout": { "ressource": "mana", "quantite": 40 }
 }
 ```
@@ -116,6 +118,8 @@ Exemple : armure de cuir (11) + DEX +2 + bouclier (2) + cape (1) = CA 16.
 | `degats` | non | `formule` et `type` |
 | `soins` | non | formule de des |
 | `cout` | non | cout dans une ressource facon WoW : `ressource` (`mana`, `rage`, `energie`...) et `quantite` |
+| `resolution` | non | `attaque` (jet d'attaque de sort), `sauvegarde` (la cible resiste contre ton DD) ou `automatique` (touche toujours). Par defaut : `attaque` si le sort a des `degats`, sinon `automatique` |
+| `sauvegarde` | non | pour `"resolution": "sauvegarde"` : la caracteristique de la cible (`dexterite`, `sagesse`...) |
 | `icone`, `description` | non | comme pour les objets |
 
 ## Auras et debuffs (etats)

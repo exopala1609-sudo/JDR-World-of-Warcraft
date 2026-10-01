@@ -79,7 +79,7 @@ const choixValides = {
 
 test("creation guidee : le serveur applique les regles du referentiel", () => {
   const p = fabriquerPersonnageGuide(choixValides, contexte);
-  assert.equal(p.versionSchema, 4);
+  assert.equal(p.versionSchema, 5);
   assert.deepEqual([p.race, p.faction, p.classe, p.niveau, p.portrait], ["orc", "horde", "guerrier", 1, null]);
   assert.equal(p.caracteristiques.force, 17); // 15 + 2 (orc)
   assert.equal(p.caracteristiques.constitution, 15); // 14 + 1

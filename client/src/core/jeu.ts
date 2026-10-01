@@ -14,8 +14,8 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { ButinOuvert, Combat, LigneJournal, Objet, OutilCarte, Personnage, Profil, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
-import { decrireCause, decrireCombat, decrireDes } from "./journal";
+import type { ButinOuvert, Combat, Jet, LigneJournal, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
+import { decrireCause, decrireCombat, decrireDes, decrireJet } from "./journal";
 
 export type EtatJeu = {
   liaison: "deconnecte" | "connecte" | "reconnexion";
@@ -32,7 +32,10 @@ export type EtatJeu = {
   presence: { pseudo: string; role: string }[];
   journal: LigneJournal[];
   selection: string | null; // personnage cible (clic sur un cadre de groupe)
-  fenetres: { sacs: boolean; personnage: boolean };
+  fenetres: { sacs: boolean; personnage: boolean; grimoire: boolean; quetes: boolean };
+  quetes: Quete[]; // le journal de quetes du groupe
+  jet: Jet | null; // la fenetre de resolution ouverte
+  annonce: { id: number; titre: string; texte: string } | null; // "Nouvelle quete !" au centre de l'ecran
   butin: ButinOuvert | null; // la fenetre de butin ouverte (coffre, cadavre)
   outil: OutilCarte; // ce que fait un clic gauche sur la carte
   couleurTrace: string | null; // null = sa propre couleur
@@ -51,7 +54,10 @@ const ETAT_INITIAL: EtatJeu = {
   presence: [],
   journal: [],
   selection: null,
-  fenetres: { sacs: false, personnage: false },
+  fenetres: { sacs: false, personnage: false, grimoire: false, quetes: false },
+  quetes: [],
+  jet: null,
+  annonce: null,
   butin: null,
   outil: "deplacer",
   couleurTrace: null,
@@ -109,8 +115,44 @@ class Jeu {
   definirRaccourci(idPersonnage: string, index: number, raccourci: Raccourci | null) {
     return this.demander(EVENEMENTS.BARRE_DEFINIR, { idPersonnage, index, raccourci });
   }
-  utiliser(idPersonnage: string, reference: string) {
-    return this.demander(EVENEMENTS.OBJET_UTILISER, { idPersonnage, reference });
+  /** Utiliser un objet : une potion agit tout de suite ; une arme ouvre la fenetre de resolution. */
+  async utiliser(idPersonnage: string, reference: string) {
+    const r = await this.demander(EVENEMENTS.OBJET_UTILISER, { idPersonnage, reference });
+    if (r.ok && r.jet) this.modifier({ jet: r.jet as Jet });
+    return r;
+  }
+
+  /** Lancer un sort : le serveur lance les des, la fenetre de resolution s'ouvre. */
+  async lancerSort(idPersonnage: string, reference: string) {
+    const r = await this.demander(EVENEMENTS.SORT_LANCER, { idPersonnage, reference });
+    if (r.ok) this.modifier({ jet: r.jet as Jet });
+    return r;
+  }
+
+  /** "Valider" : le resultat part a toute la table. */
+  async validerJet() {
+    const jet = this.etat.jet;
+    if (!jet || jet.statut === "valide") return this.modifier({ jet: null });
+    const r = await this.demander(EVENEMENTS.JET_VALIDER, { idJet: jet.id });
+    if (r.ok || r.erreur === "Ce jet a deja ete valide.") this.modifier({ jet: null });
+  }
+
+  // --- Journal de quetes (MJ seulement : le serveur refuse les joueurs) ---------
+  donnerQuete(titre: string, objectif: string, description?: string) {
+    return this.demander(EVENEMENTS.QUETE_AJOUTER, { titre, objectif, ...(description ? { description } : {}) });
+  }
+  changerQuete(idQuete: string, statut: Quete["statut"]) {
+    return this.demander(EVENEMENTS.QUETE_MODIFIER, { idQuete, statut });
+  }
+  retirerQuete(idQuete: string) {
+    return this.demander(EVENEMENTS.QUETE_SUPPRIMER, { idQuete });
+  }
+
+  private compteurAnnonces = 0;
+  private annoncer(titre: string, texte: string) {
+    const id = ++this.compteurAnnonces;
+    this.modifier({ annonce: { id, titre, texte } });
+    setTimeout(() => this.etat.annonce?.id === id && this.modifier({ annonce: null }), 4500);
   }
 
   /** Clic sur un coffre de la carte : le serveur verifie qu'on est a cote, puis envoie le contenu. */
@@ -127,6 +169,11 @@ class Jeu {
   prendreButin(objet: Objet, idButin = this.etat.butin?.id, idPersonnage = this.personnageDesSacs()?.id) {
     if (!idButin) return;
     return this.demander(EVENEMENTS.BUTIN_PRENDRE, { idButin, idObjet: objet.id, ...(this.estMJ() && idPersonnage ? { idPersonnage } : {}) });
+  }
+
+  /** La classe d'un personnage dans le referentiel (caracteristique d'incantation, progression des sorts). */
+  classeDe(p: Personnage | null) {
+    return (p && this.etat.referentiel?.classes.find((c) => c.id === p.classe)) || null;
   }
 
   /** Nom affiche d'une classe ou d'une race (celui du referentiel ; a defaut, l'identifiant). */
@@ -284,6 +331,7 @@ class Jeu {
     this.versLaCarte(EVENEMENTS.DESSINS_ETAT, { traces }); // retour apres une coupure : la carte est deja ouverte
     const personnages = Object.fromEntries((r.personnages as Personnage[]).map((p) => [p.id, p]));
     this.modifier({
+      quetes: (r.quetes as Quete[] | undefined) ?? [],
       table: r.table as Table,
       creationRequise: false,
       personnages,
@@ -337,6 +385,27 @@ class Jeu {
     socket.on(EVENEMENTS.BUTIN_MAJ, ({ idButin, butin, supprime }) => {
       if (this.etat.butin?.id !== idButin) return;
       this.modifier((e) => ({ butin: supprime ? null : { ...e.butin!, objets: butin.objets } }));
+    });
+
+    // Journal de quetes : le MJ en pousse une -> elle s'ajoute chez tout le monde.
+    socket.on(EVENEMENTS.QUETES_ETAT, ({ quetes, cause }) => {
+      this.modifier({ quetes });
+      if (cause?.action === "nouvelle") {
+        this.annoncer("Nouvelle quete", cause.titre);
+        this.journaliser(`Nouvelle quete : ${cause.titre}. (Journal de quetes : touche L)`, "butin");
+      } else if (cause?.action === "terminee") {
+        this.annoncer("Quete terminee", cause.titre);
+        this.journaliser(`Quete terminee : ${cause.titre}.`, "butin");
+      } else if (cause?.action === "echouee") this.journaliser(`Quete echouee : ${cause.titre}.`, "erreur");
+    });
+
+    // Fenetre de resolution : le MJ voit s'ouvrir le jet d'un joueur, puis tout le monde recoit le resultat.
+    socket.on(EVENEMENTS.JET_EN_COURS, ({ jet }) => this.modifier({ jet }));
+    socket.on(EVENEMENTS.JET_RESULTAT, ({ jet }: { jet: Jet }) => {
+      this.journaliser(decrireJet(jet), "des");
+      if (this.etat.jet?.id !== jet.id) return;
+      this.modifier({ jet }); // le MJ voit "Valide" quelques instants
+      setTimeout(() => this.etat.jet?.id === jet.id && this.modifier({ jet: null }), 2500);
     });
 
     socket.on(EVENEMENTS.COMBAT_ETAT, ({ combat, cause }) => {

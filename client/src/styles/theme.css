@@ -129,7 +129,8 @@
   /* Couches (z-index) : du monde (la carte) vers l'avant */
   --z-monde: 0; /* le Canvas de la carte */
   --z-hud: 10; /* cadres fixes : groupe, minicarte, barres, discussion */
-  --z-fenetres: 20; /* sacs, fiche de personnage */
+  --z-fenetres: 20; /* sacs, fiche, grimoire, quetes (ordre interne : le dernier clique devant) */
+  --z-modale: 25; /* fenetre de resolution des des, annonce "Nouvelle quete" */
   --z-infobulle: 30; /* toujours au-dessus de tout */
 
   color-scheme: dark;

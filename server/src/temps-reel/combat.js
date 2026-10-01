@@ -59,6 +59,8 @@ export function brancher(socket, ctx) {
     if (combattants.length === 0) throw new ErreurRegle("Aucun personnage a faire combattre.");
 
     const combat = creerCombat(idTable, combattants.map((p) => lancerInitiative(p)));
+    // Au combat, plus personne n'est "repose".
+    for (const p of combattants) if (p.repose) ctx.publierPersonnage({ ...p, repose: false }, { action: "combat", par: pseudo });
     return enregistrerEtPublier(combat, { action: "debut", par: pseudo, jets: combat.participants.map(resumeJet) });
   });
 

@@ -8,7 +8,11 @@
       "portee": "36 metres",
       "composantes": "V, S",
       "description": "Donnee de test. Un trait de feu frappe une creature ou un objet a portee.",
-      "degats": { "formule": "1d10", "type": "feu" }
+      "degats": {
+        "formule": "1d10",
+        "type": "feu"
+      },
+      "resolution": "attaque"
     },
     {
       "id": "projectile-magique",
@@ -18,8 +22,15 @@
       "portee": "36 metres",
       "composantes": "V, S",
       "description": "Donnee de test. Trois fleches de force touchent automatiquement leurs cibles.",
-      "degats": { "formule": "3d4+3", "type": "force" },
-      "cout": { "ressource": "mana", "quantite": 10 }
+      "degats": {
+        "formule": "3d4+3",
+        "type": "force"
+      },
+      "cout": {
+        "ressource": "mana",
+        "quantite": 10
+      },
+      "resolution": "automatique"
     },
     {
       "id": "soins",
@@ -28,9 +39,12 @@
       "ecole": "evocation",
       "portee": "Contact",
       "composantes": "V, S",
-      "description": "Donnee de test. La creature touchee recupere des points de vie.",
-      "soins": "1d8+3",
-      "cout": { "ressource": "mana", "quantite": 15 }
+      "description": "Donnee de test. La creature touchee recupere 1d8 + le modificateur d'incantation points de vie.",
+      "soins": "1d8",
+      "cout": {
+        "ressource": "mana",
+        "quantite": 15
+      }
     },
     {
       "id": "boule-de-feu",
@@ -41,8 +55,16 @@
       "portee": "45 metres",
       "composantes": "V, S, M (une boulette de guano de chauve-souris et de soufre)",
       "description": "Donnee de test. Une explosion de flammes de 6 metres de rayon.",
-      "degats": { "formule": "8d6", "type": "feu" },
-      "cout": { "ressource": "mana", "quantite": 40 }
+      "degats": {
+        "formule": "8d6",
+        "type": "feu"
+      },
+      "cout": {
+        "ressource": "mana",
+        "quantite": 40
+      },
+      "resolution": "sauvegarde",
+      "sauvegarde": "dexterite"
     }
   ]
 }

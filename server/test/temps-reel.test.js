@@ -358,22 +358,33 @@ test("barre d'actions : un raccourci de potion, qu'on boit d'un clic", async () 
   assert.ok(await texte, "le soin flotte au-dessus du pion, chez tout le monde");
 });
 
-test("barre d'actions : une arme equipee lance attaque et degats pour toute la table", async () => {
+test("une arme equipee ouvre la fenetre de resolution : le serveur lance, detaille, le joueur valide", async () => {
   const epee = fiche("Garrosh").inventaire.find((o) => o.source === "epee-longue");
   const pasEquipee = await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "epee-longue" });
   assert.equal(pasEquipee.erreur, "Equipe d'abord Epee longue pour attaquer avec.");
   await demander(thrall, EVENEMENTS.EQUIPER, { idPersonnage: perso.Garrosh.id, idObjet: epee.id, emplacement: "main-droite" });
 
-  const jets = [];
-  const ecoute = (r) => jets.push(r);
-  jaina.on(EVENEMENTS.DES_RESULTAT, ecoute);
-  await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "epee-longue" });
-  await new Promise((ok) => setTimeout(ok, 150));
-  jaina.off(EVENEMENTS.DES_RESULTAT, ecoute);
-  assert.equal(jets.length, 2);
-  assert.match(jets[0].raison, /^Garrosh attaque avec Epee longue/);
-  assert.match(jets[0].formule, /^1d20\+\d+$/);
-  assert.match(jets[1].formule, /^1d8/);
+  // 1. Le joueur attaque : le MJ voit la fenetre s'ouvrir chez lui aussi.
+  const chezMJ = attendre(mj, EVENEMENTS.JET_EN_COURS);
+  const { jet } = await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "epee-longue" });
+  assert.equal((await chezMJ).jet.id, jet.id);
+  assert.equal(jet.action.nom, "Epee longue");
+  const [attaque] = jet.lignes;
+  // Garrosh : Force 14 (+2), niveau 1 (maitrise +2) : d20 + Force + Maitrise.
+  assert.deepEqual(attaque.modificateurs, [{ nom: "Force", valeur: 2 }, { nom: "Maitrise", valeur: 2 }]);
+  assert.equal(attaque.total, attaque.d20 + 4);
+
+  // 2. Pas de second jet tant que le premier n'est pas valide (on ne relance pas pour un 20).
+  const relance = await demander(thrall, EVENEMENTS.OBJET_UTILISER, { idPersonnage: perso.Garrosh.id, reference: "epee-longue" });
+  assert.equal(relance.erreur, "Valide d'abord le jet en cours.");
+  // Jaina ne peut pas valider le jet de Thrall.
+  assert.equal((await demander(jaina, EVENEMENTS.JET_VALIDER, { idJet: jet.id })).erreur, "Ce n'est pas ton jet.");
+
+  // 3. "Valider" : toute la table recoit le resultat, avec les memes chiffres.
+  const annonce = attendre(jaina, EVENEMENTS.JET_RESULTAT);
+  assert.equal((await demander(thrall, EVENEMENTS.JET_VALIDER, { idJet: jet.id })).ok, true);
+  const resultat = (await annonce).jet;
+  assert.deepEqual([resultat.statut, resultat.lignes[0].total], ["valide", attaque.total]);
 });
 
 test("butin : a distance on ne voit que le coffre ; a cote, on fouille ; jamais de double pillage", async () => {
@@ -419,4 +430,51 @@ test("le MJ transforme un monstre en cadavre : ce qu'il portait devient du butin
   assert.deepEqual(cadavre.objets.map((o) => o.nom), ["Chope ebrechee"]);
   assert.equal(pionDe("Gnoll"), undefined);
   assert.deepEqual(fiche("Gnoll").inventaire, []);
+});
+
+// --- 7. Magie, quetes, repos (sprint 8) ------------------------------------------------------
+
+test("sorts : niveau, cout en Mana et fenetre de resolution", async () => {
+  for (const idSort of ["trait-de-feu", "projectile-magique", "boule-de-feu"]) {
+    await demander(mj, EVENEMENTS.GRIMOIRE_APPRENDRE, { idPersonnage: perso.Antonidas.id, idSort });
+  }
+  // Boule de feu (niveau 3) : hors de portee d'un personnage de niveau 1.
+  const tropHaut = await demander(jaina, EVENEMENTS.SORT_LANCER, { idPersonnage: perso.Antonidas.id, reference: "boule-de-feu" });
+  assert.match(tropHaut.erreur, /encore hors de portee/);
+  // Projectile magique coute du Mana : Antonidas (guerrier) n'en a pas.
+  const sansMana = await demander(jaina, EVENEMENTS.SORT_LANCER, { idPersonnage: perso.Antonidas.id, reference: "projectile-magique" });
+  assert.equal(sansMana.erreur, "Antonidas n'a pas de Mana pour lancer Projectile magique.");
+  // Trait de feu (mineur, gratuit) : jet d'attaque de sort detaille.
+  const { jet } = await demander(jaina, EVENEMENTS.SORT_LANCER, { idPersonnage: perso.Antonidas.id, reference: "trait-de-feu" });
+  assert.equal(jet.action.genre, "sort");
+  assert.deepEqual(jet.lignes[0].modificateurs.map((m) => m.nom), ["Intelligence", "Maitrise"]);
+  assert.equal((await demander(jaina, EVENEMENTS.JET_VALIDER, { idJet: jet.id })).ok, true);
+  // Un sort peut aller dans la barre d'actions.
+  const barre = await demander(jaina, EVENEMENTS.BARRE_DEFINIR, { idPersonnage: perso.Antonidas.id, index: 2, raccourci: { type: "sort", reference: "trait-de-feu" } });
+  assert.deepEqual(barre.personnage.barreActions[2], { type: "sort", reference: "trait-de-feu" });
+});
+
+test("quetes : le MJ en pousse une, tous les joueurs la recoivent ; lecture seule pour eux", async () => {
+  const refus = await demander(thrall, EVENEMENTS.QUETE_AJOUTER, { titre: "Triche", objectif: "x" });
+  assert.equal(refus.erreur, "Seul le MJ peut donner une quete.");
+
+  const [chezThrall, chezJaina] = [thrall, jaina].map((s) => attendre(s, EVENEMENTS.QUETES_ETAT));
+  const { quete } = await demander(mj, EVENEMENTS.QUETE_AJOUTER, { titre: "La mine des Mortemines", objectif: "Retrouver le contremaitre Edwin VanCleef." });
+  for (const recu of [await chezThrall, await chezJaina]) {
+    assert.deepEqual(recu.quetes.map((q) => q.titre), ["La mine des Mortemines"]);
+    assert.equal(recu.cause.action, "nouvelle");
+  }
+  // Elle est sauvegardee : un joueur qui arrive (ou fait F5) la retrouve.
+  const idTable = depot.listerTables()[0].id;
+  assert.equal((await demander(jaina, EVENEMENTS.TABLE_REJOINDRE, { idTable })).quetes[0].statut, "en-cours");
+  const fin = attendre(thrall, EVENEMENTS.QUETES_ETAT);
+  await demander(mj, EVENEMENTS.QUETE_MODIFIER, { idQuete: quete.id, statut: "terminee" });
+  assert.equal((await fin).quetes[0].statut, "terminee");
+});
+
+test("repos long : le portrait passe 'repose' ; le premier coup recu y met fin", async () => {
+  await demander(mj, EVENEMENTS.REPOS_LONG, { idPersonnage: perso.Garrosh.id });
+  assert.equal(fiche("Garrosh").repose, true);
+  await demander(mj, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Garrosh.id, type: "degats", montant: 1 });
+  assert.equal(fiche("Garrosh").repose, false);
 });

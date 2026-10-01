@@ -195,6 +195,7 @@
    ============================================================================= */
 .butin {
   position: absolute;
+  z-index: 100000; /* toujours devant les autres fenetres (dans la couche .fenetres) */
   pointer-events: auto;
   display: flex;
   flex-direction: column;

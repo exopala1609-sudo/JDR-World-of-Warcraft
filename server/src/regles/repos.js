@@ -64,6 +64,7 @@ export function reposLong(personnage) {
       pointsDeVie: { max: pv.max, actuels: pv.max, temporaires: 0 },
       desDeVie: { ...dv, restants },
       ressources,
+      repose: true, // portrait "repose" facon WoW, jusqu'a la prochaine action epuisante
     },
     detail: {
       repos: "long",

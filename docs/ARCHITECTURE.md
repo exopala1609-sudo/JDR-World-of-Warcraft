@@ -24,6 +24,7 @@ JDR-World-of-Warcraft/
 │   ├── couleurs.js           Couleur de chaque joueur (pions, traces, pings), palette des traces
 │   ├── creation.js           Regles de creation (achat de points, bonus de race, PV, CA), ecran ET serveur
 │   ├── equipement.js         Emplacements, CA selon l'equipement, attaques, raccourcis : ecran ET serveur
+│   ├── magie.js              Sorts accessibles selon le niveau, caracteristique d'incantation, DD : ecran ET serveur
 │   ├── ressources.js         Modeles de jauges WoW (Mana, Rage, Energie, Eclats d'ame...)
 │   ├── etats.js              Les 14 conditions de D&D 5e (buff / debuff + icone)
 │   ├── geometrie.js          Grille, aimantation, distances, test du brouillard
@@ -49,6 +50,7 @@ JDR-World-of-Warcraft/
 │   │   │   ├── compendium.js Objets, sorts, auras tels qu'ecrits dans le compendium
 │   │   │   ├── referentiel.js Factions, races, classes, ressources, regles de creation
 │   │   │   ├── combat.js     Ordre d'initiative et tour actif
+│   │   │   ├── quete.js      Journal de quetes d'une table (titre, objectif, statut)
 │   │   │   ├── scene.js      Carte, grille, pions et brouillard d'une table
 │   │   │   ├── migrations.js Mise a niveau des fiches d'un ancien format
 │   │   │   └── table.js, identifiants.js, zod.js
@@ -59,6 +61,7 @@ JDR-World-of-Warcraft/
 │   │   │   ├── repos.js      Repos court (des de vie) et repos long
 │   │   │   ├── etats.js      Poser, retirer, faire expirer auras et debuffs
 │   │   │   ├── combat.js     Initiative, ordre, tours et rounds
+│   │   │   ├── resolution.js Jets d'attaque et de sort DETAILLES (De + Force + Maitrise = total)
 │   │   │   ├── scene.js      Placer/deplacer les pions, brouillard, visibilite
 │   │   │   ├── dessins.js    Traces tactiques : auteur, limites, effacement
 │   │   │   └── erreurs.js    Distingue un refus normal d'un bug
@@ -68,6 +71,8 @@ JDR-World-of-Warcraft/
 │   │       ├── referentiel.js Lecture (tous) et rechargement (MJ) du referentiel
 │   │       ├── compendium.js Inventaire, grimoire, liste des images
 │   │       ├── combat.js     Initiative et tours (protection double clic)
+│   │       ├── resolution.js Lancer un sort, fenetre de resolution, "Valider"
+│   │       ├── quetes.js     Journal de quetes : le MJ ajoute / termine, diffusion a la table
 │   │       ├── scene.js      Mouvement synchronise (saisir / glisser / lacher), brouillard
 │   │       ├── tactique.js   Pings et traces tactiques (joueurs et MJ)
 │   │       └── des.js
@@ -177,9 +182,18 @@ lacher -> position finale    ->  borne + aimante + enregistre
 .scene-jeu (2560 x 1440, zoom automatique si la fenetre est plus petite)
 ├── .monde       z-index 0   le Canvas de la carte, plein ecran
 ├── .hud         z-index 10  cadres fixes, disposes par une grille CSS
-├── .fenetres    z-index 20  sacs, fiche de personnage (deplacables)
-└── .infobulle   z-index 30
+├── .fenetres    z-index 20  sacs, fiche, grimoire, quetes (deplacables)
+│                            ordre interne : la derniere fenetre cliquee passe devant
+├── .couche-modale z-index 25 fenetre de resolution des des, annonce "Nouvelle quete"
+├── .infobulle   z-index 30
+└── .fantome     z-index 31  l'icone qui suit la souris pendant un glisser
 ```
+
+Chaque couche est un « contexte d'empilement » : les `z-index` poses DANS une
+couche ne la font jamais sortir. Quand on clique sur une fenetre, elle prend
+un numero plus grand que les autres (`client/src/ui/Fenetre.tsx`) : elle passe
+devant le grimoire ou les sacs, mais jamais devant la fenetre de resolution ni
+l'infobulle. Les valeurs sont dans `theme.css` (`--z-monde` ... `--z-infobulle`).
 
 `.hud` et `.fenetres` couvrent tout l'ecran mais sont transparents aux clics
 (`pointer-events: none`) ; seuls leurs cadres visibles les reactivent
@@ -325,3 +339,60 @@ se mettent a jour en direct (`butin:maj`).
 **Ce que voient les joueurs** : sur la carte, un coffre ou un cadavre (et s'il
 est vide), jamais son contenu. Le contenu n'est envoye qu'a l'ouverture, a
 cote du coffre. Les butins dans le brouillard ne sont pas envoyes du tout.
+
+## Grimoire, resolution des des, quetes, auras (sprint 8)
+
+### Grimoire (P) et barre d'actions
+
+Le grimoire affiche les sorts de la fiche (`grimoire`), 6 par page. Un sort
+trop puissant pour le niveau du personnage est grise : le calcul
+(`sortDebloque` dans `shared/magie.js`) est le meme a l'ecran et au serveur.
+Le niveau de sort accessible suit D&D 5e ; les demi-lanceurs (Paladin,
+Chasseur) ont `"progressionSorts": "demi"` dans `classes.json`.
+
+Glisser un sort vers la barre reutilise **exactement** le glisser-deposer du
+sprint 7 (`glisser.tsx`) : seule la « charge » transportee change
+(`{ origine: "grimoire", sort }` au lieu de `{ origine: "sac", objet }`).
+La case de la barre declare qu'elle accepte cette charge et enregistre le
+raccourci `{ "type": "sort", "reference": "trait-de-feu" }`.
+
+### Fenetre de resolution (facon Baldur's Gate 3)
+
+```
+joueur : clic sur la barre (ou touche 1)
+   -> sort:lancer / objet:utiliser
+serveur : verifie (sort connu, niveau suffisant, Mana), DEPENSE le cout,
+          lance les des et detaille chaque terme ; garde le jet "en attente"
+   -> reponse au joueur + jet:enCours au MJ : la fenetre s'ouvre chez les deux
+joueur : "Valider" (ou Entree)   -> jet:valider
+serveur -> jet:resultat a toute la table (ligne dans la discussion)
+```
+
+Anti-triche : les chiffres viennent du serveur (le navigateur ne peut que les
+afficher) ; le cout est paye avant l'affichage ; le MJ voit chaque jet des
+qu'il est lance ; un seul jet en attente par personnage (pas de « relance
+jusqu'au 20 »). Si le joueur ferme son navigateur, le jet est valide tel quel.
+Le MJ peut « Valider pour » le joueur, ou masquer sa fenetre.
+
+Les modificateurs sont calcules depuis la fiche (`server/src/regles/resolution.js`) :
+arme = d20 + caracteristique de l'arme (Force, ou Dexterite si finesse /
+distance) + Maitrise ; sort = d20 + caracteristique d'incantation
+(`caracteristiqueIncantation` de la classe) + Maitrise, ou un DD de
+sauvegarde (8 + Maitrise + caracteristique). 20 naturel : des de degats
+doubles ; 1 naturel : rate.
+
+### Journal de quetes (L)
+
+Le MJ ajoute une quete (fenetre L, bouton « + Nouvelle quete », ou
+`/quete Titre | Objectif` dans la discussion, ou la page /test/). Le serveur
+l'enregistre (`quetes.json`, dans le dossier de la table sous `parties/`) et diffuse `quetes:etat` a toute la
+table : le journal se met a jour et « Nouvelle quete » s'affiche au centre de
+l'ecran. Les joueurs ne peuvent que lire.
+
+### Auras et etat « Repose »
+
+Les auras sont les `etats` de la fiche : chaque pose ou retrait renvoie la
+fiche (`personnage:maj`) et les cadres du groupe se redessinent. Le booleen
+`repose` passe a `true` apres un repos long et repasse a `false` au premier
+combat, sort lance, attaque, degat subi ou ressource depensee.
+

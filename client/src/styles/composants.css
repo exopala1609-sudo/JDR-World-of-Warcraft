@@ -243,3 +243,15 @@
 .infobulle__ligne--or {
   color: var(--or);
 }
+.infobulle__ligne--rouge {
+  color: var(--texte-rouge);
+}
+.infobulle__ligne--bleu {
+  color: #6fb8ff; /* l'etat "Repose" de WoW */
+}
+/* "1 action ............ 36 m" : deux infos aux deux bords (incantation / portee) */
+.infobulle__deux-colonnes {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}

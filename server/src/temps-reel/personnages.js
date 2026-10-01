@@ -126,7 +126,8 @@ export function brancher(socket, ctx) {
     const { pointsDeVie, detail } = appliquerPointsDeVie(personnage.pointsDeVie, type, montant);
     const coupCritique = critique && type === TYPES_PV.DEGATS; // un soin n'est jamais "critique"
     const publie = ctx.publierPersonnage(
-      { ...personnage, pointsDeVie },
+      // Prendre des coups met fin a l'etat "repose".
+      { ...personnage, pointsDeVie, repose: type === TYPES_PV.DEGATS && montant > 0 ? false : personnage.repose },
       { action: "points-de-vie", par: pseudo, ...detail, critique: coupCritique },
     );
     ctx.publierTexteCombat(personnage, texteDeCombat(detail, { critique: coupCritique }));
@@ -143,7 +144,8 @@ export function brancher(socket, ctx) {
     const apres = modifierRessource(ressource, variation);
     return {
       personnage: ctx.publierPersonnage(
-        { ...personnage, ressources: personnage.ressources.map((r) => (r.cle === cle ? apres : r)) },
+        // Depenser une ressource met fin a l'etat "repose".
+        { ...personnage, ressources: personnage.ressources.map((r) => (r.cle === cle ? apres : r)), repose: variation < 0 ? false : personnage.repose },
         { action: "ressource", par: pseudo, nom: ressource.nom, avant: ressource.actuel, apres: apres.actuel },
       ),
     };

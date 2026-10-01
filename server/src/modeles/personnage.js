@@ -21,7 +21,7 @@ import { z } from "./zod.js";
 
 // Version du format des fiches. Si elle change, modeles/migrations.js sait
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
-export const VERSION_FICHE = 4;
+export const VERSION_FICHE = 5;
 
 const entier = (min, max) => z.int().min(min).max(max);
 
@@ -73,8 +73,8 @@ export const SchemaEquipement = z.partialRecord(z.enum(IDS_EMPLACEMENTS), Schema
 
 // Barre d'actions : 12 cases, vides (null) ou un raccourci vers un objet.
 export const SchemaRaccourci = z.strictObject({
-  type: z.literal("objet"),
-  reference: z.string().min(1).max(80), // l'origine dans le compendium, ou l'identifiant de l'objet
+  type: z.enum(["objet", "sort"]),
+  reference: z.string().min(1).max(80), // l'origine dans le compendium, ou l'identifiant de l'objet / du sort
 });
 export const SchemaBarreActions = z.array(SchemaRaccourci.nullable()).length(TAILLE_BARRE);
 export const barreVide = () => Array(TAILLE_BARRE).fill(null);
@@ -125,6 +125,9 @@ export const SchemaPersonnage = z
     barreActions: SchemaBarreActions,
     grimoire: z.array(SchemaSortConnu).max(300),
     etats: z.array(SchemaEtatActif).max(40),
+    // "Repose" facon WoW : vrai apres un repos long, jusqu'a la prochaine action
+    // epuisante (degats subis, ressource depensee, sort lance, combat).
+    repose: z.boolean(),
     creeLe: z.iso.datetime(),
     modifieLe: z.iso.datetime(),
   })
@@ -202,6 +205,7 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
     barreActions: barreVide(),
     grimoire: [],
     etats: [],
+    repose: false,
     creeLe: maintenant,
     modifieLe: maintenant,
   });

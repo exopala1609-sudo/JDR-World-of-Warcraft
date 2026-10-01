@@ -4,8 +4,14 @@
    Empilement (du fond vers l'avant) :
      .monde      z-index --z-monde     le Canvas de la carte, plein ecran
      .hud        z-index --z-hud       cadres fixes (groupe, minicarte, barres...)
-     .fenetres   z-index --z-fenetres  sacs, fiche de personnage
+     .fenetres   z-index --z-fenetres  sacs, fiche, grimoire, journal de quetes
+     .modale     z-index --z-modale    resolution des des (BG3), annonce de quete
      .infobulle  z-index --z-infobulle
+     .fantome    z-index --z-infobulle + 1  l'icone qui suit la souris (glisser)
+
+   Chaque couche est un "contexte d'empilement" : les z-index poses A
+   L'INTERIEUR (ex. la fenetre cliquee qui passe devant les autres) ne
+   peuvent jamais faire sortir un element de sa couche.
 
    L'astuce qui protege la carte : .hud et .fenetres couvrent tout l'ecran
    mais sont "transparents aux clics" (pointer-events: none). Seuls leurs
@@ -113,6 +119,34 @@
   font-size: calc(var(--taille-portrait) * 0.38);
   text-shadow: var(--ombre-texte);
 }
+/* Etat "Repose" (apres un repos long) : halo bleu-dore qui respire autour du
+   portrait, et "Zzz" a la place du niveau. Disparait au premier combat. */
+.portrait--repose {
+  box-shadow:
+    var(--bordure-or),
+    0 0 14px 3px rgba(120, 190, 255, 0.65);
+  animation: respirer 3s ease-in-out infinite;
+}
+@keyframes respirer {
+  50% {
+    box-shadow:
+      var(--bordure-or),
+      0 0 22px 7px rgba(150, 210, 255, 0.85);
+  }
+}
+.portrait--repose .portrait__niveau {
+  color: #8fd0ff;
+}
+.portrait__zzz {
+  font-size: 12px;
+  font-style: italic;
+  letter-spacing: -0.5px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portrait--repose {
+    animation: none;
+  }
+}
 .portrait__niveau {
   position: absolute;
   left: -6px;
@@ -166,21 +200,47 @@
 .barre--ressource .barre__texte {
   font-size: 11px;
 }
-.cadre-unite__etats {
+/* Auras (buffs / debuffs) : petites icones carrees sous les barres. */
+.auras {
   display: flex;
-  gap: 3px;
-  min-height: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
 }
-.cadre-unite__etats img {
-  width: 20px;
-  height: 20px;
+.aura {
+  position: relative;
+  width: 24px;
+  height: 24px;
   border-radius: 2px;
+  background: #000;
 }
-.etat--debuff {
-  box-shadow: 0 0 0 1px var(--texte-rouge);
+.aura img {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  object-fit: cover;
 }
-.etat--buff {
-  box-shadow: 0 0 0 1px #000;
+.aura--buff {
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--metal);
+}
+/* Debuff : liseré rouge, comme dans WoW */
+.aura--debuff {
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px #c41f1f;
+}
+/* Rounds restants, en bas de l'icone */
+.aura__duree {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 12px;
+  line-height: 1;
+  text-shadow: var(--ombre-texte);
+}
+.auras:has(.aura__duree) {
+  margin-bottom: 7px; /* place pour les chiffres sous les icones */
 }
 
 /* --- Haut centre : bandeau de zone / combat -------------------------------------------- */

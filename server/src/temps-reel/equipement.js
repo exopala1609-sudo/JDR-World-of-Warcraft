@@ -14,7 +14,8 @@ import { desequiper, equiper, recalculerClasseArmure } from "../regles/equipemen
 import { ErreurRegle } from "../regles/erreurs.js";
 import { sortirUn } from "../regles/inventaire.js";
 import { appliquerPointsDeVie, texteDeCombat } from "../regles/points-de-vie.js";
-import { salleTable } from "./index.js";
+import { jetArme } from "../regles/resolution.js";
+import { proposerJet, sortDuGrimoire } from "./resolution.js";
 
 const idPersonnage = schemaId("p");
 const emplacement = z.enum(IDS_EMPLACEMENTS, "Emplacement inconnu.");
@@ -51,7 +52,9 @@ export function brancher(socket, ctx) {
   // n'importe quel ordinateur, et apres un F5.
   ctx.guichet(socket, EVENEMENTS.BARRE_DEFINIR, Demandes.barre, ({ idPersonnage, index, raccourci }) => {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
-    if (raccourci) {
+    if (raccourci?.type === "sort") {
+      if (!sortDuGrimoire(personnage, raccourci.reference)) throw new ErreurRegle("Ce sort n'est pas dans le grimoire.");
+    } else if (raccourci) {
       const { dansLeSac, equipes } = exemplairesDuRaccourci(personnage, raccourci.reference);
       const objet = dansLeSac[0] ?? equipes[0]?.[1];
       if (!objet) throw new ErreurRegle("Cet objet n'est ni dans le sac ni sur le personnage.");
@@ -80,17 +83,12 @@ export function brancher(socket, ctx) {
       return { personnage: publie };
     }
 
-    // 2. Une arme EQUIPEE : jet d'attaque et jet de degats, visibles de toute la table.
+    // 2. Une arme EQUIPEE : la fenetre de resolution s'ouvre (jet d'attaque detaille, degats).
     const arme = attaquesEquipees(personnage).find((a) => equipes.some(([, o]) => o.id === a.idObjet));
     if (arme) {
-      const attaque = lancerDes(`1d20${arme.bonus >= 0 ? "+" : ""}${arme.bonus}`);
-      const naturel = attaque.termes[0].jets[0];
-      const degats = lancerDes(arme.degats);
-      const annonce = (jet, raison) => ({ ...jet, raison, par: pseudo, secret: false, horodatage: new Date().toISOString() });
-      const critique = naturel === 20 ? " - COUP CRITIQUE !" : naturel === 1 ? " - echec critique" : "";
-      ctx.io.to(salleTable(personnage.idTable)).emit(EVENEMENTS.DES_RESULTAT, annonce(attaque, `${personnage.nom} attaque avec ${arme.nom}${critique}`));
-      ctx.io.to(salleTable(personnage.idTable)).emit(EVENEMENTS.DES_RESULTAT, annonce(degats, `Degats (${arme.typeDegats})`));
-      return { attaque: attaque.total, degats: degats.total };
+      const objet = equipes.find(([, o]) => o.id === arme.idObjet)[1];
+      ctx.publierPersonnage({ ...personnage, repose: false }, { action: "attaque", par: pseudo, nom: objet.nom });
+      return { jet: proposerJet(ctx, socket, personnage, { ...jetArme(personnage, arme, objet), cout: null }) };
     }
 
     const objet = dansLeSac[0] ?? equipes[0]?.[1];

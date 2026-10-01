@@ -122,11 +122,14 @@ export function attaquesEquipees({ equipement, caracteristiques, niveau }) {
     .filter(([, objet]) => objet?.arme)
     .map(([emplacement, objet]) => {
       const proprietes = objet.arme.proprietes.join(" ").toLowerCase();
-      const mod = emplacement === "distance" ? dex : proprietes.includes("finesse") ? Math.max(force, dex) : force;
+      const caracteristique = emplacement === "distance" || (proprietes.includes("finesse") && dex > force) ? "dexterite" : "force";
+      const mod = caracteristique === "dexterite" ? dex : force;
       return {
         emplacement,
         idObjet: objet.id,
         nom: objet.nom,
+        caracteristique, // utilisee pour toucher et pour les degats
+        modificateur: mod,
         bonus: bonusDeMaitrise(niveau) + mod,
         degats: mod === 0 ? objet.arme.degats : `${objet.arme.degats}${mod > 0 ? "+" : ""}${mod}`,
         typeDegats: objet.arme.typeDegats,

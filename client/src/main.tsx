@@ -9,6 +9,8 @@ import "@/styles/hud.css";
 import "@/styles/fenetres.css";
 import "@/styles/ecrans.css";
 import "@/styles/creation.css";
+import "@/styles/livres.css";
+import "@/styles/resolution.css";
 
 const racine = document.getElementById("racine");
 if (!racine) throw new Error("Element #racine introuvable dans index.html");

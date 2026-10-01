@@ -33,7 +33,7 @@ function Emplacement({ id, p, modifiable }: { id: string; p: Personnage; modifia
   const objet = p.equipement[id];
   const depot = useCible(`emplacement:${p.id}:${id}`, {
     accepte: (c) => modifiable && c.origine === "sac" && c.idPersonnage === p.id && peutAllerDans(c.objet, id),
-    deposer: (c) => jeu.equiper(p.id, c.objet.id, id),
+    deposer: (c) => c.origine === "sac" && jeu.equiper(p.id, c.objet.id, id),
   });
   const classes = ["case", objet ? "case--deplacable" : "case--vide", depot.possible && "case--possible", depot.survolee && "case--survolee"];
   return (

@@ -29,7 +29,54 @@ export type Objet = {
   emplacement?: string;
 };
 
-export type Raccourci = { type: "objet"; reference: string };
+export type Raccourci = { type: "objet" | "sort"; reference: string };
+
+/** Un sort du grimoire (copie de l'entree du compendium). */
+export type SortConnu = {
+  id: string;
+  source: string | null;
+  nom: string;
+  niveau: number;
+  ecole: string;
+  icone?: string;
+  incantation: string;
+  portee: string;
+  composantes: string;
+  duree: string;
+  concentration: boolean;
+  rituel: boolean;
+  description: string;
+  degats?: { formule: string; type: string };
+  soins?: string;
+  cout?: { ressource: string; quantite: number };
+  resolution?: "attaque" | "sauvegarde" | "automatique";
+  sauvegarde?: string;
+};
+
+export type Quete = { id: string; titre: string; objectif: string; description: string; statut: "en-cours" | "terminee" | "echouee"; creeLe: string };
+
+/** Une ligne de la fenetre de resolution : un d20 (ou des des) et ses modificateurs. */
+export type LigneJet = {
+  libelle: string;
+  d20: number | null;
+  des: { formule: string; jets: number[]; total: number } | null;
+  modificateurs: { nom: string; valeur: number }[];
+  total: number;
+  critique: boolean;
+  echec: boolean;
+};
+/** Un jet lance par le serveur, en attente de "Valider" (ou valide). */
+export type Jet = {
+  id: string;
+  idPersonnage: string;
+  personnage: string;
+  par: string;
+  statut: "en-attente" | "valide";
+  action: { genre: "arme" | "sort"; nom: string; icone: string | null; rarete: string | null; detail: string };
+  lignes: LigneJet[];
+  note: string | null;
+  cout: string | null;
+};
 export type Attaque = { emplacement: string; idObjet: string; nom: string; bonus: number; degats: string; typeDegats: string };
 
 /** Un coffre ou un cadavre sur la carte. Les joueurs n'en recoivent pas le contenu. */
@@ -55,6 +102,7 @@ export type Personnage = {
   race: string | null;
   faction: string | null;
   portrait: string | null; // fichier du dossier portraits/
+  repose: boolean; // apres un repos long : portrait "repose" facon WoW (Zzz)
   sacPrive?: boolean; // fiche d'un autre joueur : le serveur n'envoie pas le contenu de son sac
   niveau: number;
   caracteristiques: Record<string, number>;
@@ -65,7 +113,7 @@ export type Personnage = {
   inventaire: Objet[];
   equipement: Record<string, Objet>;
   barreActions: (Raccourci | null)[];
-  grimoire: { id: string; nom: string; niveau: number }[];
+  grimoire: SortConnu[];
   etats: EtatActif[];
   derives: { modificateurs: Record<string, number>; bonusDeMaitrise: number; bonusInitiative: number; attaques: Attaque[] };
 };
@@ -112,6 +160,8 @@ export type Classe = {
   caracteristiquesPrincipales: Caracteristique[];
   defenseSansArmure: Caracteristique[];
   ressources: { ressource: string }[];
+  caracteristiqueIncantation?: Caracteristique;
+  progressionSorts: "complete" | "demi";
 };
 
 export type ModeleRessource = { id: string; nom: string; type: "jauge" | "compteur"; max: number; couleur?: string; description: string };

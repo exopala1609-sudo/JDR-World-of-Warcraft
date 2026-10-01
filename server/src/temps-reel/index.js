@@ -30,13 +30,15 @@ import * as butins from "./butins.js";
 import * as des from "./des.js";
 import * as equipement from "./equipement.js";
 import * as personnages from "./personnages.js";
+import * as quetes from "./quetes.js";
 import * as referentiel from "./referentiel.js";
 import * as repos from "./repos.js";
+import * as resolution from "./resolution.js";
 import * as scene from "./scene.js";
 import * as tables from "./tables.js";
 import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, combat, scene, tactique, des];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
@@ -76,6 +78,9 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     // Traces tactiques de chaque table (idTable -> liste). Gardees en MEMOIRE
     // seulement : ce sont des annotations ephemeres, pas une sauvegarde.
     traces: new Map(),
+
+    // Jets de la fenetre de resolution, en attente de "Valider" (idJet -> jet).
+    jets: new Map(),
 
     /**
      * Anti-inondation : true tant que ce navigateur n'a pas fait cette action
@@ -135,6 +140,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
         combat: depot.obtenirCombat(idTable),
         scene: ctx.vueDeLaScene(depot.obtenirScene(idTable), ctx.estMJ(socket)),
         traces: ctx.traces.get(idTable) ?? [],
+        quetes: depot.obtenirQuetes(idTable),
       };
     },
 

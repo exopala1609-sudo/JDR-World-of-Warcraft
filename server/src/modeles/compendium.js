@@ -7,6 +7,7 @@
 //
 // Chaque entree a un "id" que TU choisis (ex. "epee-longue") : c'est son nom
 // technique, stable, qui sert a la retrouver (glisser-deposer, sauvegardes...).
+import { CARACTERISTIQUES } from "../../../shared/dnd5e.js";
 import { TYPES_EMPLACEMENT } from "../../../shared/equipement.js";
 import { CLES_RARETES } from "../../../shared/raretes.js";
 import { NATURES_ETAT } from "../../../shared/etats.js";
@@ -104,6 +105,11 @@ export const champsSort = {
   description: z.string().max(4000).default(""),
   degats: z.strictObject({ formule: schemaFormule, type: z.string().trim().min(1).max(30) }).optional(),
   soins: schemaFormule.optional(),
+  // Comment le sort se resout (voir shared/magie.js) : "attaque" (jet d'attaque
+  // de sort), "sauvegarde" (la cible resiste : indiquer "sauvegarde"), ou
+  // "automatique" (touche toujours, soigne). Absent : deduit (degats -> attaque).
+  resolution: z.enum(["attaque", "sauvegarde", "automatique"]).optional(),
+  sauvegarde: z.enum(CARACTERISTIQUES).optional(), // ex. "dexterite" pour la Boule de feu
   // Cout dans une ressource facon WoW (ex. 15 points de Mana).
   cout: z
     .strictObject({ ressource: z.string().regex(/^[a-z0-9-]{1,40}$/), quantite: entier(1, 999) })

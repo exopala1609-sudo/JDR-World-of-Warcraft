@@ -29,7 +29,7 @@
 //     c'est de toute facon le serveur qui deplace reellement l'objet.
 import { useEffect, useSyncExternalStore } from "react";
 import { iconeObjet } from "@/core/medias";
-import type { Objet } from "@/core/types";
+import type { Objet, SortConnu } from "@/core/types";
 import { cacherInfobulle, versScene } from "./InfoBulle";
 
 /** Ce que l'on transporte, et d'ou cela vient. */
@@ -37,7 +37,15 @@ export type Charge =
   | { origine: "sac"; objet: Objet; idPersonnage: string }
   | { origine: "equipement"; objet: Objet; idPersonnage: string; emplacement: string }
   | { origine: "butin"; objet: Objet; idButin: string }
-  | { origine: "barre"; objet: Objet; idPersonnage: string; index: number };
+  | { origine: "grimoire"; sort: SortConnu; idPersonnage: string } // un sort tire du grimoire (P)
+  | { origine: "barre"; image: string; rarete?: string; idPersonnage: string; index: number };
+
+/** L'image du fantome : l'icone de l'objet ou du sort transporte. */
+function apparence(charge: Charge): { image: string; rarete?: string; quantite: number } {
+  if (charge.origine === "grimoire") return { image: iconeObjet(charge.sort), quantite: 0 };
+  if (charge.origine === "barre") return { image: charge.image, rarete: charge.rarete, quantite: 0 };
+  return { image: iconeObjet(charge.objet), rarete: charge.objet.rarete, quantite: charge.objet.quantite };
+}
 
 type Cible = { accepte: (charge: Charge) => boolean; deposer: (charge: Charge) => void };
 type EtatGlisser = { charge: Charge; x: number; y: number; cible: string | null; refusee: boolean } | null;
@@ -159,11 +167,11 @@ export function useCible(id: string, cible: Cible) {
 export function CoucheGlisser() {
   const courant = useSyncExternalStore(abonner, () => etat);
   if (!courant) return null;
-  const { objet } = courant.charge;
+  const { image, rarete, quantite } = apparence(courant.charge);
   return (
-    <div className={`fantome case${courant.refusee ? " fantome--refuse" : ""}`} data-rarete={objet.rarete} style={{ left: courant.x, top: courant.y }}>
-      <img src={iconeObjet(objet)} alt="" />
-      {objet.quantite > 1 && <span className="case__quantite">{objet.quantite}</span>}
+    <div className={`fantome case${courant.refusee ? " fantome--refuse" : ""}`} data-rarete={rarete} style={{ left: courant.x, top: courant.y }}>
+      <img src={image} alt="" />
+      {quantite > 1 && <span className="case__quantite">{quantite}</span>}
     </div>
   );
 }
