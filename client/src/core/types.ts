@@ -59,6 +59,7 @@ export type Quete = { id: string; titre: string; objectif: string; description: 
 export type LigneJet = {
   libelle: string;
   d20: number | null;
+  d20Ecarte: number | null; // avantage / desavantage : le d20 non garde
   des: { formule: string; jets: number[]; total: number } | null;
   modificateurs: { nom: string; valeur: number }[];
   total: number;
@@ -72,7 +73,7 @@ export type Jet = {
   personnage: string;
   par: string;
   statut: "en-attente" | "valide";
-  action: { genre: "arme" | "sort"; nom: string; icone: string | null; rarete: string | null; detail: string };
+  action: { genre: "arme" | "sort" | "test"; nom: string; icone: string | null; rarete: string | null; detail: string };
   lignes: LigneJet[];
   note: string | null;
   cout: string | null;
@@ -161,6 +162,7 @@ export type Classe = {
   defenseSansArmure: Caracteristique[];
   ressources: { ressource: string }[];
   caracteristiqueIncantation?: Caracteristique;
+  maitriseSauvegardes: Caracteristique[];
   progressionSorts: "complete" | "demi";
 };
 

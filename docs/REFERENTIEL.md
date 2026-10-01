@@ -112,6 +112,7 @@ s'écrivent `force`, `dexterite`, `constitution`, `intelligence`, `sagesse`,
 | `deDeVie` | `6`, `8`, `10` ou `12` |
 | `caracteristiquesPrincipales` | facultatif. Conseil affiché au joueur |
 | `defenseSansArmure` | facultatif. Caractéristiques ajoutées à la CA sans armure (10 + DEX + ...), ex. `["sagesse"]` |
+| `maitriseSauvegardes` | facultatif. Jets de sauvegarde maîtrisés (bonus de maîtrise ajouté), ex. `["force", "constitution"]` pour le Guerrier |
 | `caracteristiqueIncantation` | facultatif. Caractéristique des sorts (attaque de sort, DD), ex. `"intelligence"` pour le Mage. Par défaut : la première caractéristique principale parmi Intelligence, Sagesse, Charisme |
 | `progressionSorts` | facultatif. `"complete"` (par défaut) ou `"demi"` (Paladin, Chasseur : les niveaux de sorts arrivent deux fois moins vite) |
 | `ressources` | facultatif. Ressources de départ, voir ci-dessous |

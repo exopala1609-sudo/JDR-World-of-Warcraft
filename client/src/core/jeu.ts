@@ -17,6 +17,8 @@ import { EVENEMENTS, ROLES } from "@partage/protocole.js";
 import type { ButinOuvert, Combat, Jet, LigneJournal, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
 import { decrireCause, decrireCombat, decrireDes, decrireJet } from "./journal";
 
+export type Avantage = "normal" | "avantage" | "desavantage";
+
 export type EtatJeu = {
   liaison: "deconnecte" | "connecte" | "reconnexion";
   profil: Profil | null;
@@ -127,6 +129,19 @@ class Jeu {
     const r = await this.demander(EVENEMENTS.SORT_LANCER, { idPersonnage, reference });
     if (r.ok) this.modifier({ jet: r.jet as Jet });
     return r;
+  }
+
+  /** Test de caracteristique ou sauvegarde : le serveur lit le bonus dans la fiche. */
+  async lancerTest(idPersonnage: string, genre: "caracteristique" | "sauvegarde", caracteristique: string, avantage: Avantage) {
+    if (this.etat.jet) return; // un jet attend deja "Valider"
+    const r = await this.demander(EVENEMENTS.TEST_LANCER, { idPersonnage, genre, caracteristique, avantage });
+    if (r.ok) this.modifier({ jet: r.jet as Jet });
+    return r;
+  }
+
+  /** Des libres (lanceur de des ou /jet) : le resultat arrive dans la discussion. */
+  lancerDes(formule: string, raison?: string, secret?: boolean) {
+    return this.demander(EVENEMENTS.DES_LANCER, { formule, ...(raison ? { raison } : {}), ...(secret ? { secret } : {}) });
   }
 
   /** "Valider" : le resultat part a toute la table. */

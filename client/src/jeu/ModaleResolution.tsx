@@ -9,7 +9,7 @@ const DUREE_ROULEMENT_MS = 1100; // le d20 "roule" avant d'afficher son resultat
  * Le d20 dessine en SVG : un hexagone (le contour d'un icosaedre vu de face),
  * son triangle central et ses aretes. Le chiffre est au centre.
  */
-function D20({ valeur, etat }: { valeur: number | string; etat: "roule" | "critique" | "echec" | "normal" }) {
+export function D20({ valeur, etat }: { valeur: number | string; etat: "roule" | "critique" | "echec" | "normal" }) {
   return (
     <div className={`d20 d20--${etat}`}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
@@ -23,7 +23,7 @@ function D20({ valeur, etat }: { valeur: number | string; etat: "roule" | "criti
 }
 
 /** Une "puce" de l'equation : un titre (De, Force...) au-dessus de sa valeur. */
-function Puce({ titre, valeur, genre }: { titre: string; valeur: string; genre: "de" | "modificateur" | "total" }) {
+function Puce({ titre, valeur, genre }: { titre: string; valeur: string; genre: "de" | "ecarte" | "modificateur" | "total" }) {
   return (
     <span className={`puce puce--${genre}`}>
       <span className="puce__valeur">{valeur}</span>
@@ -40,7 +40,11 @@ function Equation({ ligne }: { ligne: LigneJet }) {
       <div className="equation__libelle">{ligne.libelle}</div>
       <div className="equation__termes">
         {ligne.d20 !== null ? (
-          <Puce titre="De" valeur={String(ligne.d20)} genre="de" />
+          <>
+            <Puce titre={ligne.d20Ecarte !== null ? "De garde" : "De"} valeur={String(ligne.d20)} genre="de" />
+            {/* Avantage / desavantage : l'autre d20, barre */}
+            {ligne.d20Ecarte !== null && <Puce titre="Ecarte" valeur={String(ligne.d20Ecarte)} genre="ecarte" />}
+          </>
         ) : (
           ligne.des && <Puce titre={`Des (${ligne.des.formule})`} valeur={ligne.des.jets.join(" + ") || String(ligne.des.total)} genre="de" />
         )}
@@ -99,7 +103,7 @@ function Resolution({ jet }: { jet: Jet }) {
       <section className="resolution cadre" role="dialog" aria-modal={estLanceur} aria-label={`Resolution : ${jet.action.nom}`}>
         <header className="resolution__entete">
           <span className="case resolution__icone" data-rarete={jet.action.rarete ?? undefined}>
-            {jet.action.icone && <img src={urlIcone(jet.action.icone)} alt="" />}
+            {jet.action.icone ? <img src={urlIcone(jet.action.icone)} alt="" /> : <span className="resolution__glyphe">d20</span>}
           </span>
           <div>
             <h2 className={`resolution__nom${jet.action.rarete ? " texte-rarete" : ""}`} data-rarete={jet.action.rarete ?? undefined}>

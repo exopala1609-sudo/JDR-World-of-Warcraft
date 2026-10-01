@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { attaquesEquipees } from "../../shared/equipement.js";
 import { caracteristiqueIncantation, niveauDeSortMax, niveauRequis, resolutionDuSort, sortDebloque, statistiquesIncantation } from "../../shared/magie.js";
-import { doublerDes, jetArme, jetSort } from "../src/regles/resolution.js";
+import { doublerDes, jetArme, jetSort, jetTest } from "../src/regles/resolution.js";
 import { referentielExemple } from "./aides.js";
 
 const referentiel = referentielExemple();
@@ -85,4 +85,19 @@ test("statistiques d'incantation du grimoire : attaque de sort et DD", () => {
   const classe = referentiel.obtenirClasse("magicien");
   // Niveau 3 : maitrise +2, Intelligence 16 : +3 -> attaque +5, DD 13.
   assert.deepEqual(statistiquesIncantation(mage, classe), { caracteristique: "intelligence", attaque: 5, dd: 13 });
+});
+
+test("test de caracteristique et sauvegarde : modificateur, maitrise, avantage / desavantage", () => {
+  const magicien = referentiel.obtenirClasse("magicien"); // sauvegardes maitrisees : intelligence, sagesse
+  const sauvegarde = jetTest(mage, "sauvegarde", "intelligence", magicien, "normal", desTruques(11));
+  assert.equal(sauvegarde.action.nom, "Sauvegarde d'Intelligence");
+  assert.equal(sauvegarde.lignes[0].total, 11 + 3 + 2);
+  // Force : pas maitrisee, modificateur -1.
+  assert.equal(jetTest(mage, "sauvegarde", "force", magicien, "normal", desTruques(11)).lignes[0].total, 10);
+  // Desavantage : deux d20 (12 puis 4), on garde le plus bas, l'autre est montre barre.
+  const valeurs = [12, 4];
+  const lancer = () => ({ total: valeurs.shift(), termes: [] });
+  const ligne = jetTest(mage, "caracteristique", "dexterite", magicien, "desavantage", lancer).lignes[0];
+  assert.deepEqual([ligne.d20, ligne.d20Ecarte, ligne.total], [4, 12, 6]);
+  assert.equal(ligne.libelle, "Test de caracteristique (desavantage)");
 });

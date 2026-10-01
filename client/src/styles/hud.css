@@ -345,6 +345,7 @@
 
 /* --- Bas gauche : fenetre de discussion --------------------------------------------------- */
 .discussion {
+  position: relative; /* le lanceur de des s'ouvre juste au-dessus */
   grid-area: discussion;
   align-self: end;
   width: 500px;

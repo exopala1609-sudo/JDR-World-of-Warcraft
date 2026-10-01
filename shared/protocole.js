@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 9;
+export const VERSION_PROTOCOLE = 10;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -56,6 +56,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   BARRE_DEFINIR: "barre:definir", // poser / retirer un raccourci
   OBJET_UTILISER: "objet:utiliser", // boire une potion, attaquer avec une arme
   SORT_LANCER: "sort:lancer", // lancer un sort du grimoire (fenetre de resolution)
+  TEST_LANCER: "test:lancer", // test de caracteristique / sauvegarde (lanceur de des)
   JET_VALIDER: "jet:valider", // "Valider" dans la fenetre de resolution
 
   // Journal de quetes (MJ)

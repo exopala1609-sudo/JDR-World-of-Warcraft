@@ -25,6 +25,9 @@
 //    "defenseSansArmure"
 //                    Caractéristiques AJOUTÉES à la classe d'armure sans armure
 //                    (10 + Dextérité + ...). Ex. le Moine : ["sagesse"].
+//    "maitriseSauvegardes"
+//                    (facultatif) Jets de sauvegarde maîtrisés : on y ajoute le
+//                    bonus de maîtrise. Ex. le Guerrier : ["force", "constitution"].
 //    "caracteristiqueIncantation"
 //                    (facultatif) Caractéristique des sorts : jet d'attaque de
 //                    sort et DD de sauvegarde. Ex. "intelligence" pour le Mage.
@@ -54,6 +57,7 @@
       "couleur": "#c69b6d",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["force", "constitution"],
+      "maitriseSauvegardes": ["force", "constitution"],
       "ressources": [{ "ressource": "rage" }, { "ressource": "second-souffle" }]
     },
     {
@@ -63,6 +67,7 @@
       "couleur": "#f48cba",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["force", "charisme"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
       "caracteristiqueIncantation": "charisme",
       "progressionSorts": "demi",
       "ressources": [{ "ressource": "mana" }, { "ressource": "puissance-sacree" }]
@@ -75,6 +80,7 @@
       "couleur": "#aad372",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["dexterite", "sagesse"],
+      "maitriseSauvegardes": ["force", "dexterite"],
       "caracteristiqueIncantation": "sagesse",
       "progressionSorts": "demi",
       "ressources": [{ "ressource": "focalisation" }]
@@ -87,6 +93,7 @@
       "couleur": "#fff468",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["dexterite"],
+      "maitriseSauvegardes": ["dexterite", "intelligence"],
       "ressources": [{ "ressource": "energie" }, { "ressource": "points-combo" }]
     },
     {
@@ -97,6 +104,7 @@
       "couleur": "#ffffff",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["sagesse"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
       "caracteristiqueIncantation": "sagesse",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
@@ -107,6 +115,7 @@
       "couleur": "#c41e3a",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["force", "constitution"],
+      "maitriseSauvegardes": ["force", "constitution"],
       "ressources": [{ "ressource": "puissance-runique" }, { "ressource": "runes" }]
     },
     {
@@ -116,6 +125,7 @@
       "couleur": "#0070dd",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["sagesse", "constitution"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
       "caracteristiqueIncantation": "sagesse",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
@@ -127,6 +137,7 @@
       "couleur": "#3fc7eb",
       "deDeVie": 6,
       "caracteristiquesPrincipales": ["intelligence"],
+      "maitriseSauvegardes": ["intelligence", "sagesse"],
       "caracteristiqueIncantation": "intelligence",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
@@ -138,6 +149,7 @@
       "couleur": "#8788ee",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["charisme"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
       "caracteristiqueIncantation": "charisme",
       "ressources": [
         { "ressource": "mana" },
@@ -153,6 +165,7 @@
       "couleur": "#00ff98",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["dexterite", "sagesse"],
+      "maitriseSauvegardes": ["force", "dexterite"],
       "defenseSansArmure": ["sagesse"],
       "ressources": [{ "ressource": "energie" }, { "ressource": "chi" }]
     },
@@ -163,6 +176,7 @@
       "couleur": "#ff7c0a",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["sagesse"],
+      "maitriseSauvegardes": ["intelligence", "sagesse"],
       "caracteristiqueIncantation": "sagesse",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     },
@@ -173,6 +187,7 @@
       "couleur": "#a330c9",
       "deDeVie": 10,
       "caracteristiquesPrincipales": ["dexterite"],
+      "maitriseSauvegardes": ["dexterite", "constitution"],
       "ressources": [{ "ressource": "fureur" }]
     },
     {
@@ -182,6 +197,7 @@
       "couleur": "#33937f",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["intelligence", "charisme"],
+      "maitriseSauvegardes": ["intelligence", "charisme"],
       "caracteristiqueIncantation": "intelligence",
       "ressources": [{ "ressource": "mana" }, { "ressource": "essence" }]
     },
@@ -194,6 +210,7 @@
       "couleur": "#b35a3a",
       "deDeVie": 12,
       "caracteristiquesPrincipales": ["force", "constitution"],
+      "maitriseSauvegardes": ["force", "constitution"],
       "defenseSansArmure": ["constitution"],
       "ressources": [{ "ressource": "rage" }, { "ressource": "rage-barbare" }]
     },
@@ -204,6 +221,7 @@
       "couleur": "#d6a2e8",
       "deDeVie": 8,
       "caracteristiquesPrincipales": ["charisme"],
+      "maitriseSauvegardes": ["dexterite", "charisme"],
       "caracteristiqueIncantation": "charisme",
       "ressources": [
         { "ressource": "mana" },
@@ -219,6 +237,7 @@
       "couleur": "#e35d9a",
       "deDeVie": 6,
       "caracteristiquesPrincipales": ["charisme"],
+      "maitriseSauvegardes": ["constitution", "charisme"],
       "caracteristiqueIncantation": "charisme",
       "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
     }

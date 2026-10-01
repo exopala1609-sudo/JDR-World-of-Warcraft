@@ -396,3 +396,16 @@ fiche (`personnage:maj`) et les cadres du groupe se redessinent. Le booleen
 `repose` passe a `true` apres un repos long et repasse a `false` au premier
 combat, sort lance, attaque, degat subi ou ressource depensee.
 
+### Lanceur de des (bouton « d20 » a cote de la discussion)
+
+- **Des libres** : clic sur un de = un de plus (clic droit = un de moins), un
+  bonus, avantage / desavantage, une raison. Le navigateur compose seulement la
+  formule (`2d6+2`, `2d20kh1`) et la demande (`des:lancer`) ; le serveur lance
+  et le resultat arrive dans la discussion (secret possible pour le MJ).
+- **Tests et sauvegardes** : un bouton par caracteristique. La demande
+  (`test:lancer`) ne contient QUE ce qu'on teste ; le bonus (modificateur, et
+  maitrise si la classe maitrise cette sauvegarde : `maitriseSauvegardes` dans
+  `classes.json`) est lu dans la fiche par le serveur, et le jet passe par la
+  fenetre de resolution comme une attaque. L'avantage revient a « Normal »
+  apres chaque jet.
+

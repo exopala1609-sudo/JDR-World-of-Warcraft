@@ -11,17 +11,24 @@
 // serveur), ni relancer jusqu'a obtenir un 20 : le MJ voit chaque jet des sa
 // creation, et un seul jet peut etre en attente par personnage.
 import { EVENEMENTS } from "../../../shared/protocole.js";
+import { CARACTERISTIQUES } from "../../../shared/dnd5e.js";
 import { sortDebloque } from "../../../shared/magie.js";
 import { nouvelId, schemaId } from "../modeles/identifiants.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { modifierRessource } from "../regles/ressources.js";
-import { jetSort } from "../regles/resolution.js";
+import { jetSort, jetTest } from "../regles/resolution.js";
 import { salleMJ, salleTable } from "./index.js";
 
 const Demandes = {
   lancer: z.strictObject({ idPersonnage: schemaId("p"), reference: z.string().min(1).max(80) }),
   valider: z.strictObject({ idJet: schemaId("r") }),
+  test: z.strictObject({
+    idPersonnage: schemaId("p"),
+    genre: z.enum(["caracteristique", "sauvegarde"]),
+    caracteristique: z.enum(CARACTERISTIQUES),
+    avantage: z.enum(["normal", "avantage", "desavantage"]).default("normal"),
+  }),
 };
 
 /** Le sort du grimoire designe par un raccourci : par son origine dans le compendium, ou son identifiant. */
@@ -86,6 +93,15 @@ export function brancher(socket, ctx) {
     }
     const jet = proposerJet(ctx, socket, personnage, { ...jetSort(personnage, sort, classe), cout });
     ctx.publierPersonnage(fiche, { action: "sort-lance", par: pseudo, nom: sort.nom, cout });
+    return { jet };
+  });
+
+  // Test de caracteristique / sauvegarde (boutons du lanceur de des) : le
+  // bonus est lu dans la fiche PAR LE SERVEUR, le joueur ne choisit que quoi tester.
+  ctx.guichet(socket, EVENEMENTS.TEST_LANCER, Demandes.test, ({ idPersonnage, genre, caracteristique, avantage }) => {
+    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    const classe = ctx.referentiel.obtenirClasse(personnage.classe);
+    const jet = proposerJet(ctx, socket, personnage, { ...jetTest(personnage, genre, caracteristique, classe, avantage), cout: null });
     return { jet };
   });
 

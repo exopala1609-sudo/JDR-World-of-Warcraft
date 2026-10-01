@@ -24,3 +24,15 @@ export function modificateur(valeur) {
 export function bonusDeMaitrise(niveau) {
   return 2 + Math.floor((niveau - 1) / 4);
 }
+
+/**
+ * Bonus d'un test de caracteristique ou d'un jet de sauvegarde :
+ * le modificateur, plus la maitrise pour les sauvegardes que la classe maitrise
+ * (champ "maitriseSauvegardes" de classes.json).
+ */
+export function bonusDeTest(fiche, genre, caracteristique, classe) {
+  const mod = modificateur(fiche.caracteristiques[caracteristique] ?? 10);
+  const maitrise =
+    genre === "sauvegarde" && (classe?.maitriseSauvegardes ?? []).includes(caracteristique) ? bonusDeMaitrise(fiche.niveau) : 0;
+  return { modificateur: mod, maitrise, total: mod + maitrise };
+}

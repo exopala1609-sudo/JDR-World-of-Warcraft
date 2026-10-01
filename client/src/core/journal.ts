@@ -71,7 +71,13 @@ export function decrireJet(jet: { personnage: string; action: { nom: string }; l
 
 export function decrireDes(r: any): string {
   const detail = r.termes
-    .map((t: any) => (t.type === "des" ? `${t.expression}(${t.gardes.map((i: number) => t.jets[i]).join("+")})` : t.expression))
+    .map((t: any) => {
+      if (t.type !== "des") return t.expression;
+      const gardes = t.gardes.map((i: number) => t.jets[i]).join("+");
+      // Avantage (2d20kh1) : on montre aussi le de ecarte.
+      const ecartes = t.jets.filter((_: number, i: number) => !t.gardes.includes(i));
+      return `${t.expression}(${gardes}${ecartes.length ? `, ecarte : ${ecartes.join(", ")}` : ""})`;
+    })
     .join(" ");
   return `${r.secret ? "(Secret) " : ""}${r.par} obtient ${r.total}${r.raison ? ` - ${r.raison}` : ""} [${r.formule} : ${detail}]`;
 }

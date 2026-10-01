@@ -454,6 +454,34 @@ test("sorts : niveau, cout en Mana et fenetre de resolution", async () => {
   assert.deepEqual(barre.personnage.barreActions[2], { type: "sort", reference: "trait-de-feu" });
 });
 
+test("tests et sauvegardes : le serveur lit le bonus dans la fiche (lanceur de des)", async () => {
+  const pasLeSien = await demander(thrall, EVENEMENTS.TEST_LANCER, { idPersonnage: perso.Antonidas.id, genre: "caracteristique", caracteristique: "force" });
+  assert.equal(pasLeSien.ok, false);
+
+  // Sauvegarde de Constitution d'un guerrier : maitrisee (classes.json) -> + Maitrise.
+  const chezMJ = attendre(mj, EVENEMENTS.JET_EN_COURS);
+  const { jet } = await demander(jaina, EVENEMENTS.TEST_LANCER, { idPersonnage: perso.Antonidas.id, genre: "sauvegarde", caracteristique: "constitution" });
+  assert.equal(jet.action.nom, "Sauvegarde de Constitution");
+  assert.deepEqual(jet.lignes[0].modificateurs.map((m) => m.nom), ["Constitution", "Maitrise"]);
+  assert.equal((await chezMJ).jet.id, jet.id); // le MJ voit le jet aussitot
+  const second = await demander(jaina, EVENEMENTS.TEST_LANCER, { idPersonnage: perso.Antonidas.id, genre: "caracteristique", caracteristique: "force" });
+  assert.equal(second.erreur, "Valide d'abord le jet en cours.");
+  await demander(jaina, EVENEMENTS.JET_VALIDER, { idJet: jet.id });
+
+  // Test de Dexterite avec avantage : deux d20, le meilleur est garde ; pas de maitrise.
+  const avantage = await demander(jaina, EVENEMENTS.TEST_LANCER, {
+    idPersonnage: perso.Antonidas.id,
+    genre: "caracteristique",
+    caracteristique: "dexterite",
+    avantage: "avantage",
+  });
+  const ligne = avantage.jet.lignes[0];
+  assert.match(ligne.libelle, /\(avantage\)/);
+  assert.ok(ligne.d20 >= ligne.d20Ecarte);
+  assert.deepEqual(ligne.modificateurs.map((m) => m.nom), ["Dexterite"]);
+  await demander(jaina, EVENEMENTS.JET_VALIDER, { idJet: avantage.jet.id });
+});
+
 test("quetes : le MJ en pousse une, tous les joueurs la recoivent ; lecture seule pour eux", async () => {
   const refus = await demander(thrall, EVENEMENTS.QUETE_AJOUTER, { titre: "Triche", objectif: "x" });
   assert.equal(refus.erreur, "Seul le MJ peut donner une quete.");

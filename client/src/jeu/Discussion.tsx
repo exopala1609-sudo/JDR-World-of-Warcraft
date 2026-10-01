@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { EVENEMENTS } from "@partage/protocole.js";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { jeu, useJeu } from "@/core/jeu";
+import { BoutonDes, LanceurDes } from "@/jeu/LanceurDes";
 
 /**
  * Bas gauche : la fenetre de discussion, facon WoW. Elle affiche le journal
  * de la partie (des, degats, butin...) et accepte des commandes :
- *   /jet 1d20+5 Attaque     (ou /r)   -> lance des des
+ *   /jet 1d20+5 Attaque     (ou /r)   -> lance des des (ou le bouton "de" : lanceur de des)
  *   /quete Titre | Objectif            -> (MJ) donne une quete a tout le groupe
  */
 export function Discussion() {
   const journal = useJeu((e) => e.journal);
   const [saisie, setSaisie] = useState("");
+  const [lanceurOuvert, setLanceurOuvert] = useState(false);
+  const fermerLanceur = useCallback(() => setLanceurOuvert(false), []);
   const refLignes = useRef<HTMLDivElement>(null);
 
   // Toujours afficher la derniere ligne.
@@ -27,7 +29,7 @@ export function Discussion() {
     const commande = texte.match(/^\/(jet|r)\s+(\S+)\s*(.*)$/i);
     const quete = texte.match(/^\/qu[eê]te\s+(.*)$/i);
     if (commande) {
-      jeu.demander(EVENEMENTS.DES_LANCER, { formule: commande[2], ...(commande[3] ? { raison: commande[3] } : {}) });
+      jeu.lancerDes(commande[2], commande[3] || undefined);
     } else if (quete) {
       // "/quete Le repaire des Defias | Eliminer Edwin VanCleef" : titre | objectif | description (facultative)
       const [titre = "", objectif = "", description] = quete[1].split("|").map((morceau) => morceau.trim());
@@ -40,6 +42,7 @@ export function Discussion() {
 
   return (
     <div className="discussion">
+      {lanceurOuvert && <LanceurDes surFermer={fermerLanceur} />}
       <div className="discussion__lignes" ref={refLignes}>
         {journal.map((ligne) => (
           <div key={ligne.id} className={`discussion__ligne--${ligne.type}`}>
@@ -47,7 +50,7 @@ export function Discussion() {
           </div>
         ))}
       </div>
-      <form onSubmit={envoyer}>
+      <form className="discussion__saisie" onSubmit={envoyer}>
         <input
           id="saisie-discussion"
           className="champ"
@@ -56,6 +59,7 @@ export function Discussion() {
           placeholder="Entree pour ecrire - /jet 1d20+5"
           autoComplete="off"
         />
+        <BoutonDes ouvert={lanceurOuvert} surClic={() => setLanceurOuvert((o) => !o)} />
       </form>
     </div>
   );

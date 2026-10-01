@@ -2,24 +2,38 @@
 // DETAILLE chaque terme, pour que la fenetre de resolution puisse afficher
 // "De (14) + Force (+3) + Maitrise (+2) = 19". Fonctions PURES : le lancer de
 // des est passe en parametre (un "faux de" dans les tests).
-import { bonusDeMaitrise, modificateur } from "../../../shared/dnd5e.js";
+import { bonusDeMaitrise, bonusDeTest, modificateur } from "../../../shared/dnd5e.js";
 import { NOMS_CARACTERISTIQUES } from "../../../shared/creation.js";
 import { caracteristiqueIncantation, resolutionDuSort } from "../../../shared/magie.js";
 import { lancerDes } from "./des.js";
 
 const modif = (nom, valeur) => ({ nom, valeur });
+/** "de Force", mais "d'Intelligence" (elision devant une voyelle). */
+const de = (nom) => (/^[aeiouh]/i.test(nom) ? `d'${nom}` : `de ${nom}`);
 
 /** Coup critique : on lance deux fois plus de des ("1d8+3" -> "2d8+3"). */
 export function doublerDes(formule) {
   return formule.replace(/(\d*)d(\d+)/gi, (_, nombre, faces) => `${(Number(nombre) || 1) * 2}d${faces}`);
 }
 
-/** Un d20 et ses modificateurs : la ligne principale de la fenetre. */
-function ligneD20(libelle, modificateurs, lancer) {
-  const d20 = lancer("1d20").total;
+/**
+ * Un d20 et ses modificateurs : la ligne principale de la fenetre.
+ * Avantage / desavantage : deux d20, on garde le meilleur / le pire ;
+ * l'autre est montre barre ("d20Ecarte").
+ */
+function ligneD20(libelle, modificateurs, lancer, avantage = "normal") {
+  let d20 = lancer("1d20").total;
+  let d20Ecarte = null;
+  if (avantage !== "normal") {
+    const second = lancer("1d20").total;
+    const garde = avantage === "avantage" ? Math.max(d20, second) : Math.min(d20, second);
+    d20Ecarte = garde === d20 ? second : d20;
+    d20 = garde;
+  }
   return {
-    libelle,
+    libelle: avantage === "normal" ? libelle : `${libelle} (${avantage})`,
     d20,
+    d20Ecarte,
     des: null,
     modificateurs,
     total: d20 + modificateurs.reduce((t, m) => t + m.valeur, 0),
@@ -35,6 +49,7 @@ function ligneDes(libelle, formule, modificateurs, lancer) {
   return {
     libelle,
     d20: null,
+    d20Ecarte: null,
     des: { formule, jets: des, total: jet.total },
     modificateurs,
     total: Math.max(0, jet.total + modificateurs.reduce((t, m) => t + m.valeur, 0)),
@@ -60,6 +75,24 @@ export function jetArme(fiche, attaque, objet, lancer = lancerDes) {
     action: { genre: "arme", nom: objet.nom, icone: objet.icone ?? objet.source ?? null, rarete: objet.rarete, detail: `Arme - ${attaque.emplacement}` },
     lignes: toucher.echec ? [toucher] : [toucher, degats], // un 1 naturel rate toujours
     note: toucher.critique ? "Coup critique : les des de degats sont doubles." : toucher.echec ? "Echec critique : l'attaque rate." : null,
+  };
+}
+
+/**
+ * Test de caracteristique ("Test de Force") ou jet de sauvegarde
+ * ("Sauvegarde de Dexterite"), demande depuis le lanceur de des.
+ */
+export function jetTest(fiche, genre, caracteristique, classe, avantage = "normal", lancer = lancerDes) {
+  const bonus = bonusDeTest(fiche, genre, caracteristique, classe);
+  const nomCarac = NOMS_CARACTERISTIQUES[caracteristique];
+  const modificateurs = [modif(nomCarac, bonus.modificateur)];
+  if (bonus.maitrise) modificateurs.push(modif("Maitrise", bonus.maitrise));
+  const nom = genre === "sauvegarde" ? `Sauvegarde ${de(nomCarac)}` : `Test ${de(nomCarac)}`;
+  const ligne = ligneD20(genre === "sauvegarde" ? "Jet de sauvegarde" : "Test de caracteristique", modificateurs, lancer, avantage);
+  return {
+    action: { genre: "test", nom, icone: null, rarete: null, detail: genre === "sauvegarde" ? "Jet de sauvegarde" : "Test de caracteristique" },
+    lignes: [ligne],
+    note: ligne.critique ? "20 naturel !" : ligne.echec ? "1 naturel..." : null,
   };
 }
 
