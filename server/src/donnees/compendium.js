@@ -49,13 +49,18 @@ export function installerFichierExemple(dossierCompendium, cheminExemple) {
   return true;
 }
 
+/** Le fichier ou le jeu ecrit les monstres crees depuis le Bestiaire (dans compendium/). */
+export const FICHIER_MONSTRES_MJ = "mes-monstres.json";
+
 export function creerCompendium(dossier) {
   let objets = new Map();
   let sorts = new Map();
   let etats = new Map();
   let monstres = new Map();
+  let fichierDuMonstre = new Map(); // id -> fichier (relatif) ou il est ecrit
 
   function charger() {
+    const origines = new Map();
     const nouveaux = { objets: new Map(), sorts: new Map(), etats: new Map(), monstres: new Map() };
     const erreurs = [];
     const signaler = (fichier, emplacement, message) =>
@@ -99,6 +104,7 @@ export function creerCompendium(dossier) {
             signaler(fichier, emplacement, "Cet identifiant est deja un etat officiel de D&D 5e.");
           } else {
             nouveaux[section].set(resultat.data.id, resultat.data);
+            if (section === "monstres") origines.set(resultat.data.id, relative(dossier, fichier));
           }
         });
       }
@@ -106,6 +112,7 @@ export function creerCompendium(dossier) {
 
     // On ne remplace l'ancien contenu qu'une fois la lecture terminee.
     ({ objets, sorts, etats, monstres } = nouveaux);
+    fichierDuMonstre = origines;
     return { objets: objets.size, sorts: sorts.size, etats: etats.size, monstres: monstres.size, erreurs };
   }
 
@@ -122,8 +129,11 @@ export function creerCompendium(dossier) {
       objets: [...objets.values()],
       sorts: [...sorts.values()],
       etats: toutesLesDefinitionsEtat(),
-      monstres: [...monstres.values()],
+      // "modifiable" : cree depuis le jeu (mes-monstres.json), donc modifiable depuis le jeu.
+      monstres: [...monstres.values()].map((m) => ({ ...m, modifiable: fichierDuMonstre.get(m.id) === FICHIER_MONSTRES_MJ })),
     }),
+    fichierDuMonstre: (id) => fichierDuMonstre.get(id) ?? null,
+    dossier,
     obtenirMonstre: (id) => monstres.get(id) ?? null,
     obtenirObjet: (id) => objets.get(id) ?? null,
     obtenirSort: (id) => sorts.get(id) ?? null,

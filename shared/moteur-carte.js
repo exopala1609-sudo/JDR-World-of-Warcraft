@@ -55,6 +55,7 @@ export class MoteurCarte {
    *   police                     : (facultatif) police des textes de combat
    *   surButin(butin, clientX, clientY) : (facultatif) clic sur un coffre / cadavre
    *   surMenuPion(pion, clientX, clientY) : (facultatif) clic droit sur un pion (menu du MJ)
+   *   surDeplacementButin(butin, x, y) : (facultatif, MJ) un coffre / cadavre glisse ailleurs
    */
   constructor(canvas, options) {
     this.canvas = canvas;
@@ -358,7 +359,11 @@ export class MoteurCarte {
     this.dessinerGrille();
 
     // 3. Les butins (coffres, cadavres) et les pions des monstres : SOUS le brouillard.
-    for (const butin of this.scene.butins ?? []) this.dessinerButin(butin);
+    for (const butin of this.scene.butins ?? []) {
+      // Coffre en train d'etre glisse par le MJ : dessine sous la souris.
+      const glisse = this.geste?.type === "vue" && this.geste.butin?.id === butin.id && this.geste.butinVers;
+      this.dessinerButin(glisse ? { ...butin, ...this.geste.butinVers } : butin);
+    }
     const estPJ = (pion) => pion.proprietaire != null;
     for (const pion of this.scene.pions) if (!estPJ(pion)) this.dessinerPion(pion);
 
@@ -873,7 +878,14 @@ export class MoteurCarte {
     this.souris = point;
     const geste = this.geste;
 
-    if (geste?.type === "vue") {
+    if (geste?.type === "vue" && geste.butin && this.options.estMJ && this.options.surDeplacementButin) {
+      // Le MJ glisse un coffre : il suit la souris (aimante a la grille), la vue ne bouge pas.
+      if (geste.butinVers || Math.hypot(e.clientX - geste.client.x, e.clientY - geste.client.y) >= 5) {
+        const dansLaCarte = borner(point.x, point.y, this.scene.carte);
+        const aimante = aimanter(dansLaCarte.x, dansLaCarte.y, this.scene.grille);
+        geste.butinVers = borner(aimante.x, aimante.y, this.scene.carte);
+      }
+    } else if (geste?.type === "vue") {
       this.vue.x = geste.vue.x - (point.sx - geste.ecran.x) / this.vue.zoom;
       this.vue.y = geste.vue.y - (point.sy - geste.ecran.y) / this.vue.zoom;
     } else if (geste?.type === "pion") {
@@ -947,7 +959,9 @@ export class MoteurCarte {
       this.envoyerMorceau(geste);
     }
     const immobile = geste.client && Math.hypot(e.clientX - geste.client.x, e.clientY - geste.client.y) < 5;
-    if (geste.type === "vue" && geste.butin && immobile) {
+    if (geste.type === "vue" && geste.butin && geste.butinVers) {
+      this.options.surDeplacementButin(geste.butin, geste.butinVers.x, geste.butinVers.y);
+    } else if (geste.type === "vue" && geste.butin && immobile) {
       this.options.surButin?.(geste.butin, e.clientX, e.clientY);
     }
     if (geste.type === "vue" && geste.menu && immobile) {

@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 12;
+export const VERSION_PROTOCOLE = 13;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -17,6 +17,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   TABLES_LISTER: "tables:lister",
   TABLE_CREER: "table:creer", // MJ
   TABLE_REJOINDRE: "table:rejoindre",
+  TABLE_RENOMMER: "table:renommer", // MJ : le nom affiche au-dessus de la minicarte
 
   // Personnages
   CREATION_VALIDER: "creation:valider", // joueur : "Entrer dans le monde" (ecran de creation)
@@ -71,10 +72,13 @@ export const EVENEMENTS = /** @type {const} */ ({
   BUTIN_CREER: "butin:creer", // MJ : poser un coffre
   BUTIN_AJOUTER: "butin:ajouter", // MJ : y mettre un objet du compendium
   BUTIN_SUPPRIMER: "butin:supprimer", // MJ
+  BUTIN_DEPLACER: "butin:deplacer", // MJ : glisser un coffre / cadavre ailleurs sur la carte
   PION_EN_CADAVRE: "pion:enCadavre", // MJ : le monstre tombe, son cadavre se fouille
 
   // Bestiaire (MJ) : un monstre glisse sur la carte devient un PNJ + son pion
   BESTIAIRE_INVOQUER: "bestiaire:invoquer",
+  BESTIAIRE_ENREGISTRER: "bestiaire:enregistrer", // creer / modifier un monstre (ecrit dans mes-monstres.json)
+  BESTIAIRE_SUPPRIMER: "bestiaire:supprimer", // retirer un monstre de mes-monstres.json
 
   // Combat
   COMBAT_DEMARRER: "combat:demarrer", // MJ : lance l'initiative
@@ -120,6 +124,7 @@ export const EVENEMENTS = /** @type {const} */ ({
 
   // ======= Serveur -> Clients : des FAITS (deja valides par le serveur) =====
   TABLES_LISTE: "tables:liste",
+  TABLE_MAJ: "table:maj", // la table a change (nouveau nom)
   TABLE_PRESENCE: "table:presence",
   PERSONNAGE_MAJ: "personnage:maj", // une fiche a change (avec sa "cause")
   PERSONNAGE_SUPPRIME: "personnage:supprime",

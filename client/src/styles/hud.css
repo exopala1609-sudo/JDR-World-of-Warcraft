@@ -523,3 +523,52 @@
   }
 }
 
+
+/* --- Barre d'actions du MJ : page 1 = ses outils ; selecteur de page facon WoW --------- */
+.case-outil-mj {
+  padding: 0;
+  border: 0;
+  background: radial-gradient(circle at 50% 40%, #4a4a55, #121216);
+  box-shadow: var(--bordure-or);
+  cursor: pointer;
+}
+.case-outil-mj__symbole {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--or);
+  font-size: 26px;
+  text-shadow: var(--ombre-texte);
+}
+.case-outil-mj--actif {
+  box-shadow:
+    var(--bordure-or),
+    0 0 12px rgba(255, 209, 0, 0.7);
+  filter: brightness(1.3);
+}
+.case--vide-mj {
+  opacity: 0.5;
+}
+.actions__page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 2px;
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 15px;
+  text-shadow: var(--ombre-texte);
+}
+.actions__page button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--or-pale);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.actions__page button:hover {
+  color: var(--or);
+}

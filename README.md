@@ -22,9 +22,9 @@ npm run partie   # prepare l'interface, demarre, affiche (et copie) le lien pour
 Puis ouvre **http://localhost:3000/** : l'ecran de connexion World of Warcraft.
 C'est la porte UNIQUE, pour les joueurs comme pour toi : en bas de l'ecran, le
 lien discret **« Connexion Maitre du Jeu »** demande ton mot de passe. Tu arrives
-alors sur la meme interface que les joueurs, avec tes outils en plus (barre
-**MJ** au bord droit de l'ecran, clic droit sur un pion ou un cadre, bouton
-carte sur la minicarte).
+alors sur la meme interface que les joueurs, avec tes outils en plus (sur ta
+barre d'actions en bas, touches 1 a 9 ; clic droit sur un pion ou un cadre ;
+bouton carte sur la minicarte).
 
 Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 Pour developper : `npm run dev` (interface sur http://localhost:5173 ; le port

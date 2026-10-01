@@ -218,83 +218,6 @@
    SPRINT 10 : outils du MJ dans l'interface de jeu ("God mode")
    ============================================================================= */
 
-/* --- Barre d'outils du MJ : panneau vertical, bord droit, repliable -------------------- */
-.barre-mj {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 168px;
-  padding: 8px 8px 10px;
-  border-radius: 6px 0 0 6px;
-}
-.barre-mj__entete {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 4px 6px;
-  border-bottom: 1px solid var(--metal-sombre);
-  font-size: 16px;
-}
-.barre-mj__replier {
-  border: 0;
-  background: none;
-  color: var(--or);
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-.barre-mj__outil {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  align-items: center;
-  gap: 8px;
-  padding: 4px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: none;
-  color: var(--texte);
-  font-family: var(--police-ui);
-  font-size: 14px;
-  text-align: left;
-  cursor: pointer;
-}
-.barre-mj__outil:hover {
-  border-color: var(--metal-sombre);
-  background: rgba(255, 209, 0, 0.08);
-  color: var(--or);
-}
-.barre-mj__outil--actif {
-  border-color: var(--or-bordure);
-  color: var(--or);
-}
-.barre-mj__symbole {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #4a4a55, #1a1a20);
-  box-shadow: var(--bordure-or);
-  color: var(--or);
-  font-size: 20px;
-  text-shadow: var(--ombre-texte);
-}
-/* Repliee : un simple onglet "MJ" colle au bord */
-.barre-mj--repliee {
-  width: auto;
-  padding: 18px 8px;
-  border: 0;
-  color: var(--or);
-  font-family: var(--police-ui);
-  font-size: 15px;
-  writing-mode: vertical-rl;
-  cursor: pointer;
-}
-
 /* --- Bouton MJ sur le bord de la minicarte --------------------------------------------- */
 .minicarte__bouton-mj {
   position: absolute;
@@ -873,4 +796,82 @@
   color: #ff6a6a;
   font-size: 12px;
   cursor: pointer;
+}
+
+/* --- Bestiaire : actions et formulaire "Nouveau monstre" ------------------------------ */
+.bestiaire__actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 16px;
+}
+.bouton--danger {
+  background: linear-gradient(180deg, #b0271a 0%, #7d1409 48%, #5c0c04 52%, #7a1509 100%);
+}
+.formulaire-monstre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  font-family: var(--police-ui);
+  font-size: 13px;
+}
+.formulaire-monstre label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #6b1b0d;
+}
+.formulaire-monstre .champ-parchemin {
+  min-width: 0;
+  padding: 3px 6px;
+  font-size: 14px;
+}
+.formulaire-monstre__grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+.formulaire-monstre__large {
+  grid-column: 1 / -1;
+}
+.formulaire-monstre__caracs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.formulaire-monstre__attaque {
+  display: grid;
+  grid-template-columns: 2fr 48px 1fr 1fr auto;
+  gap: 4px;
+}
+.formulaire-monstre__description textarea {
+  resize: vertical;
+}
+.bestiaire__pied .bouton {
+  flex: none;
+}
+
+/* --- Nom de la zone (table) au-dessus de la minicarte : renommable par le MJ ---------- */
+.minicarte__zone--modifiable {
+  border: 0;
+  cursor: text;
+}
+.minicarte__zone--modifiable:hover {
+  filter: brightness(1.3);
+}
+.minicarte__saisie {
+  width: 240px;
+  color: var(--or);
+  text-align: center;
+}
+/* Sur le parchemin : boutons secondaires a l'encre */
+.formulaire-monstre .menu-mj__retirer {
+  border-color: var(--parchemin-sombre);
+  background: rgba(255, 250, 235, 0.4);
+  color: #6b1b0d;
+}
+.formulaire-monstre .menu-mj__retirer:hover {
+  border-color: #6b1b0d;
+  background: rgba(255, 250, 235, 0.8);
 }

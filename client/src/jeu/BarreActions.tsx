@@ -6,6 +6,7 @@ import { etatDuSort, InfobulleSort } from "@/jeu/Grimoire";
 import { InfobulleObjet } from "@/jeu/Sacs";
 import { preparerGlisser, useCible, type Charge } from "@/ui/glisser";
 import { avecInfobulle } from "@/ui/InfoBulle";
+import { OUTILS_MJ } from "@/jeu/OutilsBarreMJ";
 
 export const RACCOURCIS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
 
@@ -21,6 +22,8 @@ const sortDuRaccourci = (p: Personnage, raccourci: Raccourci): SortConnu | undef
  * avec l'arme, lancer le sort. Une attaque ou un sort ouvre la fenetre de resolution.
  */
 export function utiliserRaccourci(index: number) {
+  // Le MJ, sur la page "outils" : la touche declenche l'outil (Bestiaire, Carte...).
+  if (jeu.estMJ() && jeu.lire().pageBarreMJ === "outils") return OUTILS_MJ[index]?.action();
   const p = personnageDeLaBarre();
   const raccourci = p?.barreActions[index];
   if (!p || !raccourci || jeu.lire().jet) return; // un jet attend deja "Valider"
@@ -105,17 +108,71 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
   );
 }
 
-/** Bas centre : 12 raccourcis, encadres de deux griffons. */
+/** Une case de la barre du MJ : un outil (icone doree, nom en infobulle). */
+function CaseOutilMJ({ index }: { index: number }) {
+  const outil = OUTILS_MJ[index];
+  const actif = useJeu((e) => Boolean(outil?.actif?.(e)));
+  const touche = RACCOURCIS[index];
+  if (!outil) return <div className="case case--vide-mj" />;
+  return (
+    <button
+      type="button"
+      className={`case case-outil-mj${actif ? " case-outil-mj--actif" : ""}`}
+      onClick={outil.action}
+      aria-label={outil.nom}
+      {...avecInfobulle(() => (
+        <>
+          <div className="infobulle__titre">{outil.nom}</div>
+          <div className="infobulle__ligne--or">{outil.aide}</div>
+          <div className="infobulle__ligne--gris">Clic ou touche {touche}.</div>
+        </>
+      ))}
+    >
+      <span className="case-outil-mj__symbole">{outil.symbole}</span>
+      <span className="actions__raccourci">{touche}</span>
+    </button>
+  );
+}
+
+/**
+ * Bas centre : 12 raccourcis, encadres de deux griffons.
+ * Chez le MJ, deux "pages" (comme les pages de barre de WoW) : 1 = ses outils,
+ * 2 = la barre du personnage qu'il a cible (pour le faire agir).
+ */
 export function BarreActions() {
   const p = useJeu((e) => jeu.personnageDesSacs(e));
   const modifiable = useJeu((e) => Boolean(p && (e.profil?.role === "mj" || jeu.mesPersonnages(e).some((m) => m.id === p.id))));
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
+  const page = useJeu((e) => e.pageBarreMJ);
+  const outils = estMJ && page === "outils";
+  const changerPage = () => jeu.modifier((e) => ({ pageBarreMJ: e.pageBarreMJ === "outils" ? "personnage" : "outils" }));
   return (
     <div className="actions">
       <div className="actions__embleme actions__embleme--gauche" />
       <div className="actions__barre cadre">
-        {RACCOURCIS.map((touche, index) => (
-          <CaseRaccourci key={touche} index={index} p={p} modifiable={modifiable} />
-        ))}
+        {RACCOURCIS.map((touche, index) =>
+          outils ? <CaseOutilMJ key={touche} index={index} /> : <CaseRaccourci key={touche} index={index} p={p} modifiable={modifiable} />,
+        )}
+        {estMJ && (
+          <div className="actions__page">
+            <button type="button" onClick={changerPage} aria-label="Page precedente">
+              ▲
+            </button>
+            <span
+              {...avecInfobulle(() => (
+                <>
+                  <div className="infobulle__titre">{outils ? "Page 1 : outils du MJ" : `Page 2 : barre de ${p?.nom ?? "(aucune cible)"}`}</div>
+                  <div className="infobulle__ligne--gris">Les fleches changent de page. Page 2 : cible d'abord un personnage (clic sur son cadre ou son pion).</div>
+                </>
+              ))}
+            >
+              {outils ? 1 : 2}
+            </span>
+            <button type="button" onClick={changerPage} aria-label="Page suivante">
+              ▼
+            </button>
+          </div>
+        )}
       </div>
       <div className="actions__embleme actions__embleme--droite" />
     </div>

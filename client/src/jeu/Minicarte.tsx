@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { EVENEMENTS } from "@partage/protocole.js";
 import { carte } from "@/core/carte";
 import { jeu, useJeu } from "@/core/jeu";
 import { avecInfobulle } from "@/ui/InfoBulle";
@@ -6,6 +7,43 @@ import { OutilsCarte } from "@/jeu/OutilsCarte";
 
 const TAILLE = 250;
 const INTERVALLE_MS = 250; // au plus 4 rafraichissements par seconde
+
+/**
+ * Le nom de la zone au-dessus de la minicarte (le nom de la table). Le MJ le
+ * renomme d'un clic : Entree pour valider, Echap pour annuler.
+ */
+function NomDeZone({ nom, modifiable }: { nom: string; modifiable: boolean }) {
+  const [saisie, setSaisie] = useState<string | null>(null);
+  if (saisie === null) {
+    return modifiable ? (
+      <button type="button" className="minicarte__zone minicarte__zone--modifiable cadre titre-or" onClick={() => setSaisie(nom)} {...avecInfobulle(() => <div>Clic : renommer (MJ)</div>)}>
+        {nom}
+      </button>
+    ) : (
+      <div className="minicarte__zone cadre titre-or">{nom}</div>
+    );
+  }
+  const valider = () => {
+    const propre = saisie.trim();
+    if (propre && propre !== nom) jeu.demander(EVENEMENTS.TABLE_RENOMMER, { nom: propre });
+    setSaisie(null);
+  };
+  return (
+    <input
+      className="champ minicarte__saisie"
+      value={saisie}
+      maxLength={60}
+      autoFocus
+      onChange={(e) => setSaisie(e.target.value)}
+      onBlur={valider}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") valider();
+        if (e.key === "Escape") setSaisie(null);
+      }}
+      aria-label="Nom de la table"
+    />
+  );
+}
 
 /**
  * Minicarte ronde : vue d'ensemble de toute la carte (brouillard compris).
@@ -32,7 +70,7 @@ export function Minicarte() {
 
   return (
     <div className="minicarte">
-      <div className="minicarte__zone cadre titre-or">{table?.nom ?? ""}</div>
+      <NomDeZone nom={table?.nom ?? ""} modifiable={estMJ} />
       <div className="minicarte__rond">
         <canvas ref={refCanvas} width={TAILLE} height={TAILLE} />
         {/* MJ : le petit bouton rond sur le bord de la minicarte (comme ceux de WoW) */}

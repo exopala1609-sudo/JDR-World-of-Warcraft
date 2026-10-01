@@ -2,9 +2,10 @@
 import { EVENEMENTS } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { schemaId } from "../modeles/identifiants.js";
-import { fabriquerTable } from "../modeles/table.js";
+import { fabriquerTable, SchemaCreationTable } from "../modeles/table.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
+import { salleTable } from "./index.js";
 
 const Rejoindre = z.strictObject({ idTable: schemaId("t") });
 
@@ -18,6 +19,16 @@ export function brancher(socket, ctx) {
     const table = depot.enregistrerTable(fabriquerTable(donnees));
     io.emit(EVENEMENTS.TABLES_LISTE, { tables: depot.listerTables() });
     console.log(`[temps-reel] Table creee : ${table.nom} (${table.id}).`);
+    return { table };
+  });
+
+  // Renommer la table ou l'on joue (le nom au-dessus de la minicarte).
+  ctx.guichet(socket, EVENEMENTS.TABLE_RENOMMER, SchemaCreationTable, ({ nom }) => {
+    ctx.exigerMJ(socket, "renommer la table");
+    const idTable = ctx.exigerTable(socket);
+    const table = depot.enregistrerTable({ ...depot.obtenirTable(idTable), nom });
+    io.to(salleTable(idTable)).emit(EVENEMENTS.TABLE_MAJ, { table });
+    io.emit(EVENEMENTS.TABLES_LISTE, { tables: depot.listerTables() });
     return { table };
   });
 

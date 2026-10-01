@@ -179,6 +179,12 @@ Le fichier `exemple-bestiaire.json` (commente) montre tous les champs.
 | `butin` | non | objets du compendium (`id`, `quantite`) trouves sur son cadavre |
 | `icone` | non | image du dossier `icones/` (par defaut : l'`id`) |
 
+**Creer un monstre sans ouvrir de fichier** : dans le Bestiaire, bouton
+**« + Nouveau monstre / PNJ »** (ou « Dupliquer pour modifier » sur un monstre
+existant). Le jeu verifie chaque champ et l'ecrit dans
+`compendium/mes-monstres.json` : modifiable ensuite depuis le jeu (Modifier,
+Supprimer) ou au Bloc-notes, comme les autres fichiers.
+
 Si ton compendium ne contient encore aucun monstre, le serveur y depose
 `exemple-bestiaire.json` au demarrage (sans toucher a tes autres fichiers).
 

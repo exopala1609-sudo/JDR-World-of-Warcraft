@@ -8,6 +8,8 @@ import type { Monstre } from "@/core/types";
 import { Fenetre } from "@/ui/Fenetre";
 import { preparerGlisser } from "@/ui/glisser";
 import { avecInfobulle } from "@/ui/InfoBulle";
+import { EVENEMENTS } from "@partage/protocole.js";
+import { FormulaireMonstre } from "./FormulaireMonstre";
 
 const ABREGES: Record<string, string> = { force: "FOR", dexterite: "DEX", constitution: "CON", intelligence: "INT", sagesse: "SAG", charisme: "CHA" };
 
@@ -72,6 +74,9 @@ export function Bestiaire({ position }: { position: { x: number; y: number } }) 
   const cache = useJeu((e) => e.invocationCachee);
   const [recherche, setRecherche] = useState("");
   const [choisi, setChoisi] = useState<string | null>(null);
+  // Formulaire ouvert : "nouveau" (vierge), ou le monstre a modifier / dupliquer.
+  const [edition, setEdition] = useState<{ modele: Monstre | null } | null>(null);
+  const [supprimer, setSupprimer] = useState(false);
   const fermer = () => jeu.modifier((e) => ({ fenetres: { ...e.fenetres, bestiaire: false } }));
 
   useEffect(() => {
@@ -101,8 +106,11 @@ export function Bestiaire({ position }: { position: { x: number; y: number } }) 
               key={m.id}
               className={`carte-monstre${affiche?.id === m.id ? " carte-monstre--choisie" : ""}`}
               onPointerDown={(e) => preparerGlisser(e, { origine: "bestiaire", monstre: m })}
-              onPointerEnter={() => setChoisi(m.id)}
-              onClick={() => setChoisi(m.id)}
+              onPointerEnter={() => !edition && setChoisi(m.id)}
+              onClick={() => {
+                setChoisi(m.id);
+                setSupprimer(false);
+              }}
             >
               <span className="case carte-monstre__icone">
                 <img src={urlIcone(m.icone ?? m.id)} alt="" />
@@ -114,7 +122,40 @@ export function Bestiaire({ position }: { position: { x: number; y: number } }) 
             </div>
           ))}
         </div>
-        <div className="bestiaire__detail">{affiche ? <FicheMonstre m={affiche} /> : null}</div>
+        <div className="bestiaire__detail">
+          {edition ? (
+            <FormulaireMonstre
+              key={edition.modele?.id ?? "nouveau"}
+              modele={edition.modele}
+              surFin={(id) => {
+                setEdition(null);
+                if (id) setChoisi(id);
+              }}
+            />
+          ) : affiche ? (
+            <>
+              <FicheMonstre m={affiche} />
+              <div className="bestiaire__actions">
+                <button type="button" className="bouton bouton--discret" onClick={() => setEdition({ modele: affiche })}>
+                  {affiche.modifiable ? "Modifier" : "Dupliquer pour modifier"}
+                </button>
+                {affiche.modifiable && (
+                  <button
+                    type="button"
+                    className={`bouton bouton--discret${supprimer ? " bouton--danger" : ""}`}
+                    onClick={() => {
+                      if (!supprimer) return setSupprimer(true);
+                      setSupprimer(false);
+                      jeu.demander(EVENEMENTS.BESTIAIRE_SUPPRIMER, { idMonstre: affiche.id });
+                    }}
+                  >
+                    {supprimer ? "Confirmer la suppression ?" : "Supprimer"}
+                  </button>
+                )}
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
       <div className="bestiaire__pied">
         <div className="carte-monstre carte-monstre--coffre" onPointerDown={(e) => preparerGlisser(e, { origine: "coffre" })}>
@@ -126,6 +167,9 @@ export function Bestiaire({ position }: { position: { x: number; y: number } }) 
             <span className="carte-monstre__detail">a remplir depuis le Compendium</span>
           </span>
         </div>
+        <button type="button" className="bouton" onClick={() => setEdition({ modele: null })}>
+          + Nouveau monstre / PNJ
+        </button>
         <p className="bestiaire__astuce">Glisse un monstre (ou le coffre) sur la carte pour l'y poser.</p>
       </div>
     </Fenetre>

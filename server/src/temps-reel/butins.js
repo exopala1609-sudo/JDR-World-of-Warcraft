@@ -35,6 +35,7 @@ const Demandes = {
   }),
   ajouter: z.strictObject({ idButin, idObjet: schemaIdCompendium, quantite: z.int().min(1).max(999).default(1) }),
   supprimer: z.strictObject({ idButin }),
+  deplacer: z.strictObject({ idButin, x: coordonnee, y: coordonnee }),
   cadavre: z.strictObject({ idPion: schemaId("j") }),
 };
 
@@ -134,6 +135,18 @@ export function brancher(socket, ctx) {
     const suite = depot.enregistrerScene({ ...scene, butins: scene.butins.filter((b) => b.id !== id) });
     diffuserButin(suite, { id, supprime: true }, { action: "butin-supprime", par: pseudo });
     return {};
+  });
+
+  // Le MJ deplace un coffre / cadavre. Les joueurs recoivent la scene filtree :
+  // un coffre glisse dans le brouillard disparait de leur carte, et inversement.
+  ctx.guichet(socket, EVENEMENTS.BUTIN_DEPLACER, Demandes.deplacer, ({ idButin: id, x, y }) => {
+    ctx.exigerMJ(socket, "deplacer un butin");
+    const scene = depot.obtenirScene(ctx.exigerTable(socket));
+    exigerButin(scene, id);
+    const position = positionValide(scene, x, y);
+    depot.enregistrerScene({ ...scene, butins: scene.butins.map((b) => (b.id === id ? { ...b, ...position } : b)) });
+    ctx.publierScene(scene.idTable, { action: "butin-deplace", par: pseudo });
+    return { position };
   });
 
   // Le monstre tombe : son pion laisse place a un cadavre, qui contient ce

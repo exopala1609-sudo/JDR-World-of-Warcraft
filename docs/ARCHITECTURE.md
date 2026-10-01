@@ -517,12 +517,14 @@ telecharge meme pas.
 
 | Outil | Ou | Ce qu'il fait |
 |---|---|---|
-| Barre MJ | bord droit, repliable | ouvre les outils, repos long de la table, recharger les fichiers |
-| Bestiaire | barre MJ | monstres du compendium ; glisser sur la carte = PNJ + pion (cache) ; coffre a glisser |
-| Compendium | barre MJ | donner un objet, apprendre un sort, poser une aura ; remplir le coffre ouvert |
-| Initiative | barre MJ, touche I (tous) | combattants = pions de la carte ; lancer, reordonner (▲ ▼), modifier une valeur, tour suivant / precedent, terminer ; le pion actif pulse sur la carte de tous |
-| Carte | bouton rond de la minicarte | televerser / choisir l'image, regler la grille, brouillard, placer les absents |
-| Pinceau / gomme | outils sous la minicarte | peindre / effacer le brouillard |
+| Barre d'actions du MJ | en bas, page 1 (fleches ▲▼ : page 2 = barre du personnage cible) | ses outils, touches 1 a 9 : Bestiaire, Compendium, Initiative, Carte, gomme, pinceau, quetes, repos long de la table, recharger |
+| Bestiaire | touche 1 | monstres du compendium ; glisser sur la carte = PNJ + pion (cache) ; coffre a glisser ; **Nouveau monstre / PNJ**, Modifier, Dupliquer, Supprimer (ecrit dans `compendium/mes-monstres.json`) |
+| Compendium | touche 2 | donner un objet, apprendre un sort, poser une aura ; remplir le coffre ouvert |
+| Initiative | touche 3 (et I pour tous) | combattants = pions de la carte ; lancer, reordonner (▲ ▼), modifier une valeur, tour suivant / precedent, terminer ; le pion actif pulse sur la carte de tous |
+| Nom de la zone | au-dessus de la minicarte | un clic pour renommer la table |
+| Coffres et cadavres | sur la carte | le MJ les glisse ailleurs (un clic sans bouger les ouvre) |
+| Carte | bouton rond de la minicarte, touche 4 | televerser / choisir l'image, regler la grille, brouillard, placer les absents |
+| Pinceau / gomme | touches 5 et 6, ou outils sous la minicarte | peindre / effacer le brouillard |
 | Menu clic droit | pion ou cadre | PV, ressources, alterations, repos, fiche et sac, combat, cacher / reveler, cadavre, supprimer, expulser |
 
 Le glisser-deposer du Bestiaire reutilise celui des objets (sprint 7) : la

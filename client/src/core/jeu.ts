@@ -55,6 +55,7 @@ export type EtatJeu = {
   compendium: Compendium | null; // MJ : objets, sorts, auras, monstres (charge a la demande)
   invocationCachee: boolean; // MJ : un monstre pose depuis le Bestiaire arrive cache aux joueurs
   rayonPinceau: number; // MJ : taille de la gomme / du pinceau de brouillard
+  pageBarreMJ: "outils" | "personnage"; // MJ : sa barre du bas montre ses outils, ou la barre du personnage cible
   outil: OutilCarte; // ce que fait un clic gauche sur la carte
   couleurTrace: string | null; // null = sa propre couleur
 };
@@ -93,6 +94,7 @@ const ETAT_INITIAL: EtatJeu = {
   compendium: null,
   invocationCachee: true,
   rayonPinceau: 60,
+  pageBarreMJ: "outils",
   outil: "deplacer",
   couleurTrace: null,
 };
@@ -463,6 +465,7 @@ class Jeu {
     });
 
     socket.on(EVENEMENTS.TABLES_LISTE, ({ tables }) => this.modifier({ tables }));
+    socket.on(EVENEMENTS.TABLE_MAJ, ({ table }: { table: Table }) => this.modifier((e) => (e.table?.id === table.id ? { table } : {})));
     // MJ : le compendium a ete recharge (fichiers modifies) -> on relit.
     socket.on(EVENEMENTS.COMPENDIUM_MAJ, ({ rapport }) => {
       if (this.etat.compendium) this.chargerCompendium(true);

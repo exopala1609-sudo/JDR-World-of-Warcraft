@@ -68,6 +68,7 @@ export type Monstre = {
   butin: { id: string; quantite: number }[];
   icone?: string;
   description: string;
+  modifiable?: boolean; // cree depuis le jeu (mes-monstres.json) : modifiable et supprimable ici
 };
 
 /** Le compendium du MJ (objets, sorts, auras, monstres) et ses erreurs de lecture. */

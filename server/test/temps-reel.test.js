@@ -3,7 +3,7 @@
 // ET les protections : ce qu'un joueur n'a pas le droit de faire est refuse,
 // ce qu'il n'a pas le droit de voir ne lui est jamais envoye.
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -59,7 +59,9 @@ before(async () => {
   depot = creerDepot(join(dossier, "parties"));
   depot.charger();
   sessions = creerGestionnaireSessions({ motDePasseMJ: "secret-de-test" });
-  const compendium = creerCompendium("exemples/compendium");
+  // Une COPIE du compendium d'exemple : le Bestiaire y ecrit mes-monstres.json.
+  cpSync("exemples/compendium", join(dossier, "compendium"), { recursive: true });
+  const compendium = creerCompendium(join(dossier, "compendium"));
   compendium.charger();
   const referentiel = creerReferentiel("exemples/referentiel");
   referentiel.charger();
@@ -678,4 +680,50 @@ test("roles : un joueur qui 'debloque' l'interface MJ dans son navigateur est re
   }
   const apres = JSON.stringify({ tables: depot.listerTables(), scene: depot.obtenirScene(idTable), combat: depot.obtenirCombat(idTable) });
   assert.equal(apres, avant, "rien n'a change cote serveur");
+});
+
+test("bestiaire : le MJ cree, modifie et supprime un monstre ; c'est ecrit dans mes-monstres.json", async () => {
+  const nouveau = { nom: "Ogre des collines", pv: "7d10+21", classeArmure: 11, type: "Geant", attaques: [{ nom: "Massue", toucher: 6, degats: "2d8+4" }] };
+  assert.equal((await demander(thrall, EVENEMENTS.BESTIAIRE_ENREGISTRER, { monstre: nouveau })).ok, false);
+  const r = await demander(mj, EVENEMENTS.BESTIAIRE_ENREGISTRER, { monstre: nouveau });
+  assert.equal(r.monstre.id, "ogre-des-collines");
+  const fichier = join(dossier, "compendium", "mes-monstres.json");
+  assert.ok(existsSync(fichier));
+  assert.match(readFileSync(fichier, "utf8"), /^\/\/ =+/); // mode d'emploi en tete, lisible au Bloc-notes
+  let liste = await demander(mj, EVENEMENTS.COMPENDIUM_LISTER);
+  assert.equal(liste.monstres.find((m) => m.id === "ogre-des-collines").modifiable, true);
+  assert.equal(liste.monstres.find((m) => m.id === "gnoll").modifiable, false);
+
+  // Modifier (on peut meme changer le nom : "remplace" garde la trace de l'ancien).
+  await demander(mj, EVENEMENTS.BESTIAIRE_ENREGISTRER, { monstre: { ...nouveau, id: "ogre-chef", nom: "Chef ogre", pv: 80 }, remplace: "ogre-des-collines" });
+  liste = await demander(mj, EVENEMENTS.COMPENDIUM_LISTER);
+  assert.deepEqual(liste.monstres.filter((m) => m.modifiable).map((m) => [m.id, m.pv]), [["ogre-chef", 80]]);
+  // Erreurs claires : identifiant d'un autre fichier, PV invalides.
+  assert.match((await demander(mj, EVENEMENTS.BESTIAIRE_ENREGISTRER, { monstre: { ...nouveau, nom: "Gnoll" } })).erreur, /deja pris/);
+  assert.match((await demander(mj, EVENEMENTS.BESTIAIRE_ENREGISTRER, { monstre: { ...nouveau, pv: "beaucoup" } })).erreur, /pv/);
+  // Supprimer : seulement ceux du jeu.
+  assert.equal((await demander(mj, EVENEMENTS.BESTIAIRE_SUPPRIMER, { idMonstre: "gnoll" })).ok, false);
+  assert.equal((await demander(mj, EVENEMENTS.BESTIAIRE_SUPPRIMER, { idMonstre: "ogre-chef" })).ok, true);
+  liste = await demander(mj, EVENEMENTS.COMPENDIUM_LISTER);
+  assert.equal(liste.monstres.some((m) => m.modifiable), false);
+});
+
+test("butin : le MJ deplace un coffre (aimante a la grille) ; un joueur ne peut pas", async () => {
+  const idTable = depot.listerTables()[0].id;
+  await demander(mj, EVENEMENTS.BUTIN_CREER, { nom: "Coffre mobile", x: 120, y: 120 });
+  const coffre = depot.obtenirScene(idTable).butins.find((b) => b.nom === "Coffre mobile");
+  assert.equal((await demander(thrall, EVENEMENTS.BUTIN_DEPLACER, { idButin: coffre.id, x: 900, y: 900 })).ok, false);
+  const r = await demander(mj, EVENEMENTS.BUTIN_DEPLACER, { idButin: coffre.id, x: 912, y: 889 });
+  const deplace = depot.obtenirScene(idTable).butins.find((b) => b.id === coffre.id);
+  assert.deepEqual([deplace.x, deplace.y], [r.position.x, r.position.y]);
+  assert.deepEqual([deplace.x, deplace.y], [950, 850]); // centre de case (grille de 100)
+  await demander(mj, EVENEMENTS.BUTIN_SUPPRIMER, { idButin: coffre.id });
+});
+
+test("table : le MJ la renomme, tout le monde le voit ; un joueur ne peut pas", async () => {
+  assert.equal((await demander(thrall, EVENEMENTS.TABLE_RENOMMER, { nom: "Chez Thrall" })).ok, false);
+  const chezThrall = attendre(thrall, EVENEMENTS.TABLE_MAJ);
+  await demander(mj, EVENEMENTS.TABLE_RENOMMER, { nom: "Foret d'Elwynn" });
+  assert.equal((await chezThrall).table.nom, "Foret d'Elwynn");
+  assert.equal(depot.listerTables()[0].nom, "Foret d'Elwynn");
 });
