@@ -45,12 +45,13 @@ function ligneD20(libelle, modificateurs, lancer, avantage = "normal") {
 /** Une ligne de des (degats, soins) : le detail de chaque de, puis les modificateurs. */
 function ligneDes(libelle, formule, modificateurs, lancer) {
   const jet = lancer(formule);
-  const des = jet.termes.filter((t) => t.type === "des").flatMap((t) => t.gardes.map((i) => t.jets[i]));
+  const termes = jet.termes.filter((t) => t.type === "des");
+  const des = termes.flatMap((t) => t.gardes.map((i) => t.jets[i]));
   return {
     libelle,
     d20: null,
     d20Ecarte: null,
-    des: { formule, jets: des, total: jet.total },
+    des: { formule, jets: des, total: jet.total, faces: Math.max(0, ...termes.map((t) => t.faces)) },
     modificateurs,
     total: Math.max(0, jet.total + modificateurs.reduce((t, m) => t + m.valeur, 0)),
     critique: false,
@@ -75,6 +76,45 @@ export function jetArme(fiche, attaque, objet, lancer = lancerDes) {
     action: { genre: "arme", nom: objet.nom, icone: objet.icone ?? objet.source ?? null, rarete: objet.rarete, detail: `Arme - ${attaque.emplacement}` },
     lignes: toucher.echec ? [toucher] : [toucher, degats], // un 1 naturel rate toujours
     note: toucher.critique ? "Coup critique : les des de degats sont doubles." : toucher.echec ? "Echec critique : l'attaque rate." : null,
+  };
+}
+
+/**
+ * Des libres du lanceur de des ("2d6+2", "2d20kh1+3"). Un d20 seul (avec ou
+ * sans avantage) s'affiche comme un jet d'attaque : grand d20, critique sur 20 ;
+ * sinon une ligne "Des (2d6) + Bonus = total".
+ */
+export function jetLibre(formule, raison, lancer = lancerDes) {
+  const r = lancer(formule);
+  const des = r.termes.filter((t) => t.type === "des");
+  const bonus = r.termes.filter((t) => t.type === "bonus").reduce((s, t) => s + t.valeur, 0);
+  const modificateurs = bonus ? [modif("Bonus", bonus)] : [];
+  const unD20 = des.length === 1 && des[0].faces === 20 && des[0].gardes.length === 1 && des[0].jets.length <= 2 && des[0].valeur > 0;
+  let ligne;
+  if (unD20) {
+    const t = des[0];
+    const garde = t.jets[t.gardes[0]];
+    const ecarte = t.jets.length === 2 ? t.jets[t.gardes[0] === 0 ? 1 : 0] : null;
+    ligne = { libelle: raison || "Jet de d20", d20: garde, d20Ecarte: ecarte, des: null, modificateurs, total: r.total, critique: garde === 20, echec: garde === 1 };
+  } else {
+    const jets = des.flatMap((t) => t.gardes.map((i) => (t.valeur < 0 ? -t.jets[i] : t.jets[i])));
+    const total = des.reduce((s, t) => s + t.valeur, 0);
+    const formuleDes = des.map((t) => t.expression).join("").replace(/^\+/, "");
+    ligne = {
+      libelle: raison || "Resultat",
+      d20: null,
+      d20Ecarte: null,
+      des: { formule: formuleDes, jets, total, faces: Math.max(0, ...des.map((t) => t.faces)) },
+      modificateurs,
+      total: r.total,
+      critique: false,
+      echec: false,
+    };
+  }
+  return {
+    action: { genre: "des", nom: raison || "Jet de des", icone: null, rarete: null, detail: r.formule },
+    lignes: [ligne],
+    note: null,
   };
 }
 

@@ -139,9 +139,15 @@ class Jeu {
     return r;
   }
 
-  /** Des libres (lanceur de des ou /jet) : le resultat arrive dans la discussion. */
-  lancerDes(formule: string, raison?: string, secret?: boolean) {
-    return this.demander(EVENEMENTS.DES_LANCER, { formule, ...(raison ? { raison } : {}), ...(secret ? { secret } : {}) });
+  /**
+   * Des libres. fenetre = true (lanceur de des) : fenetre de resolution animee,
+   * resultat annonce a "Valider" ; sinon (/jet) : resultat direct dans la discussion.
+   */
+  async lancerDes(formule: string, raison?: string, secret?: boolean, fenetre = false) {
+    if (fenetre && this.etat.jet?.statut === "en-attente") return { ok: false, erreur: "Valide d'abord le jet en cours." };
+    const r = await this.demander(EVENEMENTS.DES_LANCER, { formule, ...(raison ? { raison } : {}), ...(secret ? { secret } : {}), ...(fenetre ? { fenetre } : {}) });
+    if (r.ok && r.jet) this.modifier({ jet: r.jet as Jet });
+    return r;
   }
 
   /** "Valider" : le resultat part a toute la table. */
@@ -415,7 +421,13 @@ class Jeu {
     });
 
     // Fenetre de resolution : le MJ voit s'ouvrir le jet d'un joueur, puis tout le monde recoit le resultat.
-    socket.on(EVENEMENTS.JET_EN_COURS, ({ jet }) => this.modifier({ jet }));
+    socket.on(EVENEMENTS.JET_EN_COURS, ({ jet }: { jet: Jet }) => {
+      // Le MJ a lui-meme un jet a valider : on ne le lui cache pas sous celui d'un joueur.
+      const actuel = this.etat.jet;
+      const moi = this.etat.profil?.pseudo.toLocaleLowerCase("fr");
+      if (actuel && actuel.id !== jet.id && actuel.statut === "en-attente" && actuel.par.toLocaleLowerCase("fr") === moi) return;
+      this.modifier({ jet });
+    });
     socket.on(EVENEMENTS.JET_RESULTAT, ({ jet }: { jet: Jet }) => {
       this.journaliser(decrireJet(jet), "des");
       if (this.etat.jet?.id !== jet.id) return;

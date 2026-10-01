@@ -3,21 +3,8 @@ import { CARACTERISTIQUES, bonusDeTest } from "@partage/dnd5e.js";
 import { NOMS_CARACTERISTIQUES } from "@partage/creation.js";
 import { jeu, useJeu, type Avantage } from "@/core/jeu";
 import { signe } from "@/core/journal";
+import { FACES, FORMES, type Faces } from "@/ui/formesDes";
 import { avecInfobulle } from "@/ui/InfoBulle";
-
-const FACES = [4, 6, 8, 10, 12, 20, 100] as const;
-type Faces = (typeof FACES)[number];
-
-// La silhouette de chaque de (d4 triangle, d6 carre, d8 losange...).
-const FORMES: Record<Faces, string> = {
-  4: "50,8 93,88 7,88",
-  6: "15,15 85,15 85,85 15,85",
-  8: "50,4 94,50 50,96 6,50",
-  10: "50,4 93,40 50,96 7,40",
-  12: "50,4 95,36 78,93 22,93 5,36",
-  20: "50,3 91,26.5 91,73.5 50,97 9,73.5 9,26.5",
-  100: "50,4 83,17 96,50 83,83 50,96 17,83 4,50 17,17",
-};
 
 function IconeDe({ faces }: { faces: Faces }) {
   return (
@@ -50,7 +37,8 @@ const NOMS_AVANTAGE: Record<Avantage, string> = { normal: "Normal", avantage: "A
 /**
  * Le lanceur de des, ouvert par le bouton "de" a cote de la discussion.
  *  - Des libres : clic sur un de = un de plus (clic droit = un de moins),
- *    un bonus, puis "Lancer". Le resultat arrive dans la discussion.
+ *    un bonus, puis "Lancer". La fenetre de resolution animee s'ouvre (chez
+ *    le MJ aussi) ; "Valider" annonce le resultat dans la discussion.
  *  - Tests du personnage : un bouton par caracteristique (test et sauvegarde).
  *    Le SERVEUR lit le bonus dans la fiche ; la fenetre de resolution s'ouvre.
  * Le navigateur ne lance jamais rien : il envoie seulement la demande.
@@ -86,7 +74,8 @@ export function LanceurDes({ surFermer }: { surFermer: () => void }) {
   };
   const lancer = async () => {
     if (!formule) return;
-    const r = await jeu.lancerDes(formule, raison.trim() || undefined, estMJ && secret);
+    // fenetre : true -> la fenetre de resolution animee s'ouvre (chez le MJ aussi).
+    const r = await jeu.lancerDes(formule, raison.trim() || undefined, estMJ && secret, true);
     if (r.ok) {
       effacer();
       setAvantage("normal"); // l'avantage ne vaut que pour UN jet : on ne l'oublie pas active
@@ -174,7 +163,7 @@ export function LanceurDes({ surFermer }: { surFermer: () => void }) {
       </div>
 
       <div className="lanceur__actions">
-        <button type="button" className="bouton lanceur__lancer" disabled={!formule} onClick={lancer}>
+        <button type="button" className="bouton lanceur__lancer" disabled={!formule || jetEnAttente} onClick={lancer}>
           {formule ? `Lancer ${formule}` : "Choisis des des"}
         </button>
         <button type="button" className="bouton bouton--discret" onClick={effacer}>

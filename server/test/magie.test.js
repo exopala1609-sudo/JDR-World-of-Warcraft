@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { attaquesEquipees } from "../../shared/equipement.js";
 import { caracteristiqueIncantation, niveauDeSortMax, niveauRequis, resolutionDuSort, sortDebloque, statistiquesIncantation } from "../../shared/magie.js";
-import { doublerDes, jetArme, jetSort, jetTest } from "../src/regles/resolution.js";
+import { doublerDes, jetArme, jetLibre, jetSort, jetTest } from "../src/regles/resolution.js";
 import { referentielExemple } from "./aides.js";
 
 const referentiel = referentielExemple();
@@ -100,4 +100,24 @@ test("test de caracteristique et sauvegarde : modificateur, maitrise, avantage /
   const ligne = jetTest(mage, "caracteristique", "dexterite", magicien, "desavantage", lancer).lignes[0];
   assert.deepEqual([ligne.d20, ligne.d20Ecarte, ligne.total], [4, 12, 6]);
   assert.equal(ligne.libelle, "Test de caracteristique (desavantage)");
+});
+
+test("des libres du lanceur : un d20 (avec avantage) ou des des quelconques, detailles", () => {
+  // Avantage : 2d20kh1+3 -> grand d20 (le garde), l'autre montre barre, Bonus +3.
+  const avantage = jetLibre("2d20kh1+3", "Perception", () => ({
+    total: 18,
+    termes: [
+      { type: "des", expression: "2d20kh1", faces: 20, jets: [7, 15], gardes: [1], valeur: 15 },
+      { type: "bonus", expression: "+3", valeur: 3 },
+    ],
+  })).lignes[0];
+  assert.deepEqual([avantage.libelle, avantage.d20, avantage.d20Ecarte, avantage.total], ["Perception", 15, 7, 18]);
+  assert.deepEqual(avantage.modificateurs, [{ nom: "Bonus", valeur: 3 }]);
+  // 2d6+1d4 : une ligne de des, le grand de prend la forme du plus gros (d6).
+  const ligne = jetLibre("2d6+1d4").lignes[0];
+  assert.equal(ligne.d20, null);
+  assert.equal(ligne.des.formule, "2d6+1d4");
+  assert.equal(ligne.des.faces, 6);
+  assert.equal(ligne.des.jets.length, 3);
+  assert.equal(ligne.total, ligne.des.jets.reduce((a, b) => a + b, 0));
 });

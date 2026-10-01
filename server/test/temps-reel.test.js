@@ -482,6 +482,30 @@ test("tests et sauvegardes : le serveur lit le bonus dans la fiche (lanceur de d
   await demander(jaina, EVENEMENTS.JET_VALIDER, { idJet: avantage.jet.id });
 });
 
+test("lanceur de des : fenetre de resolution chez le joueur et le MJ, resultat a la table a Valider", async () => {
+  const chezMJ = attendre(mj, EVENEMENTS.JET_EN_COURS);
+  const { jet } = await demander(thrall, EVENEMENTS.DES_LANCER, { formule: "2d6+2", raison: "Hache", fenetre: true });
+  assert.equal(jet.statut, "en-attente");
+  assert.equal(jet.action.genre, "des");
+  assert.equal((await chezMJ).jet.id, jet.id);
+  // Les autres joueurs ne voient rien avant "Valider".
+  const chezJaina = attendre(jaina, EVENEMENTS.JET_RESULTAT);
+  await demander(thrall, EVENEMENTS.JET_VALIDER, { idJet: jet.id });
+  assert.equal((await chezJaina).jet.lignes[0].total, jet.lignes[0].total);
+
+  // Jet secret du MJ : le resultat ne part qu'au MJ.
+  const secret = await demander(mj, EVENEMENTS.DES_LANCER, { formule: "1d20", secret: true, fenetre: true });
+  let fuite = false;
+  const espion = () => (fuite = true);
+  jaina.on(EVENEMENTS.JET_RESULTAT, espion);
+  const chezLeMJ = attendre(mj, EVENEMENTS.JET_RESULTAT);
+  await demander(mj, EVENEMENTS.JET_VALIDER, { idJet: secret.jet.id });
+  await chezLeMJ;
+  await new Promise((ok) => setTimeout(ok, 50));
+  jaina.off(EVENEMENTS.JET_RESULTAT, espion);
+  assert.equal(fuite, false);
+});
+
 test("quetes : le MJ en pousse une, tous les joueurs la recoivent ; lecture seule pour eux", async () => {
   const refus = await demander(thrall, EVENEMENTS.QUETE_AJOUTER, { titre: "Triche", objectif: "x" });
   assert.equal(refus.erreur, "Seul le MJ peut donner une quete.");

@@ -60,7 +60,7 @@ export type LigneJet = {
   libelle: string;
   d20: number | null;
   d20Ecarte: number | null; // avantage / desavantage : le d20 non garde
-  des: { formule: string; jets: number[]; total: number } | null;
+  des: { formule: string; jets: number[]; total: number; faces: number } | null;
   modificateurs: { nom: string; valeur: number }[];
   total: number;
   critique: boolean;
@@ -69,11 +69,12 @@ export type LigneJet = {
 /** Un jet lance par le serveur, en attente de "Valider" (ou valide). */
 export type Jet = {
   id: string;
-  idPersonnage: string;
+  idPersonnage: string | null; // null : des libres du lanceur
   personnage: string;
   par: string;
+  secret?: boolean; // jet secret du MJ
   statut: "en-attente" | "valide";
-  action: { genre: "arme" | "sort" | "test"; nom: string; icone: string | null; rarete: string | null; detail: string };
+  action: { genre: "arme" | "sort" | "test" | "des"; nom: string; icone: string | null; rarete: string | null; detail: string };
   lignes: LigneJet[];
   note: string | null;
   cout: string | null;

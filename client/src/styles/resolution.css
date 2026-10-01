@@ -114,6 +114,15 @@
   font-weight: bold;
   text-shadow: var(--ombre-texte);
 }
+/* Le d4 (triangle) : le chiffre un peu plus bas, au centre du triangle */
+.d20__valeur--bas {
+  top: 64%;
+}
+.resolution__secret {
+  margin: 0;
+  color: #c9a0ff;
+  font-size: 13px;
+}
 /* Le de roule : il tremble et tourne sur lui-meme. */
 .d20--roule svg {
   animation: rouler 0.35s linear infinite;

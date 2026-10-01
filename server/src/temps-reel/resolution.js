@@ -38,31 +38,38 @@ export const sortDuGrimoire = (fiche, reference) => fiche.grimoire.find((s) => s
  * Enregistre un jet "en attente" et previent le MJ (sa fenetre s'ouvre aussi).
  * Utilise par les sorts (ici) et par les attaques a l'arme (equipement.js).
  */
-export function proposerJet(ctx, socket, personnage, jet) {
+export function proposerJet(ctx, socket, personnage, jet, { secret = false } = {}) {
+  const pseudo = socket.data.profil.pseudo;
+  // Un seul jet en attente par personnage (des libres : par joueur).
+  const cle = personnage ? personnage.id : `libre:${pseudo.toLocaleLowerCase("fr")}`;
   for (const enAttente of ctx.jets.values()) {
-    if (enAttente.idPersonnage === personnage.id) throw new ErreurRegle("Valide d'abord le jet en cours.");
+    if (enAttente.cle === cle) throw new ErreurRegle("Valide d'abord le jet en cours.");
   }
   const complet = {
     id: nouvelId("r"),
-    idPersonnage: personnage.id,
-    idTable: personnage.idTable,
-    personnage: personnage.nom,
-    par: socket.data.profil.pseudo,
+    cle,
+    idPersonnage: personnage?.id ?? null,
+    idTable: personnage?.idTable ?? ctx.exigerTable(socket),
+    // Des libres d'un joueur : au nom de son personnage ("Garrosh"), le MJ : a son pseudo.
+    personnage: personnage?.nom ?? (ctx.estMJ(socket) ? null : ctx.personnageDuJoueur(socket, ctx.exigerTable(socket))?.nom) ?? pseudo,
+    par: pseudo,
     idSocket: socket.id,
     statut: "en-attente",
+    secret, // jet secret du MJ : le resultat ne va qu'au MJ
     ...jet,
   };
   ctx.jets.set(complet.id, complet);
-  const { idSocket: _s, ...visible } = complet;
-  ctx.io.to(salleMJ(personnage.idTable)).emit(EVENEMENTS.JET_EN_COURS, { jet: visible });
+  const { idSocket: _s, cle: _c, ...visible } = complet;
+  ctx.io.to(salleMJ(complet.idTable)).emit(EVENEMENTS.JET_EN_COURS, { jet: visible });
   return visible;
 }
 
 /** Annonce le resultat a toute la table et oublie le jet. */
 function validerJet(ctx, jet) {
   ctx.jets.delete(jet.id);
-  const { idSocket: _s, ...visible } = jet;
-  ctx.io.to(salleTable(jet.idTable)).emit(EVENEMENTS.JET_RESULTAT, { jet: { ...visible, statut: "valide" } });
+  const { idSocket: _s, cle: _c, ...visible } = jet;
+  const salle = jet.secret ? salleMJ(jet.idTable) : salleTable(jet.idTable);
+  ctx.io.to(salle).emit(EVENEMENTS.JET_RESULTAT, { jet: { ...visible, statut: "valide" } });
 }
 
 export function brancher(socket, ctx) {

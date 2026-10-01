@@ -400,8 +400,11 @@ combat, sort lance, attaque, degat subi ou ressource depensee.
 
 - **Des libres** : clic sur un de = un de plus (clic droit = un de moins), un
   bonus, avantage / desavantage, une raison. Le navigateur compose seulement la
-  formule (`2d6+2`, `2d20kh1`) et la demande (`des:lancer`) ; le serveur lance
-  et le resultat arrive dans la discussion (secret possible pour le MJ).
+  formule (`2d6+2`, `2d20kh1`) et la demande (`des:lancer` avec `fenetre: true`) ;
+  le serveur lance, la fenetre de resolution animee s'ouvre chez le joueur ET
+  le MJ, et « Valider » annonce le resultat a la table. Jet secret du MJ : le
+  resultat ne va qu'au MJ. La commande `/jet` reste un lancer rapide, sans
+  fenetre, directement dans la discussion.
 - **Tests et sauvegardes** : un bouton par caracteristique. La demande
   (`test:lancer`) ne contient QUE ce qu'on teste ; le bonus (modificateur, et
   maitrise si la classe maitrise cette sauvegarde : `maitriseSauvegardes` dans

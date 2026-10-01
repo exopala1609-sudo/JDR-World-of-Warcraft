@@ -2,22 +2,29 @@ import { useEffect, useState } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone } from "@/core/medias";
 import type { Jet, LigneJet } from "@/core/types";
+import { FORMES, formeProche } from "@/ui/formesDes";
 
-const DUREE_ROULEMENT_MS = 1100; // le d20 "roule" avant d'afficher son resultat
+const DUREE_ROULEMENT_MS = 1100; // le de "roule" avant d'afficher son resultat
 
 /**
- * Le d20 dessine en SVG : un hexagone (le contour d'un icosaedre vu de face),
- * son triangle central et ses aretes. Le chiffre est au centre.
+ * Le grand de anime, dessine en SVG. Le d20 : un hexagone (un icosaedre vu
+ * de face), son triangle central et ses aretes. Les autres des : leur
+ * silhouette (d6 carre, d8 losange...). Le chiffre est au centre.
  */
-export function D20({ valeur, etat }: { valeur: number | string; etat: "roule" | "critique" | "echec" | "normal" }) {
+export function GrosDe({ faces, valeur, etat }: { faces: number; valeur: number | string; etat: "roule" | "critique" | "echec" | "normal" }) {
+  const forme = formeProche(faces);
   return (
     <div className={`d20 d20--${etat}`}>
       <svg viewBox="0 0 100 100" aria-hidden="true">
-        <polygon className="d20__corps" points="50,3 91,26.5 91,73.5 50,97 9,73.5 9,26.5" />
-        <polygon className="d20__face" points="50,21 76,66 24,66" />
-        <path className="d20__aretes" d="M50,3 L50,21 M91,26.5 L76,66 M9,26.5 L24,66 M50,97 L76,66 M50,97 L24,66 M91,73.5 L76,66 M9,73.5 L24,66 M9,26.5 L50,21 M91,26.5 L50,21" />
+        <polygon className="d20__corps" points={FORMES[forme]} />
+        {forme === 20 && (
+          <>
+            <polygon className="d20__face" points="50,21 76,66 24,66" />
+            <path className="d20__aretes" d="M50,3 L50,21 M91,26.5 L76,66 M9,26.5 L24,66 M50,97 L76,66 M50,97 L24,66 M91,73.5 L76,66 M9,73.5 L24,66 M9,26.5 L50,21 M91,26.5 L50,21" />
+          </>
+        )}
       </svg>
-      <span className="d20__valeur">{valeur}</span>
+      <span className={`d20__valeur${forme === 4 ? " d20__valeur--bas" : ""}`}>{valeur}</span>
     </div>
   );
 }
@@ -67,17 +74,26 @@ function Resolution({ jet }: { jet: Jet }) {
   const estLanceur = jet.par.toLocaleLowerCase("fr") === profil?.pseudo.toLocaleLowerCase("fr");
   const [roule, setRoule] = useState(jet.statut !== "valide");
   const [defile, setDefile] = useState(1); // le chiffre qui defile pendant que le de roule
+  // Le grand de : le d20 de la premiere ligne qui en a un, sinon les des de la
+  // premiere ligne (degats d'un sort automatique, des libres "2d6").
   const premierD20 = jet.lignes.find((l) => l.d20 !== null) ?? null;
+  const ligneDes = premierD20 ? null : (jet.lignes.find((l) => l.des) ?? null);
+  const grosDe = premierD20
+    ? { faces: 20, valeur: premierD20.d20! }
+    : ligneDes?.des
+      ? { faces: ligneDes.des.faces || 6, valeur: ligneDes.des.total }
+      : null;
+  const facesDefile = grosDe?.faces ?? 20;
 
   useEffect(() => {
     if (!roule) return;
-    const defilement = setInterval(() => setDefile(1 + Math.floor(Math.random() * 20)), 70);
-    const fin = setTimeout(() => setRoule(false), premierD20 ? DUREE_ROULEMENT_MS : 300);
+    const defilement = setInterval(() => setDefile(1 + Math.floor(Math.random() * facesDefile)), 70);
+    const fin = setTimeout(() => setRoule(false), grosDe ? DUREE_ROULEMENT_MS : 300);
     return () => {
       clearInterval(defilement);
       clearTimeout(fin);
     };
-  }, [roule, premierD20]);
+  }, [roule, facesDefile, grosDe !== null]);
 
   const valide = jet.statut === "valide";
   const peutValider = !valide && !roule && (estLanceur || estMJ);
@@ -112,12 +128,13 @@ function Resolution({ jet }: { jet: Jet }) {
             <p className="resolution__detail">{jet.action.detail}</p>
             <p className="resolution__lanceur">
               {jet.personnage}
-              {!estLanceur && ` - joueur : ${jet.par}`}
+              {!estLanceur && jet.personnage !== jet.par && ` - joueur : ${jet.par}`}
             </p>
           </div>
         </header>
 
-        {premierD20 && <D20 valeur={roule ? defile : premierD20.d20!} etat={etatDe} />}
+        {grosDe && <GrosDe faces={grosDe.faces} valeur={roule ? defile : grosDe.valeur} etat={etatDe} />}
+        {jet.secret && <p className="resolution__secret">Jet secret : seul le MJ verra le resultat.</p>}
 
         <div className={`resolution__lignes${roule ? "" : " resolution__lignes--revelees"}`}>
           {jet.lignes.map((ligne) => (
