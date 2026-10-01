@@ -9,7 +9,14 @@ import { resolve } from "node:path";
 import { chargerConfig } from "../server/src/config.js";
 import { creerReferentiel, resumerReferentiel, situerErreur } from "../server/src/donnees/referentiel.js";
 
-const dossier = process.argv[2] ? resolve(process.argv[2]) : chargerConfig().dossiers.referentiel;
+const config = process.argv[2] ? null : chargerConfig();
+if (config?.problemes.length) {
+  console.log("");
+  for (const probleme of config.problemes) console.log(`  !! ${probleme}`);
+  console.log("");
+  process.exit(1);
+}
+const dossier = process.argv[2] ? resolve(process.argv[2]) : config.dossiers.referentiel;
 
 console.log("");
 console.log(`  Dossier verifie : ${dossier}`);

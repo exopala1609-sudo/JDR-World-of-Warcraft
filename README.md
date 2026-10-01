@@ -61,5 +61,5 @@ chaque dossier et signale tout chemin errone.
 | `client/` | Interface World of Warcraft (React + TypeScript) |
 | `shared/` | Vocabulaire temps reel et regles D&D 5e communs aux deux cotes |
 | `exemples/` | Donnees de test (compendium, referentiel), copiees au premier lancement |
-| `donnees-mj/` | Dossier de secours quand `VTT_ASSETS` n'est pas configure |
+| `donnees-mj/` | Ancien dossier de secours (n'est plus utilise : `VTT_ASSETS` est obligatoire) |
 | `docs/` | Notes d'utilisation |

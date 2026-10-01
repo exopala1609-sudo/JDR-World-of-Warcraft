@@ -7,7 +7,7 @@ import { resolve } from "node:path";
 import express from "express";
 import { exigerMJ, routesAcces } from "./auth/routes.js";
 import { creerGestionnaireSessions } from "./auth/sessions.js";
-import { chargerConfig, RACINE } from "./config.js";
+import { anciennesPartiesLocales, chargerConfig, RACINE } from "./config.js";
 import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers } from "./diagnostic.js";
 import { creerCompendium, installerExemples } from "./donnees/compendium.js";
 import { creerDepot } from "./donnees/depot.js";
@@ -21,6 +21,16 @@ import { VERSION_PROTOCOLE } from "../../shared/protocole.js";
 
 // --- 1. Configuration du poste (.env) ---------------------------------------
 const config = chargerConfig();
+// Pas de dossier cloud valide : on refuse de demarrer. Surtout pas de "dossier
+// de secours" dans le projet : une partie y serait invisible depuis l'autre PC.
+if (config.problemes.length) {
+  console.error("\n  !! Le serveur ne demarre pas : le fichier .env de ce PC est a corriger.\n");
+  for (const probleme of config.problemes) console.error(`     - ${probleme}`);
+  console.error(`\n     Fichier a ouvrir : ${resolve(RACINE, ".env")}`);
+  console.error("     Pour trouver le bon chemin : npm run detecter-assets");
+  console.error("     Exemple (Google Drive) :    VTT_ASSETS=G:\\Mon Drive\\JDR\n");
+  process.exit(1);
+}
 const modeDev = process.argv.includes("--dev");
 const avecTunnel = process.argv.includes("--tunnel"); // npm run partie
 const dossiersCrees = creerSousDossiersManquants(config);
@@ -120,7 +130,23 @@ serveurHttp.listen(config.port, "0.0.0.0", () => {
   afficherBanniere(config, { modeDev });
   if (dossiersCrees.length) console.log(`  Sous-dossiers crees : ${dossiersCrees.join(", ")}`);
   afficherDiagnostic(config, rapportDossiers);
+  // La ligne la plus importante pour jouer sur deux PC : OU sont les sauvegardes.
+  console.log(`  Sauvegardes      : ${config.dossiers.parties}${config.cloud ? `  (${config.cloud})` : ""}`);
   console.log(`  Donnees chargees : ${bilan.tables} table(s), ${bilan.personnages} personnage(s).`);
+  if (!config.cloud) {
+    console.log("  !! Ce dossier n'est pas reconnu comme un dossier cloud (OneDrive, Google Drive...).");
+    console.log("     Les parties sauvegardees ici ne seront PAS visibles depuis ton autre PC.");
+  }
+  if (bilan.tables === 0) {
+    console.log("  !! Aucune table dans ce dossier. Si tu as joue sur ton autre PC, verifie que");
+    console.log("     VTT_ASSETS pointe vers le MEME dossier cloud et que la synchronisation est terminee.");
+  }
+  const anciennes = anciennesPartiesLocales();
+  if (anciennes.tables.length) {
+    console.log(`  !! ${anciennes.tables.length} ancienne(s) table(s) trouvee(s) DANS le projet : ${anciennes.dossier}`);
+    console.log("     (sauvegardees avant que VTT_ASSETS ne soit obligatoire). Pour les garder, copie");
+    console.log(`     leurs dossiers t-xxxxxxxxxx dans ${config.dossiers.parties}, puis relance.`);
+  }
   if (bilan.combats) console.log(`  Combat(s) en cours repris : ${bilan.combats}.`);
   if (bilan.migrees) console.log(`  Fiches mises au nouveau format : ${bilan.migrees}.`);
   if (bilan.ignores) console.log(`  !! ${bilan.ignores} fichier(s) invalide(s) ignore(s), voir ci-dessus.`);

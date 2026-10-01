@@ -1,5 +1,5 @@
 // Lance apres "npm install" : cree le .env du poste et les dossiers de travail.
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,14 +10,14 @@ if (!existsSync(env)) {
   copyFileSync(resolve(racine, ".env.exemple"), env);
   console.log("");
   console.log("  Fichier .env cree pour ce poste.");
-  console.log("  Ouvre-le et renseigne VTT_ASSETS (le chemin de ton dossier cloud).");
+  console.log("  !! A FAIRE avant de lancer le serveur : ouvre-le et renseigne VTT_ASSETS,");
+  console.log("     le chemin COMPLET de ton dossier cloud (ex. G:\\Mon Drive\\JDR).");
+  console.log("     Sans lui, le serveur refuse de demarrer (pour ne rien sauvegarder au mauvais endroit).");
   console.log("  Besoin d'aide ? lance : npm run detecter-assets");
   console.log("");
 } else {
   console.log("[env] .env deja present : conserve tel quel.");
 }
 
-// Dossiers de secours, utilises tant que VTT_ASSETS pointe dans le projet.
-for (const sous of ["cartes", "jetons", "portraits", "icones", "polices", "compendium", "parties"]) {
-  mkdirSync(resolve(racine, "donnees-mj", sous), { recursive: true });
-}
+// Plus de "dossier de secours" dans le projet : toutes les donnees vivent dans
+// le dossier cloud indique par VTT_ASSETS (voir docs/CONFIGURATION.md).
