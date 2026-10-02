@@ -579,7 +579,13 @@ carte (`moteur.versCarte`).
   recomposees dans un canvas : bordures de WoW (8 carres, bords haut/bas
   tournes) -> image 3 x 3 pour `border-image` ; anneau et cartouche de
   `UI-Minimap-Border` (anneau centre en 168,75 ; 108,3, minicarte de 140 px) ;
-  surbrillances additives (noir -> transparent).
+  surbrillances additives (noir -> transparent) ; cadre de quete (morceaux de
+  droite + miroir) ; livre (Spellbook-Page-1 + -2) ; barre de sorts
+  (UI-MainMenuBar-Dwarf, bandes 3 et 2, lignes 10 a 64 -> 512 x 54 ; cases a
+  8 + 42 n, la taille d'un "pixel de texture" `--u` = case / 36) ; cadres
+  d'unite (UI-Player-Portrait, grand cadre 193 x 76, pose en `::after`
+  par-dessus le portrait et les barres places dans ses trous). Les roles a
+  plusieurs fichiers listent les suivants dans `AUTRES`.
 - `client/src/styles/textures.css` (charge en dernier) : toutes les regles sont
   sous `.tex-<role>` : sans fichier, le dessin CSS d'origine reste.
 

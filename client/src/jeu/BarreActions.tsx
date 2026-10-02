@@ -162,7 +162,7 @@ export function BarreActions() {
   const outils = estMJ && page === "outils";
   const changerPage = () => jeu.modifier((e) => ({ pageBarreMJ: e.pageBarreMJ === "outils" ? "personnage" : "outils" }));
   return (
-    <div className="actions">
+    <div className={`actions${estMJ ? " actions--pages" : ""}`}>
       <div className="actions__embleme actions__embleme--gauche" />
       <div className="actions__barre cadre">
         {RACCOURCIS.map((touche, index) =>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone, urlPortrait } from "@/core/medias";
+import { useTexture } from "@/core/textures";
 import type { Personnage, Ressource } from "@/core/types";
 import { Barre } from "@/ui/Barre";
 import { avecInfobulle, versScene } from "@/ui/InfoBulle";
@@ -50,9 +51,11 @@ function Portrait({ nom, niveau, fichier, repose }: { nom: string; niveau: numbe
 function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principal: boolean; enLigne: boolean; choisi: boolean }) {
   const pv = p.pointsDeVie;
   const ressource = ressourcePrincipale(p);
+  // UI-Player-Portrait dans le dossier interface/ : le cadre de WoW remplace le cadre dessine.
+  const texture = useTexture("cadre-unite");
   const classes = [
     "cadre-unite",
-    "cadre",
+    texture ? "cadre-unite--texture" : "cadre",
     principal && "cadre-unite--joueur",
     !enLigne && "cadre-unite--hors-ligne",
     choisi && "cadre-unite--selection",

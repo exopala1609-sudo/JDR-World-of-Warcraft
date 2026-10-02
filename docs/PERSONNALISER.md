@@ -121,14 +121,17 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `UI-MicroButton-Spellbook-Up` / `-Down` | Micro-menu : grimoire (P) |
 | `Button-Backpack-Up` / `-Down` | Micro-menu : sacs (B) |
 | `UI-MainMenuBar-EndCap-Dwarf` (sinon `-Human`) | Les griffons (sinon les lions) de la barre d'actions |
+| `UI-MainMenuBar-Dwarf` (sinon `-Human`) | La barre de sorts elle-meme : ses 12 emplacements et la colonne "page" du MJ. La barre prend alors les proportions de WoW |
+| `UI-Player-Portrait` | Les cadres des joueurs (en haut a gauche) : anneau du portrait, cartouche du nom, deux barres |
 | `UI-Minimap-Border` | Anneau de la minicarte et cartouche du nom de la zone |
 | `UI-Backpack-EmptySlot` | Cases vides du sac |
 | `UI-PaperDoll-Slot-Head`, `-Neck`, `-Shoulder`, `-Chest`, `-Wrists`, `-Hands`, `-Waist`, `-Legs`, `-Feet`, `-Finger`, `-Trinket`, `-MainHand`, `-SecondaryHand` (et `-Back`, `-Shirt`, `-Tabard`, `-Ranged` si tu les ajoutes) | Silhouettes des emplacements vides de la fiche (C) |
 | `ClassIcon_Warrior`, `_Paladin`, `_Hunter`, `_Rogue`, `_Priest`, `_DeathKnight`, `_Shaman`, `_Mage`, `_Warlock`, `_Monk`, `_Druid`, `_DemonHunter`, `_Evoker` | Icone de classe (fiche, creation de personnage) |
 | `UI-QuestLog-BookIcon`, `Spellbook-Icon`, `LootPanel-Icon` | Medaillons du journal de quetes, du grimoire, du butin |
 | `UI-QuestTitleHighlight` | Surbrillance de la quete choisie |
-| `QuestBackgroundClassic` | Parchemin du journal de quetes |
-| `Spellbook-Page-1` / `-2` | Pages gauche / droite du grimoire |
+| `UI-QuestGreeting-TopRight` + `UI-QuestGreeting-BotRight-blank` | Cadre du parchemin du journal de quetes (le cote gauche est fabrique en miroir) |
+| `QuestBackgroundClassic` | Parchemin du journal de quetes (si le cadre ci-dessus manque) |
+| `Spellbook-Page-1` + `Spellbook-Page-2` | Le livre ouvert du grimoire (P) et du carnet (N) : la page 1 et son bord droit (la page 2, 32 px de large) |
 | `WoWUnknownItem01` | Icone "?" pour un objet ou un sort dont l'icone manque |
 | `UI_MainMenu_BattleForAzeroth_LowBandwidth` | Fond de l'ecran d'accueil |
 | `Glues-WoW-ClassicLogo` (sinon `-WotLKLogo`) | Logo au-dessus du formulaire de connexion |

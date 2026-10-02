@@ -44,8 +44,12 @@ const ROLES = {
   "micro-quitter-appui": ["UI-MicroButton-MainMenu-Down"],
   sac: ["Button-Backpack-Up"],
   "sac-appui": ["Button-Backpack-Down"],
-  // --- Barre d'actions : les griffons (Dwarf) ou les lions (Human) ------------
+  // --- Barre d'actions : la barre de WoW, et ses griffons (Dwarf) ou lions (Human)
   griffon: ["UI-MainMenuBar-EndCap-Dwarf", "UI-MainMenuBar-EndCap-Human"],
+  "barre-actions": ["UI-MainMenuBar-Dwarf", "UI-MainMenuBar-Human"],
+  "barre-page": ["UI-MainMenuBar-Dwarf", "UI-MainMenuBar-Human"], // la colonne "page 1 / 2", dans la meme planche
+  // --- Cadres des joueurs (en haut a gauche) ----------------------------------------
+  "cadre-unite": ["UI-Player-Portrait"],
   // --- Minicarte ----------------------------------------------------------------
   "minicarte-bordure": ["UI-Minimap-Border"],
   "minicarte-bandeau": ["UI-Minimap-Border"], // le cartouche du nom de la zone, dans la meme planche
@@ -90,8 +94,9 @@ const ROLES = {
   "portrait-butin": ["LootPanel-Icon"],
   "quete-surbrillance": ["UI-QuestTitleHighlight"],
   "quete-parchemin": ["QuestBackgroundClassic"],
-  "page-gauche": ["Spellbook-Page-1"],
-  "page-droite": ["Spellbook-Page-2"],
+  "quete-cadre": ["UI-QuestGreeting-TopRight"], // + UI-QuestGreeting-BotRight-blank (voir AUTRES)
+  "quete-cadre-fond": ["UI-QuestGreeting-TopRight"],
+  livre: ["Spellbook-Page-1"], // + Spellbook-Page-2, le bord droit du livre (voir AUTRES)
   // --- Ecran d'accueil -----------------------------------------------------------
   "accueil-fond": ["UI_MainMenu_BattleForAzeroth_LowBandwidth", "UI_MainMenu_BattleForAzeroth"],
   "accueil-logo": ["Glues-WoW-ClassicLogo", "Glues-WoW-WotLKLogo", "Glues-WoW-Logo"],
@@ -100,13 +105,28 @@ const ROLES = {
 
 export type RoleTexture = keyof typeof ROLES;
 
-// Les roles qu'on recompose dans un canvas avant de s'en servir.
-const RECOMPOSER: Partial<Record<RoleTexture, (image: HTMLImageElement) => HTMLCanvasElement>> = {
+// Les roles qu'on recompose dans un canvas avant de s'en servir. La fonction
+// recoit l'image du role et, dans l'ordre, celles des fichiers AUTRES (null
+// si absent).
+type Recomposition = (image: HTMLImageElement, autres: (HTMLImageElement | null)[]) => HTMLCanvasElement;
+const RECOMPOSER: Partial<Record<RoleTexture, Recomposition>> = {
   "bordure-dialogue": bordureNeufParties,
   "bordure-or": bordureNeufParties,
   "minicarte-bordure": anneauMinicarte,
   "minicarte-bandeau": bandeauDeZone,
   "quete-surbrillance": additive,
+  "quete-parchemin": (image) => rogner(image),
+  "quete-cadre": cadreDeQuete,
+  "quete-cadre-fond": (image) => decouper(image, 0, 92, 60, 164, 128),
+  livre: livreOuvert,
+  "barre-actions": barreDActions,
+  "barre-page": (image) => decouper(image, 0, 74, 40, 54, 256),
+  "cadre-unite": (image) => decouper(image, 0, 0, 193, 76, 256),
+};
+// Fichiers supplementaires d'un role recompose (une liste de candidats par fichier).
+const AUTRES: Partial<Record<RoleTexture, string[][]>> = {
+  "quete-cadre": [["UI-QuestGreeting-BotRight-blank", "UI-QuestGreeting-BotRight"]],
+  livre: [["Spellbook-Page-2"]],
 };
 
 // --- Le petit magasin des textures trouvees (pour les composants React) ----------
@@ -158,16 +178,25 @@ export async function chargerTextures() {
     const nom = f.split("/").pop()!.replace(/\.[^.]+$/, "").toLowerCase();
     if (!index.has(nom)) index.set(nom, f);
   }
-  for (const [role, candidats] of Object.entries(ROLES) as [RoleTexture, string[]][]) {
+  const adresse = (candidats: string[]) => {
     const fichier = candidats.map((c) => index.get(c.toLowerCase())).find(Boolean);
-    if (!fichier) continue;
-    const url = `/medias/interface/${fichier.split("/").map(encodeURIComponent).join("/")}`;
+    return fichier ? `/medias/interface/${fichier.split("/").map(encodeURIComponent).join("/")}` : null;
+  };
+  for (const [role, candidats] of Object.entries(ROLES) as [RoleTexture, string[]][]) {
+    const url = adresse(candidats);
+    if (!url) continue;
     const recomposer = RECOMPOSER[role];
-    if (!recomposer) brancher(role, url);
-    else
-      chargerImage(url)
-        .then((image) => brancher(role, recomposer(image).toDataURL()))
-        .catch(() => {}); // image illisible : on garde le dessin actuel
+    if (!recomposer) {
+      brancher(role, url);
+      continue;
+    }
+    const autres = (AUTRES[role] ?? []).map((c) => {
+      const u = adresse(c);
+      return u ? chargerImage(u).catch(() => null) : Promise.resolve(null);
+    });
+    Promise.all([chargerImage(url), ...autres])
+      .then(([image, ...suite]) => brancher(role, recomposer(image!, suite).toDataURL()))
+      .catch(() => {}); // image illisible ou incomplete : on garde le dessin actuel
   }
 }
 
@@ -266,5 +295,117 @@ function additive(image: HTMLImageElement) {
     d[i + 3] = (d[i + 3] * lumiere) / 255;
   }
   g.putImageData(pixels, 0, 0);
+  return canvas;
+}
+
+/** Un morceau d'une planche (coordonnees donnees pour une planche de `largeur` px, mise a l'echelle si besoin). */
+function decouper(image: HTMLImageElement, x: number, y: number, l: number, h: number, largeur: number) {
+  const e = image.naturalWidth / largeur;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(l * e);
+  canvas.height = Math.round(h * e);
+  canvas.getContext("2d")!.drawImage(image, x * e, y * e, l * e, h * e, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+/** Retire les marges transparentes autour du dessin (ex. le parchemin de QuestBackgroundClassic). */
+function rogner(image: HTMLImageElement) {
+  const { naturalWidth: l, naturalHeight: h } = image;
+  const source = document.createElement("canvas");
+  source.width = l;
+  source.height = h;
+  const g = source.getContext("2d")!;
+  g.drawImage(image, 0, 0);
+  const d = g.getImageData(0, 0, l, h).data;
+  let x0 = l,
+    y0 = h,
+    x1 = -1,
+    y1 = -1;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < l; x++)
+      if (d[(y * l + x) * 4 + 3] > 40) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+  if (x1 < 0) return source;
+  const canvas = document.createElement("canvas");
+  canvas.width = x1 - x0 + 1;
+  canvas.height = y1 - y0 + 1;
+  canvas.getContext("2d")!.drawImage(source, x0, y0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+/** Dessine un morceau, eventuellement retourne comme dans un miroir (pour fabriquer le cote gauche). */
+function poser(g: CanvasRenderingContext2D, image: HTMLImageElement, e: number, s: number[], x: number, y: number, miroir = false) {
+  const [sx, sy, l, h] = s;
+  g.save();
+  g.translate(miroir ? x + l : x, y);
+  if (miroir) g.scale(-1, 1);
+  g.drawImage(image, sx * e, sy * e, l * e, h * e, 0, 0, l, h);
+  g.restore();
+}
+
+/**
+ * Le cadre du dialogue de quete de WoW, a partir de ses deux morceaux de droite
+ * (UI-QuestGreeting-TopRight et -BotRight-blank, 128 x 256 chacun). Le cote
+ * gauche est le cote droit vu dans un miroir. Resultat : une image 3 x 3
+ * (bords de 37 px a gauche et a droite, 72 px en haut, 41 px en bas) pour
+ * border-image, le centre vide (le parchemin est pose a part, etire).
+ */
+function cadreDeQuete(haut: HTMLImageElement, [bas]: (HTMLImageElement | null)[]) {
+  if (!bas) throw new Error("UI-QuestGreeting-BotRight-blank manquant");
+  const e = haut.naturalWidth / 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = 134;
+  canvas.height = 277;
+  const g = canvas.getContext("2d")!;
+  // Haut : barre de titre ; a droite, le coin (et la place du bouton de fermeture).
+  poser(g, haut, e, [0, 20, 60, 72], 37, 0);
+  poser(g, haut, e, [60, 20, 37, 72], 97, 0);
+  poser(g, haut, e, [60, 20, 37, 72], 0, 0, true);
+  // Cotes : la gouttiere noire et le liseré de metal.
+  poser(g, haut, e, [60, 92, 37, 164], 97, 72);
+  poser(g, haut, e, [60, 92, 37, 164], 0, 72, true);
+  // Bas.
+  const eb = bas.naturalWidth / 128;
+  poser(g, bas, eb, [0, 148, 60, 41], 37, 236);
+  poser(g, bas, eb, [60, 148, 37, 41], 97, 236);
+  poser(g, bas, eb, [60, 148, 37, 41], 0, 236, true);
+  return canvas;
+}
+
+/**
+ * Le livre des sorts de WoW : Spellbook-Page-1 (512 x 512, la page avec son
+ * signet) et Spellbook-Page-2 (32 x 512, le bord droit du livre), cote a cote.
+ */
+function livreOuvert(page: HTMLImageElement, [bord]: (HTMLImageElement | null)[]) {
+  const canvas = document.createElement("canvas");
+  canvas.width = page.naturalWidth + (bord?.naturalWidth ?? 0);
+  canvas.height = page.naturalHeight;
+  const g = canvas.getContext("2d")!;
+  g.drawImage(page, 0, 0);
+  if (bord) g.drawImage(bord, page.naturalWidth, 0, bord.naturalWidth, page.naturalHeight);
+  return canvas;
+}
+
+/**
+ * UI-MainMenuBar-Dwarf (256 x 256) : 4 bandes de 64 px de haut. Les deux du
+ * bas portent les 12 emplacements (bande 3 : 1 a 6, bande 2 : 7 a 12). On
+ * garde de chacune les lignes 10 a 64 (le rail de l'experience + la barre)
+ * et on les met bout a bout : 512 x 54 px. Le premier emplacement commence a
+ * 8 px du bord, puis un tous les 42 px (36 px de case + 6 px d'ecart).
+ */
+function barreDActions(image: HTMLImageElement) {
+  const e = image.naturalWidth / 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 54;
+  const g = canvas.getContext("2d")!;
+  g.fillStyle = "rgba(0, 0, 0, 0.6)"; // l'interieur (vide) du rail d'experience
+  g.fillRect(0, 4, 512, 6);
+  g.drawImage(image, 0, 202 * e, 256 * e, 54 * e, 0, 0, 256, 54);
+  g.drawImage(image, 0, 138 * e, 256 * e, 54 * e, 256, 0, 256, 54);
   return canvas;
 }
