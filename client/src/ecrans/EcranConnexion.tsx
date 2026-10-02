@@ -24,6 +24,8 @@ export function EcranConnexion() {
 
   return (
     <div className="ecran-accueil">
+      {/* Le logo de WoW, si Glues-WoW-ClassicLogo est dans le dossier interface/ */}
+      <div className="accueil__logo" aria-hidden="true" />
       <form className="accueil cadre" onSubmit={entrer}>
         <h1 className="titre-or accueil__titre">Donjons &amp; Dragons</h1>
         <p className="accueil__sous-titre">Table virtuelle</p>

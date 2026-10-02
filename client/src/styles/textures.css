@@ -1,0 +1,217 @@
+/* =============================================================================
+   TEXTURES DE WORLD OF WARCRAFT (dossier interface/ de ton cloud)
+
+   Chaque regle ci-dessous ne s'applique que si la page porte la classe
+   tex-<role>, c'est-a-dire si le fichier correspondant a ete trouve dans le
+   dossier interface/ (la correspondance role -> fichier est dans
+   src/core/textures.ts). Sans le fichier : le dessin CSS d'origine reste.
+   ============================================================================= */
+
+/* --- Cadres : UI-DialogBox-Border (bordure) et -Background (fond) -------------
+   La bordure, recomposee en 3 x 3 carres (voir textures.ts), est posee sur le
+   pseudo-element qui dessinait les rivets : elle deborde un peu du cadre,
+   comme dans WoW, sans rien changer a la place qu'il occupe. */
+.tex-bordure-dialogue .cadre::before {
+  inset: calc(var(--bordure-cadre, 30px) * -0.3);
+  border: var(--bordure-cadre, 30px) solid transparent;
+  border-radius: 0;
+  border-image: var(--tex-bordure-dialogue) 33.3333% / var(--bordure-cadre, 30px) round;
+  background: none;
+}
+.tex-bordure-dialogue .cadre {
+  border-radius: 2px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+/* Les petits cadres (barres, cadres d'unite, micro-menu) : une bordure plus fine. */
+.tex-bordure-dialogue :is(.cadre-unite, .menu, .bandeau, .minicarte__zone, .outils-carte, .actions__barre) {
+  --bordure-cadre: 20px;
+}
+.tex-fond-dialogue .cadre:not(.cadre--parchemin) {
+  /* Le fond de WoW est un noir a 60 % : on le pose sur un gris tres sombre
+     pour que le texte reste lisible au-dessus de la carte. */
+  background: var(--tex-fond-dialogue), rgba(24, 24, 28, 0.6);
+}
+
+/* --- Bouton de fermeture : UI-Panel-MinimizeButton-Up / -Down -----------------
+   Dans la texture (32 x 32), le bouton n'occupe que le centre (19 px) : on
+   l'agrandit pour qu'il remplisse la place du bouton actuel. */
+.tex-fermer .bouton-fermer {
+  border-radius: 0;
+  background: var(--tex-fermer) 50% 48% / 168% no-repeat;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+}
+.tex-fermer-appui .bouton-fermer:active {
+  background-image: var(--tex-fermer-appui);
+  transform: none;
+}
+
+/* --- Micro-menu : UI-MicroButton-*-Up / -Down et Button-Backpack-Up -----------
+   Une texture de micro-bouton fait 32 x 64 ; le bouton dessine en occupe le
+   bas (de 24 a 62 px). */
+.menu__bouton--texture,
+.menu__bouton--sac {
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--micro) no-repeat;
+}
+.menu__bouton--texture {
+  width: 37px;
+  background-size: 37px 74px; /* x 1,15 : le bouton dessine remplit la hauteur */
+  background-position: 50% -27px;
+}
+.menu__bouton--sac {
+  background-size: cover;
+}
+.menu__bouton--texture:active,
+.menu__bouton--texture.menu__bouton--actif,
+.menu__bouton--sac:active {
+  background-image: var(--micro-appui);
+}
+.menu__bouton--texture.menu__bouton--actif,
+.menu__bouton--sac.menu__bouton--actif {
+  filter: brightness(1.15) drop-shadow(0 0 5px rgba(255, 209, 0, 0.7));
+}
+
+/* --- Barre d'actions : les griffons (UI-MainMenuBar-EndCap-Dwarf) ------------ */
+.tex-griffon .actions__embleme--gauche,
+.tex-griffon .actions__embleme--droite {
+  background-image: var(--tex-griffon);
+}
+
+/* --- Minicarte : l'anneau et le cartouche du nom (UI-Minimap-Border) ---------
+   L'anneau recompose fait 160/140e de la minicarte : il deborde de 10/140e. */
+.tex-minicarte-bordure .minicarte__rond {
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.8);
+}
+.tex-minicarte-bordure .minicarte__rond::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: calc(var(--minicarte) * -10 / 140);
+  background: var(--tex-minicarte-bordure) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.tex-minicarte-bandeau .minicarte__zone {
+  border: 0 solid transparent;
+  border-image: var(--tex-minicarte-bandeau) 10 14 fill / 13px 18px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 5px 24px;
+}
+.tex-minicarte-bandeau .minicarte__zone::before {
+  display: none;
+}
+
+/* --- Cases vides : sac (UI-Backpack-EmptySlot) et mannequin (UI-PaperDoll-Slot-*) */
+.tex-case-sac .case--vide-sac {
+  background: var(--tex-case-sac) center / 100% 100%;
+}
+.case img.case__silhouette {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+}
+
+/* --- Icone de classe (ClassIcon_*) a cote du nom de la classe ------------------ */
+.icone-classe {
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  vertical-align: -5px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #000;
+}
+
+/* --- Portraits ronds des fenetres (UI-QuestLog-BookIcon, Spellbook-Icon...) ---
+   Comme dans WoW : un medaillon a cheval sur le coin haut-gauche. */
+.tex-portrait-quetes .fenetre.quetes {
+  --portrait: var(--tex-portrait-quetes);
+}
+.tex-portrait-grimoire .fenetre.grimoire {
+  --portrait: var(--tex-portrait-grimoire);
+}
+:is(.tex-portrait-quetes .fenetre.quetes, .tex-portrait-grimoire .fenetre.grimoire) > .fenetre__entete {
+  padding-left: 72px;
+}
+:is(.tex-portrait-quetes .fenetre.quetes, .tex-portrait-grimoire .fenetre.grimoire) > .fenetre__entete::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -16px;
+  left: -16px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--portrait) center / cover;
+  box-shadow:
+    0 0 0 3px var(--metal),
+    0 0 0 4px var(--metal-reflet),
+    0 0 0 6px #000,
+    0 4px 10px rgba(0, 0, 0, 0.8);
+}
+.tex-portrait-butin .butin__embleme {
+  background: var(--tex-portrait-butin) center / cover;
+  color: transparent;
+}
+
+/* --- Journal de quetes : surbrillance (UI-QuestTitleHighlight) et parchemin --- */
+/* Le bas de la texture (5 dernieres lignes) contient des residus : on ne montre que le haut. */
+.tex-quete-surbrillance :is(.quetes__entree:hover, .quetes__entree--choisie) {
+  background: var(--tex-quete-surbrillance) top / 100% 150% no-repeat;
+}
+.tex-quete-parchemin .quetes__parchemin {
+  background: var(--tex-quete-parchemin) top center / cover;
+}
+
+/* --- Grimoire : les pages (Spellbook-Page-1 / -2) -------------------------------- */
+.tex-page-gauche .livre__page--gauche {
+  background: var(--tex-page-gauche) center / 100% 100%;
+}
+.tex-page-droite .livre__page--droite {
+  background: var(--tex-page-droite) center / 100% 100%;
+}
+
+/* --- Fenetre de resolution des des : bordure doree et dragon ------------------- */
+.tex-bordure-or .resolution.cadre::before {
+  border-image-source: var(--tex-bordure-or);
+}
+.tex-dragon .resolution::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -34px;
+  left: -50px;
+  width: 100px;
+  height: 100px;
+  background: var(--tex-dragon) 0 0 / contain no-repeat;
+  pointer-events: none;
+}
+
+/* --- Ecrans hors jeu : fond de l'accueil, logo, roche --------------------------- */
+.tex-accueil-fond .ecran-accueil {
+  background:
+    radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%),
+    var(--tex-accueil-fond) center / cover no-repeat,
+    #000;
+}
+.ecran-accueil {
+  align-content: center; /* le logo (s'il existe) au-dessus du formulaire */
+}
+.accueil__logo {
+  display: none;
+}
+.tex-accueil-logo .accueil__logo {
+  display: block;
+  width: 440px;
+  height: 200px;
+  margin-bottom: -10px;
+  background: var(--tex-accueil-logo) center / contain no-repeat;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
+}
+:root.tex-roche {
+  --texture-pierre: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), var(--tex-roche) 0 0 / 512px repeat;
+}

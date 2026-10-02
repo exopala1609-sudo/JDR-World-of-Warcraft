@@ -9,7 +9,7 @@
 // le serveur cherche alors epee-longue.png, .webp, .jpg... C'est ce qui permet
 // au compendium de parler d'icones sans se soucier du format du fichier.
 import { existsSync, readdirSync } from "node:fs";
-import { basename, extname, join } from "node:path";
+import { basename, extname, join, relative, sep } from "node:path";
 import express from "express";
 import { CATEGORIES_PUBLIQUES } from "./config.js";
 
@@ -67,6 +67,13 @@ const nomSur = (nom) => nom && basename(nom) === nom && nom !== ".." && !nom.inc
 
 export function routesMedias(config) {
   const routeur = express.Router();
+  const interfaceWow = creerIndexInterface(config.dossiers.interface);
+
+  // La liste des textures du dossier interface/ : le navigateur y cherche
+  // celles qu'il sait utiliser (bouton de fermeture, bordures...).
+  routeur.get("/api/interface", (_requete, reponse) => {
+    reponse.set("Cache-Control", "no-store").json({ fichiers: interfaceWow.lister() });
+  });
 
   for (const categorie of CATEGORIES_PUBLIQUES) {
     const dossier = config.dossiers[categorie];
@@ -107,6 +114,9 @@ export function routesMedias(config) {
       // barre d'actions), on prefere "introuvable" : l'interface garde alors
       // son dessin par defaut.
       if (requete.query.remplacement === "non") return reponse.status(404).end();
+      // Icone absente : le point d'interrogation de WoW, s'il est dans interface/.
+      const inconnue = categorie === "icones" && interfaceWow.trouver("WoWUnknownItem01");
+      if (inconnue) return reponse.set("Cache-Control", "no-store").sendFile(inconnue);
       // "no-store" : le navigateur ne garde pas le carre gris en memoire,
       // pour afficher le vrai fichier des qu'il sera depose.
       reponse.set("Cache-Control", "no-store").type("image/svg+xml").send(imageDeRemplacement(categorie, nom));
@@ -117,6 +127,48 @@ export function routesMedias(config) {
   // pas la page du jeu (le navigateur passe alors a la police de substitution).
   routeur.use("/medias", (_requete, reponse) => reponse.status(404).end());
   return routeur;
+}
+
+/**
+ * Le dossier interface/ : les textures de WoW, rangees comme on veut (a plat
+ * ou dans leurs sous-dossiers d'origine, "Buttons/UI-Quickslot2.png"). La
+ * liste est relue au plus toutes les 10 secondes : un fichier depose pendant
+ * la partie est vu sans redemarrer.
+ */
+export function creerIndexInterface(dossier) {
+  let fichiers = [];
+  let lu = 0;
+  const lire = () => {
+    if (Date.now() - lu < 10_000) return fichiers;
+    lu = Date.now();
+    fichiers = [];
+    const parcourir = (chemin, profondeur) => {
+      let entrees = [];
+      try {
+        entrees = readdirSync(chemin, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const e of entrees) {
+        if (e.name.startsWith(".") || fichiers.length >= 5000) continue;
+        const complet = join(chemin, e.name);
+        if (e.isDirectory() && profondeur < 4) parcourir(complet, profondeur + 1);
+        else if (e.isFile() && EXTENSIONS_IMAGE.includes(extname(e.name).toLowerCase())) fichiers.push(relative(dossier, complet).split(sep).join("/"));
+      }
+    };
+    parcourir(dossier, 0);
+    fichiers.sort((a, b) => a.localeCompare(b, "fr"));
+    return fichiers;
+  };
+  return {
+    lister: lire,
+    /** Chemin complet d'une texture d'apres son nom SANS extension, majuscules indifferentes. */
+    trouver(nom) {
+      const cherche = nom.toLowerCase();
+      const trouve = lire().find((f) => basename(f, extname(f)).toLowerCase() === cherche);
+      return trouve ? join(dossier, trouve) : null;
+    },
+  };
 }
 
 /** Liste les images (ou les sons) d'une categorie (pour que le MJ choisisse une carte, un son...). */

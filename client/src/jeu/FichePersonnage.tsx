@@ -6,6 +6,7 @@ import { signe } from "@/core/journal";
 import { jeu, useJeu } from "@/core/jeu";
 import { iconeObjet, urlIcone, urlPortrait } from "@/core/medias";
 import type { Personnage } from "@/core/types";
+import { useTexture, type RoleTexture } from "@/core/textures";
 import { InfobulleObjet } from "@/jeu/Sacs";
 import { Fenetre } from "@/ui/Fenetre";
 import { preparerGlisser, useCible } from "@/ui/glisser";
@@ -33,6 +34,7 @@ const NOMS_CARACS: Record<string, string> = {
 function Emplacement({ id, p, modifiable }: { id: string; p: Personnage; modifiable: boolean }) {
   const nom = EMPLACEMENTS[id as keyof typeof EMPLACEMENTS];
   const objet = p.equipement[id];
+  const silhouette = useTexture(`emplacement-${id}` as RoleTexture); // UI-PaperDoll-Slot-Head...
   const depot = useCible(`emplacement:${p.id}:${id}`, {
     accepte: (c) => modifiable && c.origine === "sac" && c.idPersonnage === p.id && peutAllerDans(c.objet, id),
     deposer: (c) => c.origine === "sac" && jeu.equiper(p.id, c.objet.id, id),
@@ -62,9 +64,21 @@ function Emplacement({ id, p, modifiable }: { id: string; p: Personnage; modifia
         ),
       )}
     >
-      {objet ? <img src={iconeObjet(objet)} alt={objet.nom} /> : <span className="case__libelle">{nom}</span>}
+      {objet ? (
+        <img src={iconeObjet(objet)} alt={objet.nom} />
+      ) : silhouette ? (
+        <img className="case__silhouette" src={silhouette} alt={nom} />
+      ) : (
+        <span className="case__libelle">{nom}</span>
+      )}
     </div>
   );
+}
+
+/** L'icone de la classe (ClassIcon_Mage...), si elle est dans le dossier interface/. */
+export function IconeClasse({ classe }: { classe: string }) {
+  const url = useTexture(`classe-${classe}` as RoleTexture);
+  return url ? <img className="icone-classe" src={url} alt="" /> : null;
 }
 
 function Stat({ nom, valeur, variation }: { nom: string; valeur: string | number; variation?: number }) {
@@ -132,6 +146,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
   return (
     <Fenetre titre={p.nom} classe="fiche" positionInitiale={position} surFermer={fermer}>
       <p className="fiche__sous-titre">
+        <IconeClasse classe={p.classe} />
         Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
         {p.proprietaire ? ` - ${p.proprietaire}` : ""}
       </p>

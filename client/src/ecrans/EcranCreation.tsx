@@ -11,6 +11,7 @@ import {
 } from "@partage/creation.js";
 import { CARACTERISTIQUES } from "@partage/dnd5e.js";
 import { EVENEMENTS } from "@partage/protocole.js";
+import { useTextures, type RoleTexture } from "@/core/textures";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone } from "@/core/medias";
 import type { Caracteristique, Classe, MethodeCaracteristiques, Race, Referentiel } from "@/core/types";
@@ -60,6 +61,7 @@ export function EcranCreation() {
 
 function Creation({ referentiel }: { referentiel: Referentiel }) {
   const table = useJeu((e) => e.table);
+  const textures = useTextures(); // icones de classe de WoW (dossier interface/), en secours
   const regles = referentiel.creation;
 
   // --- Les choix du joueur (etat local de l'ecran) --------------------------------------
@@ -258,6 +260,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
                 interdit={!permise}
                 onClick={() => permise && choisirClasse(c.id)}
                 aide={<AideClasse classe={c} race={race} permise={permise} referentiel={referentiel} />}
+                secours={textures[`classe-${c.id}` as RoleTexture]}
               />
             );
           })}
@@ -354,15 +357,17 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
 // --- Briques de l'ecran ---------------------------------------------------------------------
 
 /** Image du dossier icones/ ; si elle manque, une pastille avec des initiales. */
-function Image({ src, texte, classe }: { src: string; texte: string; classe: string }) {
+/** Une image du dossier icones/ ; absente : l'image de secours (texture de WoW), sinon des initiales. */
+function Image({ src, texte, classe, secours }: { src: string; texte: string; classe: string; secours?: string | null }) {
   const [absente, setAbsente] = useState(false);
   useEffect(() => setAbsente(false), [src]);
+  if ((absente || !src) && secours) return <img className={classe} src={secours} alt="" />;
   if (absente || !src) return <span className={`${classe} image-absente`}>{texte.toUpperCase()}</span>;
   return <img className={classe} src={`${src}?remplacement=non`} alt="" onError={() => setAbsente(true)} />;
 }
 
-function BoutonChoix(props: { nom: string; icone: string; couleur?: string; actif: boolean; interdit?: boolean; onClick: () => void; aide: React.ReactNode }) {
-  const { nom, icone, couleur, actif, interdit, onClick, aide } = props;
+function BoutonChoix(props: { nom: string; icone: string; couleur?: string; actif: boolean; interdit?: boolean; onClick: () => void; aide: React.ReactNode; secours?: string | null }) {
+  const { nom, icone, couleur, actif, interdit, onClick, aide, secours } = props;
   return (
     <button
       type="button"
@@ -373,7 +378,7 @@ function BoutonChoix(props: { nom: string; icone: string; couleur?: string; acti
       aria-disabled={interdit}
       {...avecInfobulle(() => aide)}
     >
-      <Image src={urlIcone(icone)} texte={nom.slice(0, 2)} classe="choix__icone" />
+      <Image src={urlIcone(icone)} texte={nom.slice(0, 2)} classe="choix__icone" secours={secours} />
       <span className="choix__nom">{nom}</span>
     </button>
   );

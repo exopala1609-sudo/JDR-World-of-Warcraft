@@ -1,6 +1,32 @@
+import type { CSSProperties } from "react";
 import { jeu, useJeu, type EtatJeu } from "@/core/jeu";
+import { useTexture, type RoleTexture } from "@/core/textures";
 import { ReglageSon } from "@/jeu/ReglageSon";
 import { avecInfobulle } from "@/ui/InfoBulle";
+
+/**
+ * Un bouton du micro-menu. Si sa texture de WoW est dans le dossier interface/
+ * (ex. UI-MicroButton-Quest-Up), il la porte, avec son etat "enfonce" (-Down)
+ * quand on clique ou que sa fenetre est ouverte. Sinon : une lettre.
+ */
+function BoutonMicro({ libelle, aide, action, actif = false, role }: { libelle: string; aide: string; action: () => void; actif?: boolean; role: RoleTexture }) {
+  const haut = useTexture(role);
+  const bas = useTexture(`${role}-appui` as RoleTexture) ?? haut;
+  const style = haut ? ({ "--micro": `url("${haut}")`, "--micro-appui": `url("${bas}")` } as CSSProperties) : undefined;
+  const forme = !haut ? "" : role === "sac" ? " menu__bouton--sac" : " menu__bouton--texture";
+  return (
+    <button
+      type="button"
+      className={`menu__bouton${forme}${actif ? " menu__bouton--actif" : ""}`}
+      style={style}
+      onClick={action}
+      aria-label={aide}
+      {...avecInfobulle(() => <div>{aide}</div>)}
+    >
+      {haut ? null : libelle}
+    </button>
+  );
+}
 
 /** Bas droite : les petits boutons du micro-menu de WoW. */
 export function MicroMenu() {
@@ -8,27 +34,16 @@ export function MicroMenu() {
   const basculer = (nom: keyof EtatJeu["fenetres"]) =>
     jeu.modifier((e) => ({ fenetres: { ...e.fenetres, [nom]: !e.fenetres[nom] } }));
 
-  const bouton = (libelle: string, aide: string, action: () => void, actif = false) => (
-    <button
-      type="button"
-      className={`menu__bouton${actif ? " menu__bouton--actif" : ""}`}
-      onClick={action}
-      {...avecInfobulle(() => <div>{aide}</div>)}
-    >
-      {libelle}
-    </button>
-  );
-
   return (
     <div className="menu cadre">
-      {bouton("C", "Personnage (C)", () => basculer("personnage"), fenetres.personnage)}
-      {bouton("P", "Grimoire (P)", () => basculer("grimoire"), fenetres.grimoire)}
-      {bouton("L", "Journal de quetes (L)", () => basculer("quetes"), fenetres.quetes)}
-      {bouton("I", "Initiative (I)", () => basculer("initiative"), fenetres.initiative)}
-      {bouton("N", "Carnet de notes (N)", () => basculer("carnet"), fenetres.carnet)}
-      {bouton("B", "Sacs (B)", () => basculer("sacs"), fenetres.sacs)}
+      <BoutonMicro libelle="C" aide="Personnage (C)" role="micro-personnage" action={() => basculer("personnage")} actif={fenetres.personnage} />
+      <BoutonMicro libelle="P" aide="Grimoire (P)" role="micro-grimoire" action={() => basculer("grimoire")} actif={fenetres.grimoire} />
+      <BoutonMicro libelle="L" aide="Journal de quetes (L)" role="micro-quetes" action={() => basculer("quetes")} actif={fenetres.quetes} />
+      <BoutonMicro libelle="I" aide="Initiative (I)" role="micro-initiative" action={() => basculer("initiative")} actif={fenetres.initiative} />
+      <BoutonMicro libelle="N" aide="Carnet de notes (N)" role="micro-carnet" action={() => basculer("carnet")} actif={fenetres.carnet} />
+      <BoutonMicro libelle="B" aide="Sacs (B)" role="sac" action={() => basculer("sacs")} actif={fenetres.sacs} />
       <ReglageSon />
-      {bouton("X", "Quitter la partie", () => jeu.deconnecter())}
+      <BoutonMicro libelle="X" aide="Quitter la partie" role="micro-quitter" action={() => jeu.deconnecter()} />
     </div>
   );
 }

@@ -564,3 +564,22 @@ carte (`moteur.versCarte`).
   servie avec ses sous-dossiers (`/medias/interface/Buttons/...`), express
   refusant tout chemin qui sortirait du dossier (teste).
 
+## Textures de WoW (dossier interface/)
+
+- `GET /api/interface` (public, `server/src/medias.js`, `creerIndexInterface`) :
+  la liste des images du dossier `interface/`, sous-dossiers compris (profondeur
+  4, 5000 fichiers max, fichiers caches exclus), relue au plus toutes les 10 s.
+- Icone absente (`/medias/icones/<nom>`) : `WoWUnknownItem01` du dossier
+  `interface/` s'il existe, sinon le carre gris. `?remplacement=non` repond
+  toujours 404.
+- `client/src/core/textures.ts` : table `ROLES` (role -> noms de fichiers
+  candidats, insensibles a la casse). Au demarrage, chaque role trouve pose
+  `--tex-<role>` et la classe `tex-<role>` sur `<html>` ; `useTexture(role)`
+  pour les composants. Les textures non utilisables telles quelles sont
+  recomposees dans un canvas : bordures de WoW (8 carres, bords haut/bas
+  tournes) -> image 3 x 3 pour `border-image` ; anneau et cartouche de
+  `UI-Minimap-Border` (anneau centre en 168,75 ; 108,3, minicarte de 140 px) ;
+  surbrillances additives (noir -> transparent).
+- `client/src/styles/textures.css` (charge en dernier) : toutes les regles sont
+  sous `.tex-<role>` : sans fichier, le dessin CSS d'origine reste.
+

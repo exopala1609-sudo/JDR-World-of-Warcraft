@@ -97,10 +97,50 @@ que les resultats d'une recherche.
 ## Textures d'interface (dossier interface)
 
 Le dossier `interface\` (cree au demarrage du serveur, avec un LISEZ-MOI)
-accueille les textures d'interface (boutons, cadres, curseurs...). Copie-les
-**sans les renommer, avec leurs sous-dossiers d'origine** (ex. depot
-`Gethe/wow-ui-textures` : `interface\Buttons\UI-Quickslot2.png`). C'est le code
-qui fera la correspondance avec chaque element de l'interface.
+accueille les textures de WoW (depot `Gethe/wow-ui-textures`). **Ne les renomme
+pas.** Tu peux les ranger a plat ou dans leurs sous-dossiers d'origine
+(`interface\Buttons\...`), et les majuscules ne comptent pas
+(`UI-MINIMAP-BORDER.PNG` = `UI-Minimap-Border.png`).
+
+Au chargement de la page, le jeu lit la liste du dossier et branche chaque
+texture qu'il connait. Une texture absente ne casse rien : l'element garde son
+dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
+
+| Fichier(s) reconnu(s) | Ce que ca habille |
+| --- | --- |
+| `UI-DialogBox-Border` | Bordure metallique de toutes les fenetres et cadres |
+| `UI-DialogBox-Background` | Fond des fenetres et cadres |
+| `UI-DialogBox-Gold-Border` | Bordure doree de la fenetre de resolution des des |
+| `UI-DialogBox-Gold-Dragon` | Dragon dans le coin de la fenetre de resolution |
+| `UI-Panel-MinimizeButton-Up` / `-Down` | Bouton de fermeture (X) des fenetres |
+| `UI-MicroButton-Quest-Up` / `-Down` | Micro-menu : journal de quetes (L) |
+| `UI-MicroButton-LFG-Up` / `-Down` | Micro-menu : initiative (I) |
+| `UI-MicroButton-EJ-Up` / `-Down` | Micro-menu : carnet de notes (N) |
+| `UI-MicroButton-MainMenu-Up` / `-Down` | Micro-menu : quitter (X) |
+| `UI-MicroButton-Character-Up` / `-Down` | Micro-menu : personnage (C) |
+| `UI-MicroButton-Spellbook-Up` / `-Down` | Micro-menu : grimoire (P) |
+| `Button-Backpack-Up` / `-Down` | Micro-menu : sacs (B) |
+| `UI-MainMenuBar-EndCap-Dwarf` (sinon `-Human`) | Les griffons (sinon les lions) de la barre d'actions |
+| `UI-Minimap-Border` | Anneau de la minicarte et cartouche du nom de la zone |
+| `UI-Backpack-EmptySlot` | Cases vides du sac |
+| `UI-PaperDoll-Slot-Head`, `-Neck`, `-Shoulder`, `-Chest`, `-Wrists`, `-Hands`, `-Waist`, `-Legs`, `-Feet`, `-Finger`, `-Trinket`, `-MainHand`, `-SecondaryHand` (et `-Back`, `-Shirt`, `-Tabard`, `-Ranged` si tu les ajoutes) | Silhouettes des emplacements vides de la fiche (C) |
+| `ClassIcon_Warrior`, `_Paladin`, `_Hunter`, `_Rogue`, `_Priest`, `_DeathKnight`, `_Shaman`, `_Mage`, `_Warlock`, `_Monk`, `_Druid`, `_DemonHunter`, `_Evoker` | Icone de classe (fiche, creation de personnage) |
+| `UI-QuestLog-BookIcon`, `Spellbook-Icon`, `LootPanel-Icon` | Medaillons du journal de quetes, du grimoire, du butin |
+| `UI-QuestTitleHighlight` | Surbrillance de la quete choisie |
+| `QuestBackgroundClassic` | Parchemin du journal de quetes |
+| `Spellbook-Page-1` / `-2` | Pages gauche / droite du grimoire |
+| `WoWUnknownItem01` | Icone "?" pour un objet ou un sort dont l'icone manque |
+| `UI_MainMenu_BattleForAzeroth_LowBandwidth` | Fond de l'ecran d'accueil |
+| `Glues-WoW-ClassicLogo` (sinon `-WotLKLogo`) | Logo au-dessus du formulaire de connexion |
+| `UI-Background-Rock` | Fond de pierre des ecrans hors jeu |
+
+Correspondance classes du referentiel -> icones : rodeur = Hunter,
+clerc = Priest, occultiste = Warlock, magicien = Mage. Barbare, barde et
+ensorceleur n'ont pas d'icone de classe dans WoW : ils gardent celle du dossier
+`icones/` (ou leurs initiales).
+
+Pour ajouter un role : `client/src/core/textures.ts` (liste `ROLES`) et
+`client/src/styles/textures.css`.
 
 ## Images des pions (jetons)
 

@@ -122,7 +122,7 @@ export function Sacs({ position }: { position: { x: number; y: number } }) {
       <div className={`sacs__grille${depot.possible ? " zone--possible" : ""}${depot.survolee ? " zone--survolee" : ""}`} {...depot.proprietes}>
         {Array.from({ length: nombreDeCases }, (_, index) => {
           const objet = objets[index];
-          if (!objet || !personnage) return <div key={`vide-${index}`} className="case" />;
+          if (!objet || !personnage) return <div key={`vide-${index}`} className="case case--vide-sac" />;
           return <CaseObjet key={objet.id} objet={objet} personnage={personnage} modifiable={modifiable} />;
         })}
       </div>

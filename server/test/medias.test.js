@@ -18,6 +18,9 @@ for (const c of ["jetons", "portraits", "cartes", "icones", "polices", "sons", "
 }
 mkdirSync(join(dossiers.interface, "Buttons"));
 writeFileSync(join(dossiers.interface, "Buttons", "UI-Quickslot2.png"), "PNG");
+writeFileSync(join(dossiers.interface, "WOWUNKNOWNITEM01.PNG"), "INCONNUE"); // rangee a plat, en majuscules
+writeFileSync(join(dossiers.interface, "LISEZ-MOI.txt"), "pas une image");
+writeFileSync(join(dossiers.interface, ".cache.png"), "fichier cache");
 writeFileSync(join(racine, "secret.txt"), "ne doit pas sortir");
 let serveur;
 let adresse;
@@ -43,6 +46,22 @@ test("interface/ : sous-dossiers servis, sortie du dossier refusee, absent = 404
     assert.notEqual(await r.text(), "ne doit pas sortir", piege);
   }
   assert.equal((await fetch(`${adresse}/medias/interface/Buttons/Absent.png`)).status, 404);
+});
+
+test("/api/interface : liste les images (sous-dossiers compris), sans fichiers caches ni texte", async () => {
+  const r = await fetch(`${adresse}/api/interface`);
+  assert.equal(r.status, 200);
+  assert.deepEqual((await r.json()).fichiers, ["Buttons/UI-Quickslot2.png", "WOWUNKNOWNITEM01.PNG"]);
+});
+
+test("icone absente : le point d'interrogation de WoW s'il est dans interface/, 404 si remplacement=non", async () => {
+  const r = await fetch(`${adresse}/medias/icones/epee-introuvable`);
+  assert.equal(r.status, 200);
+  assert.equal(await r.text(), "INCONNUE");
+  assert.equal(r.headers.get("cache-control"), "no-store");
+  assert.equal((await fetch(`${adresse}/medias/icones/epee-introuvable?remplacement=non`)).status, 404);
+  // Les autres categories gardent leur carre gris.
+  assert.match((await fetch(`${adresse}/medias/jetons/absent`)).headers.get("content-type"), /svg/);
 });
 
 test("bibliotheque d'icones : lue une fois, recherche multi-mots, limite, actualisation", async () => {
