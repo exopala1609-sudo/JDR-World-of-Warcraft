@@ -75,6 +75,33 @@ personnage en minuscules, sans accents, les espaces remplaces par des tirets :
 Le portrait apparait dans les cadres du groupe et au centre de la fiche de
 personnage. Sans image, les initiales s'affichent.
 
+## Bibliotheque d'icones et selecteur
+
+Le dossier `icones\` peut contenir **toutes** les icones de WoW (des dizaines
+de milliers) : le serveur ne lit la liste des noms qu'une fois, et ne renvoie
+que les resultats d'une recherche.
+
+- **Ou les mettre ?** Conseille : sur le disque LOCAL de chaque PC (elles ne
+  changent jamais, et Google Drive gere mal des milliers de petits fichiers).
+  Dans le `.env` de chaque PC : `VTT_ASSETS_ICONES=D:\WoW-Icones`.
+  Les deux PC doivent avoir la meme bibliotheque (une copie unique, ex. un zip).
+- **Le selecteur** (MJ) : Bestiaire > Nouveau monstre (ou Modifier) > Icone >
+  « Choisir... ». On cherche par mots du NOM DE FICHIER, en anglais :
+  `head gnoll`, `fire ball`, `sword`. Raccourcis : `inv_misc_head` (tetes de
+  creatures), `achievement_boss` (boss), `inv_` (objets), `spell_` (sorts),
+  `ability_` (techniques), `achievement_character` (races).
+- L'icone choisie sert dans le bestiaire ET d'image au pion du monstre sur la
+  carte (sauf si tu donnes un « Jeton » : une image du dossier `jetons\`).
+- Icones ajoutees pendant une partie : bouton **Actualiser** du selecteur.
+
+## Textures d'interface (dossier interface)
+
+Le dossier `interface\` (cree au demarrage du serveur, avec un LISEZ-MOI)
+accueille les textures d'interface (boutons, cadres, curseurs...). Copie-les
+**sans les renommer, avec leurs sous-dossiers d'origine** (ex. depot
+`Gethe/wow-ui-textures` : `interface\Buttons\UI-Quickslot2.png`). C'est le code
+qui fera la correspondance avec chaque element de l'interface.
+
 ## Images des pions (jetons)
 
 Chaque pion de la carte affiche une image dans son rond (sinon ses initiales) :

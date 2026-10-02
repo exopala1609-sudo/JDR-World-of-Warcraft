@@ -22,6 +22,7 @@ const Demandes = {
   retirerObjet: z.strictObject({ idPersonnage, idObjet: schemaId("o"), quantite: z.int().min(1).max(QUANTITE_MAX).optional() }),
   apprendre: z.strictObject({ idPersonnage, idSort: schemaIdCompendium }),
   oublier: z.strictObject({ idPersonnage, idSort: schemaId("s") }),
+  icones: z.strictObject({ recherche: z.string().max(80).default("") }),
   medias: z.strictObject({ categorie: z.enum(["cartes", "jetons", "portraits", "icones", "sons"]) }),
 };
 
@@ -41,6 +42,18 @@ export function brancher(socket, ctx) {
     console.log(`[compendium] Recharge : ${rapport.objets} objets, ${rapport.sorts} sorts, ${rapport.etats} etats.`);
     ctx.io.to(SALLE_MJ).emit(EVENEMENTS.COMPENDIUM_MAJ, { rapport });
     return { rapport };
+  });
+
+  // Selecteur d'icones (MJ : bestiaire, compendium...). Recherche par nom de fichier.
+  ctx.guichet(socket, EVENEMENTS.ICONES_CHERCHER, Demandes.icones, async ({ recherche }) => {
+    ctx.exigerMJ(socket, "parcourir les icones");
+    if (!ctx.quota(socket, "icones", 10)) throw new ErreurRegle("Doucement : trop de recherches d'un coup.");
+    return ctx.icones.chercher(recherche);
+  });
+  ctx.guichet(socket, EVENEMENTS.ICONES_ACTUALISER, null, async () => {
+    ctx.exigerMJ(socket, "parcourir les icones");
+    await ctx.icones.actualiser();
+    return ctx.icones.chercher("");
   });
 
   ctx.guichet(socket, EVENEMENTS.MEDIAS_LISTER, Demandes.medias, ({ categorie }) => {

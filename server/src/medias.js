@@ -71,7 +71,9 @@ export function routesMedias(config) {
   for (const categorie of CATEGORIES_PUBLIQUES) {
     const dossier = config.dossiers[categorie];
 
-    // 1. Le fichier existe tel quel : on l'envoie.
+    // 1. Le fichier existe tel quel : on l'envoie. (Sous-dossiers permis, ex.
+    //    /medias/interface/Buttons/UI-Quickslot2.png ; express.static refuse
+    //    tout chemin qui tenterait de sortir du dossier avec "..".)
     routeur.use(`/medias/${categorie}`, express.static(dossier, { maxAge: "1h", dotfiles: "ignore" }));
 
     // Sons : demandes sans extension (/medias/sons/murmure -> murmure.ogg, .mp3...).

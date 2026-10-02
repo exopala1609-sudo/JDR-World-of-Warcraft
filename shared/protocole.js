@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 15;
+export const VERSION_PROTOCOLE = 16;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -124,6 +124,10 @@ export const EVENEMENTS = /** @type {const} */ ({
   // Joueurs (MJ)
   JOUEUR_EXPULSER: "joueur:expulser", // deconnecte un joueur et lui ferme la table
   JOUEUR_READMETTRE: "joueur:readmettre", // lui rouvre la table
+
+  // Selecteur d'icones : chercher dans le dossier icones/ (par nom de fichier)
+  ICONES_CHERCHER: "icones:chercher",
+  ICONES_ACTUALISER: "icones:actualiser", // relire le dossier (icones ajoutees)
 
   // Des et medias
   DES_LANCER: "des:lancer",

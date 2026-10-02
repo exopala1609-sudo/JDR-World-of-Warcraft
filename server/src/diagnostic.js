@@ -30,7 +30,7 @@ export function creerSousDossiersManquants(config) {
  * depose s'il n'y est pas deja (les noms de fichiers attendus).
  */
 export function installerLisezMoi(config, dossierExemples) {
-  for (const categorie of ["polices", "sons"]) {
+  for (const categorie of ["polices", "sons", "interface"]) {
     const destination = join(config.dossiers[categorie], "LISEZ-MOI.txt");
     const source = join(dossierExemples, categorie, "LISEZ-MOI.txt");
     if (existsSync(config.dossiers[categorie]) && !existsSync(destination) && existsSync(source)) copyFileSync(source, destination);

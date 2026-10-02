@@ -139,7 +139,8 @@ export const SchemaPersonnage = z
     repose: z.boolean(),
     // Monstres : leurs attaques ; tous : l'image du pion (dossier jetons/, sans extension).
     attaquesMonstre: z.array(SchemaAttaqueMonstre).max(10),
-    jeton: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/).nullable(),
+    // "gnoll" = jetons/gnoll.png ; "icones/inv_misc_head_gnoll_01" = une icone choisie au selecteur.
+    jeton: z.string().regex(/^(icones\/)?[A-Za-z0-9_-]{1,80}$/).nullable(),
     creeLe: z.iso.datetime(),
     modifieLe: z.iso.datetime(),
   })
@@ -287,6 +288,12 @@ export function fabriquerPersonnage(entree, { idTable, proprietaire, referentiel
  * de PNJ. Il n'a ni race ni classe jouable : sa "classe" est "monstre".
  * "pv" : deja tires par l'appelant (un nombre, meme si le modele donne "5d8").
  */
+/**
+ * L'image du pion d'un monstre : son "jeton" (dossier jetons/) s'il est donne,
+ * sinon l'icone choisie dans le bestiaire, sinon jetons/<id> (initiales si absent).
+ */
+export const jetonDuModele = (modele) => modele.jeton ?? (modele.icone ? `icones/${modele.icone}` : modele.id);
+
 export function fabriquerMonstre(modele, { idTable, nom, pv }) {
   const fiche = ficheNeuve({
     idTable,
@@ -305,7 +312,7 @@ export function fabriquerMonstre(modele, { idTable, nom, pv }) {
   // Ses attaques, deja posees sur sa barre d'actions (le MJ n'a plus qu'a cliquer).
   const attaquesMonstre = modele.attaques.slice(0, 10).map(({ nom: n, toucher, degats, type }) => ({ nom: n, toucher, degats, type }));
   const barreActions = barreVide().map((_, i) => (attaquesMonstre[i] ? { type: "attaque", reference: attaquesMonstre[i].nom } : null));
-  return SchemaPersonnage.parse({ ...fiche, attaquesMonstre, barreActions, jeton: modele.jeton ?? modele.id });
+  return SchemaPersonnage.parse({ ...fiche, attaquesMonstre, barreActions, jeton: jetonDuModele(modele) });
 }
 
 /**

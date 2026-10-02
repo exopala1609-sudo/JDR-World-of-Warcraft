@@ -20,6 +20,7 @@ import { Server } from "socket.io";
 import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
+import { creerBibliothequeIcones } from "../donnees/bibliotheque-icones.js";
 import { presenterPersonnage } from "../modeles/personnage.js";
 import { butinVisibleParLesJoueurs } from "../regles/butins.js";
 import { pionVisibleParLesJoueurs } from "../regles/scene.js";
@@ -65,7 +66,8 @@ const vuePublique = (fiche) => ({ ...fiche, inventaire: [], sacPrive: true });
  */
 export function imageDuPion(personnage) {
   if (!personnage) return null;
-  if (personnage.jeton) return `jetons/${personnage.jeton}`;
+  // "icones/xxx" : une icone choisie dans le selecteur sert d'image au pion.
+  if (personnage.jeton) return personnage.jeton.startsWith("icones/") ? personnage.jeton : `jetons/${personnage.jeton}`;
   if (personnage.portrait) return `portraits/${personnage.portrait}`;
   if (!personnage.proprietaire) return null;
   const nom = personnage.nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -102,6 +104,8 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     jets: new Map(),
 
     sessions,
+    // Les noms des icones du dossier icones/ (selecteur d'icones), lus a la demande.
+    icones: creerBibliothequeIcones(config?.dossiers?.icones),
     // Joueurs expulses par le MJ, par table (pseudos normalises). En memoire.
     expulsesParTable: new Map(),
     expulses(idTable) {

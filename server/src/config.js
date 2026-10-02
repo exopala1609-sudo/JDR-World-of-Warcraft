@@ -17,6 +17,7 @@ export const CATEGORIES = /** @type {const} */ ({
   icones: "VTT_ASSETS_ICONES",
   polices: "VTT_ASSETS_POLICES",
   sons: "VTT_ASSETS_SONS",
+  interface: "VTT_ASSETS_INTERFACE", // textures d'interface (boutons, cadres...), sous-dossiers permis
   compendium: "VTT_ASSETS_COMPENDIUM",
   referentiel: "VTT_ASSETS_REFERENTIEL",
   parties: "VTT_ASSETS_PARTIES",
@@ -24,7 +25,7 @@ export const CATEGORIES = /** @type {const} */ ({
 
 // Categories exposees telles quelles aux navigateurs. Le compendium et les
 // sauvegardes passeront par l'API (le MJ decide ce que les joueurs voient).
-export const CATEGORIES_PUBLIQUES = ["jetons", "portraits", "cartes", "icones", "polices", "sons"];
+export const CATEGORIES_PUBLIQUES = ["jetons", "portraits", "cartes", "icones", "polices", "sons", "interface"];
 
 const CLOUDS_CONNUS = [
   { motif: /onedrive/i, nom: "OneDrive" },

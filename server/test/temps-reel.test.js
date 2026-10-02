@@ -3,7 +3,7 @@
 // ET les protections : ce qu'un joueur n'a pas le droit de faire est refuse,
 // ce qu'il n'a pas le droit de voir ne lui est jamais envoye.
 import assert from "node:assert/strict";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -66,7 +66,12 @@ before(async () => {
   const referentiel = creerReferentiel("exemples/referentiel");
   referentiel.charger();
   serveur = createServer();
-  installerTempsReel(serveur, { depot, sessions, compendium, referentiel, config: { dossiers: {} } });
+  // Un petit dossier d'icones pour le selecteur.
+  mkdirSync(join(dossier, "icones"));
+  for (const nom of ["INV_Sword_04.png", "inv_misc_head_gnoll_01.png", "spell_fire_fireball02.png", "notes.txt"]) {
+    writeFileSync(join(dossier, "icones", nom), "x");
+  }
+  installerTempsReel(serveur, { depot, sessions, compendium, referentiel, config: { dossiers: { icones: join(dossier, "icones") } } });
   await new Promise((ok) => serveur.listen(0, "127.0.0.1", ok));
   adresse = `http://127.0.0.1:${serveur.address().port}`;
 
@@ -770,4 +775,21 @@ test("carnet de notes : prive (ni les autres joueurs ni le MJ ne le lisent), sau
   assert.equal(depot.obtenirNotes(idTable, "mj").length, 1);
   await demander(thrall, EVENEMENTS.NOTE_SUPPRIMER, { idNote: note.id });
   assert.deepEqual(depot.obtenirNotes(idTable, "joueur:thrall"), []);
+});
+
+test("selecteur d'icones : recherche par nom (MJ), une icone choisie sert d'image au pion", async () => {
+  assert.equal((await demander(thrall, EVENEMENTS.ICONES_CHERCHER, { recherche: "sword" })).ok, false);
+  const r = await demander(mj, EVENEMENTS.ICONES_CHERCHER, { recherche: "sword" });
+  assert.deepEqual([r.total, r.icones], [3, ["INV_Sword_04"]]); // notes.txt n'est pas une image
+  assert.deepEqual((await demander(mj, EVENEMENTS.ICONES_CHERCHER, { recherche: "fire ball" })).icones, ["spell_fire_fireball02"]);
+
+  // Un monstre cree avec une icone : son pion l'affiche.
+  await demander(mj, EVENEMENTS.BESTIAIRE_ENREGISTRER, { monstre: { nom: "Gnoll chef", pv: 20, classeArmure: 14, icone: "inv_misc_head_gnoll_01" } });
+  const { personnage } = await demander(mj, EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: "gnoll-chef", x: 300, y: 300 });
+  assert.equal(personnage.jeton, "icones/inv_misc_head_gnoll_01");
+  const idTable = depot.listerTables()[0].id;
+  const vue = await demander(mj, EVENEMENTS.TABLE_REJOINDRE, { idTable });
+  assert.equal(vue.scene.pions.find((p) => p.idPersonnage === personnage.id).image, "icones/inv_misc_head_gnoll_01");
+  await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: personnage.id });
+  await demander(mj, EVENEMENTS.BESTIAIRE_SUPPRIMER, { idMonstre: "gnoll-chef" });
 });

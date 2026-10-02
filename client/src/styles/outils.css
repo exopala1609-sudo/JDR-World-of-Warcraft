@@ -886,3 +886,117 @@
 .menu-mj__action small {
   font-size: 11px;
 }
+
+/* --- Selecteur d'icones (MJ) ----------------------------------------------------------- */
+.selecteur-icone {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 820px;
+  max-height: 86%;
+  padding: 14px 18px 18px;
+}
+.selecteur-icone__entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.selecteur-icone__recherche {
+  display: flex;
+  gap: 8px;
+}
+.selecteur-icone__recherche .champ {
+  flex: 1;
+}
+.selecteur-icone__prefixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.selecteur-icone__prefixes small {
+  color: var(--texte-gris);
+}
+.selecteur-icone__compte {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.selecteur-icone__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 60px);
+  gap: 6px;
+  min-height: 140px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: var(--relief-creux);
+}
+.selecteur-icone__case {
+  width: 60px;
+  height: 60px;
+  padding: 2px;
+  border: 1px solid #000;
+  border-radius: 4px;
+  background: var(--anthracite-950);
+  box-shadow: 0 0 0 1px var(--metal-sombre);
+  cursor: pointer;
+}
+.selecteur-icone__case img {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: cover;
+}
+.selecteur-icone__case:hover {
+  box-shadow: 0 0 0 2px var(--or-bordure), 0 0 10px rgba(255, 209, 0, 0.5);
+}
+.selecteur-icone__case--choisie {
+  box-shadow: 0 0 0 2px var(--or), 0 0 12px rgba(255, 209, 0, 0.8);
+}
+.selecteur-icone__case--aucune {
+  color: var(--texte-doux);
+  font-family: var(--police-ui);
+  font-size: 12px;
+}
+
+/* Champ "Icone" des formulaires : vignette + boutons */
+.champ-icone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.champ-icone__apercu {
+  --taille-case: 52px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+.champ-icone__texte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.champ-icone__nom {
+  overflow: hidden;
+  color: #000;
+  font-family: var(--police-chiffres);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.champ-icone__actions {
+  display: flex;
+  gap: 6px;
+}
+.formulaire-monstre__libelle {
+  color: #6b1b0d;
+}
+.formulaire-monstre .champ-icone .menu-mj__retirer {
+  border-color: var(--parchemin-sombre);
+  background: rgba(255, 250, 235, 0.4);
+  color: #6b1b0d;
+}

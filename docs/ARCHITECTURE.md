@@ -551,3 +551,16 @@ carte (`moteur.versCarte`).
 - **Repos court** : sur la fiche (C), le joueur choisit ses des de vie ; le
   serveur les lance (1d<faces> + Constitution chacun).
 
+### Selecteur d'icones et dossier interface (sprint 11, suite)
+
+- `server/src/donnees/bibliotheque-icones.js` : la liste des noms du dossier
+  `icones/` est lue UNE fois (asynchrone), gardee en memoire ; recherche
+  multi-mots, au plus 240 resultats par reponse (`icones:chercher`, MJ ;
+  `icones:actualiser` pour relire le dossier). Le navigateur ne charge que les
+  vignettes visibles (`loading="lazy"`).
+- Une icone choisie pour un monstre devient l'image de son pion :
+  `jeton = "icones/<nom>"` (sinon `jetons/<id>`).
+- Nouvelle categorie de medias `interface/` (variable `VTT_ASSETS_INTERFACE`) :
+  servie avec ses sous-dossiers (`/medias/interface/Buttons/...`), express
+  refusant tout chemin qui sortirait du dossier (teste).
+

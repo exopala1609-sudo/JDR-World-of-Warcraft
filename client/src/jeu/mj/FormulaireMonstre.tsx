@@ -4,6 +4,7 @@ import { NOMS_CARACTERISTIQUES } from "@partage/creation.js";
 import { EVENEMENTS } from "@partage/protocole.js";
 import { jeu } from "@/core/jeu";
 import type { Monstre } from "@/core/types";
+import { ChampIcone } from "./SelecteurIcone";
 
 type Attaque = Monstre["attaques"][number];
 
@@ -71,6 +72,10 @@ export function FormulaireMonstre({ modele, surFin }: { modele: Monstre | null; 
           Nom
           <input className="champ-parchemin" value={m.nom} maxLength={50} required autoFocus onChange={(e) => changer({ nom: e.target.value })} />
         </label>
+        <div className="formulaire-monstre__large">
+          <span className="formulaire-monstre__libelle">Icone (bestiaire et pion sur la carte)</span>
+          <ChampIcone valeur={m.icone ?? null} defaut={modele?.id ?? "monstre"} surChange={(icone) => changer({ icone: icone ?? undefined })} />
+        </div>
         <label>
           Type
           <input className="champ-parchemin" value={m.type} maxLength={60} placeholder="Humanoide, Bete..." onChange={(e) => changer({ type: e.target.value })} />
@@ -106,12 +111,13 @@ export function FormulaireMonstre({ modele, surFin }: { modele: Monstre | null; 
           </select>
         </label>
         <label>
-          Jeton (image)
+          Jeton (facultatif)
           <input
             className="champ-parchemin"
             value={m.jeton ?? ""}
             maxLength={80}
-            placeholder="nom du fichier dans jetons/"
+            placeholder="sinon : l'icone ci-dessus"
+            title="Une image du dossier jetons/ pour le pion, a la place de l'icone"
             onChange={(e) => changer({ jeton: e.target.value.replace(/\.[a-z0-9]+$/i, "").trim() || undefined })}
           />
         </label>
