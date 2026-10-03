@@ -21,7 +21,7 @@ import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { creerBibliothequeIcones } from "../donnees/bibliotheque-icones.js";
-import { presenterPersonnage } from "../modeles/personnage.js";
+import { presenterPersonnage, santeVisible } from "../modeles/personnage.js";
 import { butinVisibleParLesJoueurs } from "../regles/butins.js";
 import { pionVisibleParLesJoueurs } from "../regles/scene.js";
 import { ErreurRegle } from "../regles/erreurs.js";
@@ -226,11 +226,18 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
      *    fiche sans le contenu du sac aux autres joueurs.
      */
     publierPersonnage(personnage, cause) {
+      const avant = depot.obtenirPersonnage(personnage.id);
       const enregistre = depot.enregistrerPersonnage(personnage);
       const presente = presenterPersonnage(enregistre);
       const { idTable, proprietaire } = enregistre;
       if (proprietaire === null) {
         io.to(salleMJ(idTable)).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+        // Un monstre visible a change de nom, de niveau, de rang ou de sante
+        // (a 10 % pres) : les joueurs recoivent la scene a jour (cadre de cible).
+        const apparence = (p) => p && `${p.nom}|${p.niveau}|${p.rang}|${santeVisible(p)}`;
+        if (apparence(avant) !== apparence(enregistre) && ctx.pnjVisible(enregistre)) {
+          ctx.envoyerSceneAuxJoueurs(idTable, depot.obtenirScene(idTable));
+        }
         return presente;
       }
       const sallePrivee = salleDuJoueur(idTable, proprietaire);
@@ -320,10 +327,16 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       if (depot.obtenirCombat(idTable)) ctx.publierCombat(idTable, null);
     },
 
-    /** Un pion, complete du nom et du proprietaire de son personnage. */
+    /**
+     * Un pion, complete du nom et du proprietaire de son personnage. Pour un
+     * monstre, aussi ce qu'en montre le cadre de cible des joueurs (qui n'ont
+     * pas sa fiche) : niveau, rang et sante arrondie a 10 %.
+     */
     presenterPion(pion) {
       const personnage = depot.obtenirPersonnage(pion.idPersonnage);
-      return { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null, image: imageDuPion(personnage) };
+      const pion2 = { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null, image: imageDuPion(personnage) };
+      if (!personnage || personnage.proprietaire !== null) return pion2;
+      return { ...pion2, niveau: personnage.niveau, rang: personnage.rang ?? "normal", sante: santeVisible(personnage) };
     },
 
     /**

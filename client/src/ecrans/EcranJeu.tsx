@@ -4,6 +4,7 @@ import { useEchelleInterface } from "@/core/useEchelleInterface";
 import { BarreActions, RACCOURCIS, utiliserRaccourci } from "@/jeu/BarreActions";
 import { Bandeau } from "@/jeu/Bandeau";
 import { CadresGroupe } from "@/jeu/CadresGroupe";
+import { CadreCible } from "@/jeu/CadreCible";
 import { FenetreButin } from "@/jeu/FenetreButin";
 import { CarteMonde } from "@/jeu/CarteMonde";
 import { Discussion } from "@/jeu/Discussion";
@@ -53,8 +54,11 @@ export function EcranJeu() {
       else if (touche === "i") basculer("initiative");
       else if (touche === "n") basculer("carnet");
       else if (touche === "escape") {
+        // Comme dans WoW : Echap ferme d'abord les fenetres ; s'il n'y en a plus, il efface la cible.
+        const etat = jeu.lire();
+        const rienDOuvert = !Object.values(etat.fenetres).some(Boolean) && !etat.butin;
         jeu.fermerButin();
-        jeu.modifier({ fenetres: FENETRES_FERMEES });
+        jeu.modifier(rienDOuvert ? { cible: null } : { fenetres: FENETRES_FERMEES });
       } else if (RACCOURCIS.includes(e.key)) utiliserRaccourci(RACCOURCIS.indexOf(e.key)); // touches 1 a =
       else if (touche === "enter") document.getElementById("saisie-discussion")?.focus();
       else return;
@@ -69,6 +73,7 @@ export function EcranJeu() {
       <CarteMonde />
       <div className="hud">
         <CadresGroupe />
+        <CadreCible />
         <Bandeau />
         <Minicarte />
         <Discussion />

@@ -71,6 +71,7 @@ export type Monstre = {
   icone?: string;
   jeton?: string;
   taille: number;
+  rang: Rang;
   description: string;
   modifiable?: boolean; // cree depuis le jeu (mes-monstres.json) : modifiable et supprimable ici
 };
@@ -138,6 +139,7 @@ export type Personnage = {
   faction: string | null;
   portrait: string | null; // fichier du dossier portraits/
   sexe: "masculin" | "feminin" | null; // choisi a la creation (portrait par defaut race + sexe)
+  rang: Rang | null; // monstres : cadre de cible normal, elite, rare, boss
   repose: boolean; // apres un repos long : portrait "repose" facon WoW (Zzz)
   attaquesMonstre: AttaqueMonstre[]; // monstres du bestiaire : leurs attaques
   jeton: string | null; // image du pion (dossier jetons/), sinon le portrait
@@ -167,7 +169,13 @@ export type Pion = {
   couleur: string;
   nom: string;
   proprietaire: string | null;
+  // Monstres seulement : ce qu'en montre le cadre de cible (les joueurs n'ont pas sa fiche).
+  niveau?: number;
+  rang?: Rang;
+  sante?: number; // pourcentage arrondi a 10 % (jamais les PV exacts)
 };
+
+export type Rang = "normal" | "elite" | "rare" | "boss";
 
 // --- Referentiel : les fichiers JSON du dossier referentiel/ (races, classes...) ---------
 export type Caracteristique = "force" | "dexterite" | "constitution" | "intelligence" | "sagesse" | "charisme";

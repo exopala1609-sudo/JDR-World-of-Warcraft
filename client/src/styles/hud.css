@@ -572,3 +572,95 @@
 .actions__page button:hover {
   color: var(--or);
 }
+
+/* --- Haut : cadre de cible (a droite des cadres du groupe) ----------------------------
+   Dessin par defaut (sans textures) : un cartouche et un portrait rond a droite,
+   comme le cadre de cible de WoW. Habillage de WoW : voir textures.css. */
+.cadre-cible {
+  position: absolute;
+  top: var(--marge-hud);
+  left: calc(var(--marge-hud) + 455px);
+  display: grid;
+  grid-template-columns: 220px 78px;
+  grid-template-rows: auto auto auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 8px 8px 8px 12px;
+  cursor: pointer;
+}
+.cadre-cible__nom {
+  grid-column: 1;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  color: #fff;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: var(--ombre-texte);
+}
+/* Couleur de "reaction" facon WoW : rouge pour un monstre, bleu pour un heros. */
+.cadre-cible--hostile .cadre-cible__nom {
+  background: linear-gradient(90deg, rgba(150, 18, 8, 0.85), rgba(110, 12, 4, 0.55));
+}
+.cadre-cible--amical .cadre-cible__nom {
+  background: linear-gradient(90deg, rgba(20, 60, 150, 0.85), rgba(12, 40, 110, 0.55));
+}
+.cadre-cible__vie,
+.cadre-cible__ressource {
+  grid-column: 1;
+}
+.cadre-cible__ressource .barre {
+  height: 10px;
+}
+.cadre-cible__portrait {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  position: relative;
+  width: 78px;
+  height: 78px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #000;
+  box-shadow: var(--bordure-or);
+}
+.cadre-cible__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cadre-cible__initiales {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--or);
+  font-size: 28px;
+  text-shadow: var(--ombre-texte);
+}
+.cadre-cible__niveau {
+  position: absolute;
+  right: 0;
+  bottom: -6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a3a44, #0c0c10);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 14px;
+}
+.cadre-cible__rang {
+  position: absolute;
+  top: -10px;
+  right: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: #000;
+  color: var(--or);
+  font-size: 12px;
+  box-shadow: var(--bordure-or);
+}

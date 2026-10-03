@@ -507,6 +507,11 @@ Cela ne lui donne AUCUN pouvoir, pour trois raisons :
 3. **Les donnees secretes ne partent jamais.** Fiches des PNJ, pions caches,
    compendium, bestiaire, jets secrets : le serveur ne les envoie qu'au salon
    du MJ. Meme une interface MJ « debloquee » chez un joueur serait vide.
+   Le cadre de cible en est un exemple : pour un monstre, un joueur ne recoit
+   que son nom, son niveau, son rang et sa sante ARRONDIE a 10 %
+   (`santeVisible`, dans `presenterPion`), jamais ses PV exacts. Quand cette
+   sante arrondie change, le serveur renvoie la scene aux joueurs
+   (`publierPersonnage`). Le MJ, lui, a la fiche : il voit les PV exacts.
 
 En plus (confort, pas securite) : le code des outils MJ est dans un fichier a
 part (`client/src/jeu/mj/`), charge a la demande (`React.lazy`) seulement

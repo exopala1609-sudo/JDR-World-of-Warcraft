@@ -148,6 +148,9 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `Point` | Curseur de la souris (le gantelet) |
 | `Hurlevents` / `Orgrimmar` | Fond de l'ecran de creation, selon la faction choisie |
 | `Alliance-Logo` / `Horde-Logo` | Blasons des factions (creation) |
+| `TargetFrame` | Cadre de cible (en haut, a droite des cadres du groupe) : cible normale |
+| `TargetFrameElite` / `TargetFrameRare` / `UnitFrameBoss` | Cadre de cible d'un monstre elite (dragon dore), rare (dragon d'argent), boss. Le rang se choisit dans le bestiaire (champ `rang`) |
+| `UI-LootPanel` | Fenetre de butin (coffres, cadavres) : medaillon, titre, bouton fermer |
 | `TemporaryPortrait-Male-Orc`, `TemporaryPortrait-Female-NightElf`... | Portrait par defaut selon la race et le sexe (creation, cadres des joueurs, fiche), quand le joueur n'a pas d'image dans `portraits\` |
 | `QuestBackgroundClassic2` | Parchemin a l'interieur du cadre de quete |
 | `UI_MainMenu_BattleForAzeroth_LowBandwidth` | Fond de l'ecran d'accueil |

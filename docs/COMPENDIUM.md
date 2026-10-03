@@ -174,6 +174,7 @@ Le fichier `exemple-bestiaire.json` (commente) montre tous les champs.
 | `classeArmure` | oui | 1 a 40 |
 | `type`, `puissance`, `vitesse`, `description` | non | textes libres (affichage) |
 | `niveau` | non | 1 par defaut (bonus de maitrise) |
+| `rang` | non | `normal` (defaut), `elite`, `rare` ou `boss` : le cadre de cible change (dragon dore, dragon d'argent, cadre de boss) |
 | `caracteristiques` | non | 10 pour chaque caracteristique absente |
 | `attaques` | non | `nom`, `toucher`, `degats` (formule), `type` : affichees dans le bestiaire |
 | `butin` | non | objets du compendium (`id`, `quantite`) trouves sur son cadavre |

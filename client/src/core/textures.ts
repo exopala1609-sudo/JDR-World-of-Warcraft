@@ -75,6 +75,13 @@ const ROLES = {
   "barre-page": ["UI-MainMenuBar-Dwarf", "UI-MainMenuBar-Human"], // la colonne "page 1 / 2", dans la meme planche
   // --- Cadres des joueurs (en haut a gauche) ----------------------------------------
   "cadre-unite": ["UI-Player-Portrait"],
+  // --- Cadre de cible, selon le rang du monstre --------------------------------------
+  "cible-normal": ["TargetFrame", "UI-TargetingFrame"],
+  "cible-elite": ["TargetFrameElite", "UI-TargetingFrame-Elite"],
+  "cible-rare": ["TargetFrameRare", "UI-TargetingFrame-Rare"],
+  "cible-boss": ["UnitFrameBoss"],
+  // --- Fenetre de butin ------------------------------------------------------------------
+  "butin-cadre": ["UI-LootPanel"],
   // --- Minicarte ----------------------------------------------------------------
   "minicarte-bordure": ["UI-Minimap-Border"],
   "minicarte-bandeau": ["UI-Minimap-Border"], // le cartouche du nom de la zone, dans la meme planche
@@ -178,6 +185,7 @@ const RECOMPOSER: Partial<Record<string, Recomposition>> = {
   "barre-actions": barreDActions,
   "barre-page": (image) => decouper(image, 0, 74, 40, 54, 256),
   "cadre-unite": (image) => decouper(image, 0, 0, 193, 76, 256),
+  "butin-cadre": (image) => decouper(image, 0, 0, 188, 252, 256), // le cadre seul, sans la marge vide
 };
 // Fichiers supplementaires d'un role recompose (une liste de candidats par fichier).
 const AUTRES: Partial<Record<string, string[][]>> = {

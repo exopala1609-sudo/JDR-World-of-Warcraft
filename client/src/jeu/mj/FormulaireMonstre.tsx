@@ -24,6 +24,7 @@ const VIDE: Omit<Monstre, "id"> = {
   classeArmure: 12,
   vitesse: "9 m",
   taille: 1,
+  rang: "normal",
   caracteristiques: Object.fromEntries(CARACTERISTIQUES.map((c) => [c, 10])),
   attaques: [],
   butin: [],
@@ -108,6 +109,15 @@ export function FormulaireMonstre({ modele, surFin }: { modele: Monstre | null; 
                 {nom}
               </option>
             ))}
+          </select>
+        </label>
+        <label>
+          Rang (cadre de cible)
+          <select className="champ-parchemin" value={m.rang ?? "normal"} onChange={(e) => changer({ rang: e.target.value as Monstre["rang"] })}>
+            <option value="normal">Normal</option>
+            <option value="elite">Elite (dragon dore)</option>
+            <option value="rare">Rare (dragon d'argent)</option>
+            <option value="boss">Boss</option>
           </select>
         </label>
         <label>

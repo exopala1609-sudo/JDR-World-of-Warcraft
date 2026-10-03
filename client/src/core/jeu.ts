@@ -34,7 +34,8 @@ export type EtatJeu = {
   combat: Combat;
   presence: { pseudo: string; role: string }[];
   journal: LigneJournal[];
-  selection: string | null; // personnage cible (clic sur un cadre de groupe)
+  selection: string | null; // personnage choisi (clic sur un cadre de groupe) : ses sacs / sa fiche
+  cible: string | null; // personnage CIBLE (cadre de cible) : clic sur un pion ou un cadre ; Echap l'efface
   // Fenetres ouvertes. Les quatre dernieres sont des outils du MJ (jamais affichees a un joueur).
   fenetres: {
     sacs: boolean;
@@ -87,6 +88,7 @@ const ETAT_INITIAL: EtatJeu = {
   presence: [],
   journal: [],
   selection: null,
+  cible: null,
   fenetres: FENETRES_FERMEES,
   quetes: [],
   notes: null,
@@ -511,7 +513,7 @@ class Jeu {
     socket.on(EVENEMENTS.PERSONNAGE_SUPPRIME, ({ idPersonnage }) => {
       this.modifier((e) => {
         const { [idPersonnage]: _supprime, ...reste } = e.personnages;
-        return { personnages: reste, selection: e.selection === idPersonnage ? null : e.selection };
+        return { personnages: reste, selection: e.selection === idPersonnage ? null : e.selection, cible: e.cible === idPersonnage ? null : e.cible };
       });
     });
 

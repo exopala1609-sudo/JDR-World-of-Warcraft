@@ -169,5 +169,7 @@ export const SchemaEntreeMonstre = z.strictObject({
   jeton: schemaIcone.optional(), // image du pion, dossier jetons/ (par defaut : l'id)
   // Taille du pion en cases : 1 (petite / moyenne), 2 (grande), 3 (tres grande), 4 (gigantesque).
   taille: entier(1, 4).default(1),
+  // Rang (cadre de cible facon WoW) : normal, elite (dragon dore), rare (dragon d'argent), boss.
+  rang: z.enum(["normal", "elite", "rare", "boss"]).default("normal"),
   description: z.string().max(2000).default(""),
 });

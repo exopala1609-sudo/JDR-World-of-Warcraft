@@ -14,6 +14,8 @@
 //    "type"          (facultatif) ex. "Humanoide (gnoll)", "Bete", "Mort-vivant".
 //    "puissance"     (facultatif) ex. "FP 1/2" : affichage seulement.
 //    "niveau"        (facultatif, 1 par defaut) : sert au bonus de maitrise.
+//    "rang"          (facultatif) "normal" (par defaut), "elite", "rare" ou "boss" :
+//                    change le cadre de cible (dragon dore, dragon d'argent, boss).
 //    "pv"            Points de vie : un nombre (22) ou une formule ("5d8+5"),
 //                    tiree a chaque invocation : deux gnolls n'ont pas les memes PV.
 //    "classeArmure"  Classe d'armure.

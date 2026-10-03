@@ -77,8 +77,9 @@ export function CarteMonde() {
       // Clic sur un coffre ou un cadavre : la fenetre de butin s'ouvre a cote du curseur.
       surButin: (butin: { id: string }, clientX: number, clientY: number) => jeu.ouvrirButin(butin.id, versScene(clientX, clientY)),
       // Clic sur un pion : il devient la cible (sa fiche avec C ; chez le MJ, sa barre en page 2).
+      // Clic sur un pion : il devient la CIBLE (cadre de cible), et, si on a sa fiche, la selection.
       surSelection: (pion: { idPersonnage: string }) => {
-        if (jeu.lire().personnages[pion.idPersonnage]) jeu.modifier({ selection: pion.idPersonnage });
+        jeu.modifier({ cible: pion.idPersonnage, ...(jeu.lire().personnages[pion.idPersonnage] ? { selection: pion.idPersonnage } : {}) });
       },
       // MJ : un coffre / cadavre glisse ailleurs sur la carte.
       surDeplacementButin: (butin: { id: string }, x: number, y: number) => jeu.demander(EVENEMENTS.BUTIN_DEPLACER, { idButin: butin.id, x, y }),

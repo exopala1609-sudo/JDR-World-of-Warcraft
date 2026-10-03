@@ -757,6 +757,25 @@ test("monstres : attaques jouables (fenetre de resolution), taille du pion, imag
   await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: ogre.id });
 });
 
+test("cadre de cible : les joueurs voient le rang et la sante ARRONDIE d'un monstre visible, jamais ses PV", async () => {
+  const idTable = depot.listerTables()[0].id;
+  const { personnage: ogre } = await demander(mj, EVENEMENTS.BESTIAIRE_INVOQUER, { idMonstre: "ogre-mage", x: 1000, y: 1000, cache: false });
+  const vue = await demander(thrall, EVENEMENTS.TABLE_REJOINDRE, { idTable });
+  const pion = vue.scene.pions.find((p) => p.idPersonnage === ogre.id);
+  assert.deepEqual([pion.rang, pion.niveau, pion.sante], ["normal", 4, 100]);
+  assert.equal(pion.pointsDeVie, undefined);
+  assert.equal(JSON.stringify(vue.scene).includes(`"actuels"`), false);
+  // Des degats : les joueurs recoivent la scene, avec la sante a 10 % pres.
+  const max = ogre.pointsDeVie.max;
+  const degats = Math.ceil(max * 0.62);
+  const chezThrall = attendre(thrall, EVENEMENTS.SCENE_ETAT, 600);
+  await demander(mj, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: ogre.id, type: "degats", montant: degats });
+  const recu = (await chezThrall)?.scene.pions.find((p) => p.idPersonnage === ogre.id);
+  assert.equal(recu?.sante, Math.max(1, Math.round(((max - degats) / max) * 10) * 10));
+  assert.equal(recu.sante % 10 === 0 || recu.sante === 1, true);
+  await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: ogre.id });
+});
+
 test("carnet de notes : prive (ni les autres joueurs ni le MJ ne le lisent), sauvegarde", async () => {
   const idTable = depot.listerTables()[0].id;
   const fuite = attendre(jaina, EVENEMENTS.NOTES_ETAT, 200);

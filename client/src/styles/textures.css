@@ -501,3 +501,154 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+/* --- Cadre de cible : TargetFrame, -Elite, -Rare (256 x 128) et UnitFrameBoss --------
+   La texture entiere est posee PAR-DESSUS (::after) ; le nom, les barres, le
+   portrait et le niveau sont places dessous, dans ses trous. --u = un pixel de
+   texture. Reperes : cartouche x 32-144 / y 26-50, barre fine y 57-62,
+   anneau du portrait centre (179,5 ; 44,5), pastille du niveau (203 ; 66). */
+.cadre-cible--texture {
+  --u: 1.8px;
+  top: calc(var(--marge-hud) - var(--u) * 8);
+  left: calc(var(--marge-hud) + 455px - var(--u) * 26);
+  display: block;
+  width: calc(var(--u) * 256);
+  height: calc(var(--u) * 100);
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: none; /* les marges transparentes de la texture laissent passer les clics */
+}
+.cadre-cible--texture > * {
+  pointer-events: auto;
+}
+.cadre-cible--texture::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--u) * 128);
+  z-index: 2;
+  background: var(--fond-cible) 0 0 / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.cadre-cible--texture .cadre-cible__nom {
+  position: absolute;
+  left: calc(var(--u) * 32);
+  top: calc(var(--u) * 26);
+  width: calc(var(--u) * 112);
+  height: calc(var(--u) * 12.5);
+  padding: 0 calc(var(--u) * 3);
+  border-radius: 0;
+  font-size: calc(var(--u) * 7.5);
+  line-height: calc(var(--u) * 12.5);
+}
+.cadre-cible--texture .barre {
+  border: 0;
+  box-shadow: none;
+}
+.cadre-cible--texture .cadre-cible__vie {
+  position: absolute;
+  left: calc(var(--u) * 32);
+  top: calc(var(--u) * 38.5);
+  width: calc(var(--u) * 112);
+  height: calc(var(--u) * 12);
+}
+.cadre-cible--texture .barre__texte {
+  font-size: calc(var(--u) * 6);
+}
+.cadre-cible--texture .cadre-cible__ressource {
+  position: absolute;
+  left: calc(var(--u) * 32);
+  top: calc(var(--u) * 56.5);
+  width: calc(var(--u) * 112);
+  height: calc(var(--u) * 6.5);
+  background: rgba(0, 0, 0, 0.8);
+}
+.cadre-cible--texture .cadre-cible__ressource .barre {
+  height: 100%;
+}
+.cadre-cible--texture .cadre-cible__portrait {
+  position: absolute;
+  left: calc(var(--u) * 154);
+  top: calc(var(--u) * 19);
+  width: calc(var(--u) * 51);
+  height: calc(var(--u) * 51);
+  box-shadow: none;
+}
+.cadre-cible--texture .cadre-cible__niveau {
+  z-index: 3;
+  left: calc(var(--u) * 193);
+  top: calc(var(--u) * 56);
+  right: auto;
+  bottom: auto;
+  width: calc(var(--u) * 20);
+  height: calc(var(--u) * 20);
+  background: none;
+  box-shadow: none;
+  font-size: calc(var(--u) * 8);
+}
+/* Boss : pas de portrait ; cartouche un peu decale, pastille du niveau sous le dragon. */
+.cadre-cible--texture.cadre-cible--boss :is(.cadre-cible__nom, .cadre-cible__vie, .cadre-cible__ressource) {
+  left: calc(var(--u) * 35);
+  width: calc(var(--u) * 110);
+}
+.cadre-cible--texture.cadre-cible--boss .cadre-cible__niveau {
+  left: calc(var(--u) * 140.5);
+  top: calc(var(--u) * 55);
+}
+
+/* --- Fenetre de butin : UI-LootPanel (188 x 252 pixels de texture) -------------------
+   Largeur fixe (celle de la fenetre, 300 px) ; seul le corps s'allonge avec la
+   liste. Reperes : anneau du medaillon centre (34 ; 33), titre x 72-166 /
+   y 14-32, case du bouton de fermeture x 169-186 / y 14-34, corps des y 78. */
+.tex-butin-cadre .butin.cadre {
+  --u: calc(300px / 188);
+  min-height: calc(var(--u) * 140);
+  padding: calc(var(--u) * 80) calc(var(--u) * 14) calc(var(--u) * 12) calc(var(--u) * 20);
+  border: 0 solid transparent;
+  border-image: var(--tex-butin-cadre) 80 0 12 0 fill / calc(var(--u) * 80) 0 calc(var(--u) * 12) 0 stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.tex-butin-cadre .butin.cadre::before {
+  display: none;
+}
+.tex-butin-cadre .butin__entete {
+  position: static;
+  border: 0;
+  padding: 0;
+}
+.tex-butin-cadre .butin__embleme {
+  position: absolute;
+  left: calc(var(--u) * 8);
+  top: calc(var(--u) * 7);
+  width: calc(var(--u) * 52);
+  height: calc(var(--u) * 52);
+  box-shadow: none;
+  font-size: calc(var(--u) * 20);
+}
+.tex-butin-cadre .butin__titre {
+  position: absolute;
+  left: calc(var(--u) * 74);
+  top: calc(var(--u) * 15);
+  width: calc(var(--u) * 92);
+  height: calc(var(--u) * 16);
+  overflow: hidden;
+  font-size: calc(var(--u) * 9);
+  line-height: calc(var(--u) * 16);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tex-butin-cadre .butin .bouton-fermer {
+  position: absolute;
+  left: calc(var(--u) * 169);
+  top: calc(var(--u) * 15);
+  width: calc(var(--u) * 17);
+  height: calc(var(--u) * 17);
+}
+.tex-butin-cadre .butin__supprimer {
+  position: absolute;
+  right: calc(var(--u) * 14);
+  top: calc(var(--u) * 42);
+}

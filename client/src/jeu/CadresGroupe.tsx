@@ -10,12 +10,12 @@ import { avecInfobulle, versScene } from "@/ui/InfoBulle";
 const APPARENCES_DU_THEME = new Set(["mana", "rage", "energie", "focalisation", "puissance-runique", "eclats-ame", "points-combo", "puissance-sacree"]);
 
 /** La ressource affichee sous la vie : une jauge WoW en priorite (Mana, Rage...). */
-function ressourcePrincipale(p: Personnage): Ressource | null {
+export function ressourcePrincipale(p: Personnage): Ressource | null {
   return p.ressources.find((r) => r.type === "jauge") ?? p.ressources[0] ?? null;
 }
 
 /** Couleur de la barre : celle du referentiel (ressources.json), sinon celle du theme. */
-function couleurRessource(r: Ressource) {
+export function couleurRessource(r: Ressource) {
   const modele = jeu.lire().referentiel?.ressources.find((m) => m.id === r.apparence || m.id === r.cle);
   if (modele?.couleur) return modele.couleur;
   return APPARENCES_DU_THEME.has(r.apparence) ? `var(--ressource-${r.apparence})` : "var(--ressource-autre)";
@@ -68,7 +68,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
     <div
       className={classes.join(" ")}
       // Clic : ce personnage devient la "cible" (ses sacs / sa fiche s'ouvrent avec B / C).
-      onClick={() => jeu.modifier((e) => ({ selection: e.selection === p.id ? null : p.id }))}
+      onClick={() => jeu.modifier((e) => (e.selection === p.id ? { selection: null, cible: null } : { selection: p.id, cible: p.id }))}
       // Clic droit (MJ) : le menu contextuel (PV, alterations, expulser...).
       onContextMenu={(e) => {
         if (!jeu.estMJ()) return;

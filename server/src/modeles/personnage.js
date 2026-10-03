@@ -23,6 +23,7 @@ import { z } from "./zod.js";
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
 export const VERSION_FICHE = 6;
 export const SEXES = /** @type {const} */ (["masculin", "feminin"]);
+export const RANGS = /** @type {const} */ (["normal", "elite", "rare", "boss"]);
 
 const entier = (min, max) => z.int().min(min).max(max);
 
@@ -127,6 +128,8 @@ export const SchemaPersonnage = z
     // Choisi a la creation : donne le portrait par defaut (race + sexe) quand
     // aucune image n'est choisie. null pour un monstre ou une fiche ancienne.
     sexe: z.enum(SEXES).nullable().default(null),
+    // Monstres : leur rang (cadre de cible normal, elite, rare, boss). null pour un heros.
+    rang: z.enum(RANGS).nullable().default(null),
     niveau: entier(1, 20),
     caracteristiques: SchemaCaracteristiques,
     classeArmure: entier(1, 40),
@@ -319,7 +322,7 @@ export function fabriquerMonstre(modele, { idTable, nom, pv }) {
   // Ses attaques, deja posees sur sa barre d'actions (le MJ n'a plus qu'a cliquer).
   const attaquesMonstre = modele.attaques.slice(0, 10).map(({ nom: n, toucher, degats, type }) => ({ nom: n, toucher, degats, type }));
   const barreActions = barreVide().map((_, i) => (attaquesMonstre[i] ? { type: "attaque", reference: attaquesMonstre[i].nom } : null));
-  return SchemaPersonnage.parse({ ...fiche, attaquesMonstre, barreActions, jeton: jetonDuModele(modele) });
+  return SchemaPersonnage.parse({ ...fiche, attaquesMonstre, barreActions, jeton: jetonDuModele(modele), rang: modele.rang ?? "normal" });
 }
 
 /**
@@ -339,4 +342,15 @@ export function presenterPersonnage(personnage) {
       attaques: attaquesEquipees(personnage), // armes en main : bonus au toucher et degats
     },
   };
+}
+
+/**
+ * La sante d'un monstre telle que les joueurs la voient : un pourcentage
+ * ARRONDI a la dizaine (comme la barre de vie d'une cible dans WoW), jamais
+ * ses points de vie exacts. 1 % minimum tant qu'il est debout.
+ */
+export function santeVisible(personnage) {
+  const { actuels, max } = personnage.pointsDeVie;
+  if (actuels <= 0) return 0;
+  return Math.max(1, Math.min(100, Math.round((actuels / max) * 10) * 10));
 }
