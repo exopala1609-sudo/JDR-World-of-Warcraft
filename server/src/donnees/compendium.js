@@ -51,6 +51,13 @@ export function installerFichierExemple(dossierCompendium, cheminExemple) {
 
 /** Le fichier ou le jeu ecrit les monstres crees depuis le Bestiaire (dans compendium/). */
 export const FICHIER_MONSTRES_MJ = "mes-monstres.json";
+/**
+ * Le fichier ou le jeu ecrit les icones choisies depuis le Compendium :
+ * { "objets": { "epee-longue": "INV_Sword_04" }, "sorts": { ... } }. Il
+ * l'emporte sur le champ "icone" des autres fichiers (jamais reecrits).
+ */
+export const FICHIER_ICONES_MJ = "mes-icones.json";
+const NOM_ICONE = /^[A-Za-z0-9_-]{1,80}$/;
 
 export function creerCompendium(dossier) {
   let objets = new Map();
@@ -67,6 +74,7 @@ export function creerCompendium(dossier) {
       erreurs.push({ fichier: relative(dossier, fichier), emplacement, message });
 
     for (const fichier of fichiersJson(dossier)) {
+      if (relative(dossier, fichier) === FICHIER_ICONES_MJ) continue; // lu a part, a la fin
       let contenu;
       try {
         contenu = lireJsonCommente(fichier);
@@ -110,10 +118,40 @@ export function creerCompendium(dossier) {
       }
     }
 
+    // Les icones choisies depuis le jeu (mes-icones.json) remplacent celles des fichiers.
+    const choix = lireChoixIcones(signaler);
+    for (const section of ["objets", "sorts"]) {
+      for (const [id, icone] of Object.entries(choix[section])) {
+        const entree = nouveaux[section].get(id);
+        if (entree) nouveaux[section].set(id, { ...entree, icone });
+      }
+    }
+
     // On ne remplace l'ancien contenu qu'une fois la lecture terminee.
     ({ objets, sorts, etats, monstres } = nouveaux);
     fichierDuMonstre = origines;
     return { objets: objets.size, sorts: sorts.size, etats: etats.size, monstres: monstres.size, erreurs };
+  }
+
+  /** Les icones choisies depuis le jeu, telles qu'ecrites dans mes-icones.json (valides seulement). */
+  function lireChoixIcones(signaler = () => {}) {
+    const choix = { objets: {}, sorts: {} };
+    const fichier = join(dossier, FICHIER_ICONES_MJ);
+    if (!existsSync(fichier)) return choix;
+    let contenu;
+    try {
+      contenu = lireJsonCommente(fichier);
+    } catch (erreur) {
+      signaler(fichier, "fichier", erreur.message);
+      return choix;
+    }
+    for (const section of ["objets", "sorts"]) {
+      for (const [id, icone] of Object.entries(contenu?.[section] ?? {})) {
+        if (typeof icone === "string" && NOM_ICONE.test(icone)) choix[section][id] = icone;
+        else signaler(fichier, `${section}.${id}`, "Nom d'icone invalide (lettres, chiffres, _ et - seulement).");
+      }
+    }
+    return choix;
   }
 
   /** Etats disponibles : les conditions officielles + les auras du compendium. */
@@ -135,6 +173,7 @@ export function creerCompendium(dossier) {
     fichierDuMonstre: (id) => fichierDuMonstre.get(id) ?? null,
     dossier,
     obtenirMonstre: (id) => monstres.get(id) ?? null,
+    lireChoixIcones,
     obtenirObjet: (id) => objets.get(id) ?? null,
     obtenirSort: (id) => sorts.get(id) ?? null,
     obtenirDefinitionEtat: (cle) => toutesLesDefinitionsEtat().find((d) => d.cle === cle) ?? null,

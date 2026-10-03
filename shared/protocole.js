@@ -46,6 +46,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   // Compendium, inventaire, grimoire
   COMPENDIUM_LISTER: "compendium:lister", // MJ
   COMPENDIUM_RECHARGER: "compendium:recharger", // MJ
+  COMPENDIUM_ICONE: "compendium:icone", // MJ : choisir l'icone d'un objet / d'un sort (ecrit dans mes-icones.json)
   INVENTAIRE_AJOUTER: "inventaire:ajouter", // MJ : depuis le compendium
   INVENTAIRE_RETIRER: "inventaire:retirer",
   GRIMOIRE_APPRENDRE: "grimoire:apprendre", // MJ : depuis le compendium

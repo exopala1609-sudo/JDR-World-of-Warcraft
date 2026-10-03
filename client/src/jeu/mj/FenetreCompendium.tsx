@@ -6,6 +6,7 @@ import { InfobulleSort, rangDuSort } from "@/jeu/Grimoire";
 import { InfobulleObjet } from "@/jeu/Sacs";
 import { Fenetre } from "@/ui/Fenetre";
 import { avecInfobulle } from "@/ui/InfoBulle";
+import { SelecteurIcone } from "./SelecteurIcone";
 
 type Onglet = "objets" | "sorts" | "etats";
 const ONGLETS: { cle: Onglet; nom: string }[] = [
@@ -28,6 +29,14 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
   const [recherche, setRecherche] = useState("");
   const [cible, setCible] = useState<string>("");
   const [quantite, setQuantite] = useState(1);
+  // Le selecteur d'icones ouvert pour un objet ou un sort (clic sur son icone).
+  const [choixIcone, setChoixIcone] = useState<{ genre: "objets" | "sorts"; id: string; icone: string | null } | null>(null);
+  const changerIcone = async (icone: string | null) => {
+    if (!choixIcone) return;
+    const r = await jeu.demander(EVENEMENTS.COMPENDIUM_ICONE, { genre: choixIcone.genre, id: choixIcone.id, icone });
+    setChoixIcone(null);
+    if (r.ok && Number(r.exemplaires) > 0) jeu.journaliser(`Icone changee aussi sur ${r.exemplaires} exemplaire(s) deja en jeu.`);
+  };
   const fermer = () => jeu.modifier((e) => ({ fenetres: { ...e.fenetres, compendium: false } }));
 
   useEffect(() => {
@@ -84,9 +93,20 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
             .filter((o) => garder(o.nom))
             .map((o) => (
               <div key={o.id} className="compendium-mj__ligne" data-rarete={o.rarete}>
-                <span className="case compendium-mj__icone" data-rarete={o.rarete} {...avecInfobulle(() => <InfobulleObjet objet={{ ...o, quantite: 1 }} />)}>
+                <button
+                  type="button"
+                  className="case compendium-mj__icone compendium-mj__icone--choix"
+                  data-rarete={o.rarete}
+                  onClick={() => setChoixIcone({ genre: "objets", id: o.id, icone: o.icone ?? null })}
+                  {...avecInfobulle(() => (
+                    <>
+                      <InfobulleObjet objet={{ ...o, quantite: 1 }} />
+                      <div className="infobulle__ligne--vert">Clic : changer l'icone</div>
+                    </>
+                  ))}
+                >
                   <img src={iconeObjet(o)} alt="" />
-                </span>
+                </button>
                 <span className="compendium-mj__nom texte-rarete">{o.nom}</span>
                 <button
                   type="button"
@@ -108,9 +128,19 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
             .filter((s) => garder(s.nom))
             .map((s) => (
               <div key={s.id} className="compendium-mj__ligne">
-                <span className="case compendium-mj__icone" {...avecInfobulle(() => <InfobulleSort sort={s} p={personnages[idCible] ?? null} />)}>
+                <button
+                  type="button"
+                  className="case compendium-mj__icone compendium-mj__icone--choix"
+                  onClick={() => setChoixIcone({ genre: "sorts", id: s.id, icone: s.icone ?? null })}
+                  {...avecInfobulle(() => (
+                    <>
+                      <InfobulleSort sort={s} p={personnages[idCible] ?? null} />
+                      <div className="infobulle__ligne--vert">Clic : changer l'icone</div>
+                    </>
+                  ))}
+                >
                   <img src={iconeObjet(s)} alt="" />
-                </span>
+                </button>
                 <span className="compendium-mj__nom">
                   {s.nom} <small>{rangDuSort(s)}</small>
                 </span>
@@ -136,7 +166,8 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
               </div>
             ))}
       </div>
-      <p className="compendium-mj__astuce">Tes fichiers : dossier compendium/ du cloud. Apres modification : bouton "Recharger" de la barre MJ.</p>
+      <p className="compendium-mj__astuce">Clic sur une icone : en choisir une autre. Tes fichiers : dossier compendium/ du cloud. Apres modification : bouton "Recharger" de la barre MJ.</p>
+      {choixIcone && <SelecteurIcone valeur={choixIcone.icone} surChoix={changerIcone} surFermer={() => setChoixIcone(null)} />}
     </Fenetre>
   );
 }

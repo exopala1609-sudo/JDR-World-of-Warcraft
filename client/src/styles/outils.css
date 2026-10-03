@@ -747,6 +747,25 @@
 .compendium-mj__icone {
   --taille-case: 40px;
 }
+/* L'icone est un bouton : clic = en choisir une autre (selecteur d'icones). */
+.compendium-mj__icone--choix {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+.compendium-mj__icone--choix:hover {
+  outline: 2px solid var(--or);
+  outline-offset: 1px;
+}
+.compendium-mj__icone--choix:hover::after {
+  content: "✎";
+  position: absolute;
+  right: 1px;
+  bottom: -1px;
+  color: var(--or);
+  font-size: 13px;
+  text-shadow: var(--ombre-texte);
+}
 .compendium-mj__aura {
   width: 32px;
   height: 32px;

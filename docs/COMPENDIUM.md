@@ -62,6 +62,14 @@ changer ensuite : c'est lui qui relie un objet ramasse a son entree d'origine.
 | `soins` | non | formule de des, ex. `"2d4+2"`. L'objet s'utilise (barre d'actions, clic droit) |
 | `emplacement` | non | ou il se porte, voir ci-dessous |
 
+**Choisir l'icone depuis le jeu** (sans ouvrir de fichier) : Compendium du MJ
+(touche 2), onglet Objets ou Sorts, **clic sur l'icone** de la ligne : le
+selecteur d'icones s'ouvre (le meme que le bestiaire). Le choix est ecrit dans
+`compendium/mes-icones.json` et l'emporte sur le champ `icone` de tes fichiers,
+qui ne sont jamais reecrits. « Aucune » revient a l'icone de ton fichier. Les
+exemplaires deja donnes a la table (sacs, equipement porte, coffres,
+grimoires) prennent aussi la nouvelle icone, en direct.
+
 ### Ou se porte un objet (`emplacement`)
 
 Valeurs : `tete`, `cou`, `epaules`, `dos`, `torse`, `chemise`, `tabard`,

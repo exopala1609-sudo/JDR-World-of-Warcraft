@@ -602,6 +602,10 @@ carte (`moteur.versCarte`).
   `imagesDeSecours` du moteur, `imagesDeRace` dans textures.ts) l'icone
   `icones/Achievement_Character_<Race>_<Male|Female>`, sinon le portrait
   provisoire ; la premiere image qui existe est dessinee, sinon les initiales.
+- Icones choisies depuis le Compendium : `compendium:icone` (MJ) ecrit
+  `compendium/mes-icones.json` (`{ objets: { id: icone }, sorts: {...} }`),
+  lu a part a chaque chargement du compendium ; les exemplaires deja en jeu
+  a la table (meme `source`) recoivent la nouvelle icone.
 - Cadres du groupe : a partir de 6 heros, "raid" facon WoW (CadreRaid) : mon
   grand cadre reste, les autres en colonnes de 5 cadres compacts (vie a la
   couleur de la classe du referentiel). Si les cadres ne tiennent pas dans la

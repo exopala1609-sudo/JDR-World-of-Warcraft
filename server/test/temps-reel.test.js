@@ -812,3 +812,28 @@ test("selecteur d'icones : recherche par nom (MJ), une icone choisie sert d'imag
   await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: personnage.id });
   await demander(mj, EVENEMENTS.BESTIAIRE_SUPPRIMER, { idMonstre: "gnoll-chef" });
 });
+
+test("compendium : le MJ choisit l'icone d'un objet, les exemplaires deja donnes suivent, null = icone d'origine", async () => {
+  const demande = { genre: "objets", id: "epee-longue", icone: "spell_fire_fireball02" };
+  assert.equal((await demander(thrall, EVENEMENTS.COMPENDIUM_ICONE, demande)).ok, false); // reserve au MJ
+  assert.equal((await demander(mj, EVENEMENTS.COMPENDIUM_ICONE, { ...demande, icone: "../secret" })).ok, false);
+  await demander(mj, EVENEMENTS.INVENTAIRE_AJOUTER, { idPersonnage: perso.Garrosh.id, idObjet: "epee-longue", quantite: 1 });
+
+  // Thrall (proprietaire de Garrosh) recoit sa fiche avec l'epee a la nouvelle icone.
+  const avecIcone = (d) => d.personnage.id === perso.Garrosh.id && d.personnage.inventaire.some((o) => o.source === "epee-longue" && o.icone === "spell_fire_fireball02");
+  const recue = attendre(thrall, EVENEMENTS.PERSONNAGE_MAJ, 800, avecIcone);
+  const r = await demander(mj, EVENEMENTS.COMPENDIUM_ICONE, demande);
+  assert.equal(r.ok, true, r.erreur);
+  assert.equal(r.icone, "spell_fire_fireball02");
+  assert.ok(r.exemplaires >= 1);
+  // Le compendium, l'epee deja dans le sac de Garrosh, et le fichier mes-icones.json.
+  assert.equal((await demander(mj, EVENEMENTS.COMPENDIUM_LISTER)).objets.find((o) => o.id === "epee-longue").icone, "spell_fire_fireball02");
+  const fiche = (await recue)?.personnage;
+  assert.ok(fiche?.inventaire.some((o) => o.source === "epee-longue" && o.icone === "spell_fire_fireball02"));
+  assert.match(readFileSync(join(dossier, "compendium", "mes-icones.json"), "utf8"), /"epee-longue": "spell_fire_fireball02"/);
+
+  // "Aucune" : retour a l'icone ecrite dans exemple-objets.json.
+  const retour = await demander(mj, EVENEMENTS.COMPENDIUM_ICONE, { ...demande, icone: null });
+  assert.equal(retour.icone, "inv_sword_04");
+  assert.equal(depot.obtenirPersonnage(perso.Garrosh.id).inventaire.find((o) => o.source === "epee-longue").icone, "inv_sword_04");
+});
