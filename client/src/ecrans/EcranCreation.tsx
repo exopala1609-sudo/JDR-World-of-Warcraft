@@ -227,7 +227,12 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
               className={`creation__sexe-bouton${sexe === valeur ? " creation__sexe-bouton--actif" : ""}`}
               onClick={() => setSexe(valeur)}
             >
-              <span aria-hidden="true">{symbole}</span> {nomSexe}
+              {textures[`sexe-${valeur}`] ? (
+                <img className="creation__sexe-icone" src={textures[`sexe-${valeur}`]} alt="" />
+              ) : (
+                <span aria-hidden="true">{symbole}</span>
+              )}{" "}
+              {nomSexe}
             </button>
           ))}
         </div>

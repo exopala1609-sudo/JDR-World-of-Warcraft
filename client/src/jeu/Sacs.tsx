@@ -8,8 +8,12 @@ import { Fenetre } from "@/ui/Fenetre";
 import { preparerGlisser, useCible } from "@/ui/glisser";
 import { avecInfobulle } from "@/ui/InfoBulle";
 
+// Un sac de 20 places (5 x 4), qui grandit si besoin. Avec la texture de WoW
+// (UI-BackpackBackground), 4 colonnes et 16 places, comme le sac a dos du jeu.
 const COLONNES = 5;
-const CASES_MIN = 20; // un sac de 20 places, qui grandit si besoin
+const CASES_MIN = 20;
+const COLONNES_TEXTURE = 4;
+const CASES_MIN_TEXTURE = 16;
 
 const TYPES: Record<string, string> = {
   arme: "Arme",
@@ -132,7 +136,9 @@ export function Sacs({ position }: { position: { x: number; y: number } }) {
   const modifiable = useJeu((e) => Boolean(personnage && (e.profil?.role === "mj" || jeu.mesPersonnages(e).some((p) => p.id === personnage.id))));
   const fermer = () => jeu.modifier((e) => ({ fenetres: { ...e.fenetres, sacs: false } }));
   const objets = personnage?.inventaire ?? [];
-  const nombreDeCases = Math.max(CASES_MIN, Math.ceil(objets.length / COLONNES) * COLONNES);
+  const texture = Boolean(useTextures()["sac-cadre"]);
+  const colonnes = texture ? COLONNES_TEXTURE : COLONNES;
+  const nombreDeCases = Math.max(texture ? CASES_MIN_TEXTURE : CASES_MIN, Math.ceil(objets.length / colonnes) * colonnes);
   const poids = objets.reduce((total, o) => total + o.poids * o.quantite, 0);
   const valeur = objets.reduce((total, o) => total + o.valeur * o.quantite, 0);
 

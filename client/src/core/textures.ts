@@ -137,6 +137,10 @@ const ROLES = {
   "bestiaire-rangee-1": ["Professions-Book-Left"], // ... et ses trois rangees, une par monstre
   "bestiaire-rangee-2": ["Professions-Book-Left"],
   "bestiaire-rangee-3": ["Professions-Book-Left"],
+  "sac-cadre": ["UI-BackpackBackground"], // la fenetre du sac (B) : 4 colonnes, la bourse en bas
+  "annonce-fond": ["QuestAlert"], // le bandeau noir de "Nouvelle quete" / "Quete terminee"
+  "sexe-masculin": ["UI-CharacterCreate-Gender"], // creation : le symbole masculin (moitie gauche)...
+  "sexe-feminin": ["UI-CharacterCreate-Gender"], // ... et le feminin (moitie droite)
   // --- Ecran d'accueil -----------------------------------------------------------
   "accueil-fond": ["UI_MainMenu_BattleForAzeroth_LowBandwidth", "UI_MainMenu_BattleForAzeroth"],
   "accueil-logo": ["Glues-WoW-ClassicLogo", "Glues-WoW-WotLKLogo", "Glues-WoW-Logo"],
@@ -198,6 +202,12 @@ const RECOMPOSER: Partial<Record<string, Recomposition>> = {
   "des-fond": (image) => decouper(image, 24, 24, 310, 396, 512),
   // Le livre des metiers : la page de gauche (signet vert) et le cadre des rangees,
   // puis chacune des trois rangees "a filigrane" (une creature dessinee a l'encre).
+  // Le sac : la planche sans sa marge vide a gauche (le dessin fait 186 x 256).
+  "sac-cadre": (image) => decouper(image, 66, 0, 186, 256, 256),
+  // Le bandeau d'annonce : le halo et la bande noire, sans le bas d'un autre halo.
+  "annonce-fond": (image) => decouper(image, 10, 36, 400, 174, 445),
+  "sexe-masculin": (image) => decouper(image, 0, 0, 64, 64, 128),
+  "sexe-feminin": (image) => decouper(image, 64, 0, 64, 64, 128),
   "bestiaire-rangee-1": (image) => decouper(image, 72, 239, 434, 68, 512),
   "bestiaire-rangee-2": (image) => decouper(image, 72, 315, 434, 70, 512),
   "bestiaire-rangee-3": (image) => decouper(image, 72, 393, 434, 82, 512),

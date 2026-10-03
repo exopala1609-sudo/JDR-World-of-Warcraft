@@ -706,3 +706,114 @@
 .tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre__detail {
   color: #3a2a14;
 }
+
+/* --- Sac (B) : UI-BackpackBackground ---------------------------------------------
+   Une planche de 186 x 256 "pixels de texture" (--u) : la barre de titre, une
+   zone vide, 4 x 4 cases dessinees, la bourse en bas. Les objets tombent dans
+   les cases dessinees (colonnes tous les 42 px, rangees tous les 41 px). Si le
+   sac deborde, la rangee du milieu de la planche se repete (border-image). */
+.tex-sac-cadre .sacs.cadre {
+  --u: 1.5px;
+  width: calc(var(--u) * 186);
+  min-height: calc(var(--u) * 256);
+  padding: calc(var(--u) * 63) 0 calc(var(--u) * 33) calc(var(--u) * 16);
+  border: 0 solid transparent;
+  /* (des bords gauche et droit non nuls : sinon le navigateur ne met pas la
+     rangee du milieu a l'echelle --u, et elle se repete en deux demi-rangees) */
+  border-image: var(--tex-sac-cadre) 145 8 70 8 fill / calc(var(--u) * 145) calc(var(--u) * 8) calc(var(--u) * 70) calc(var(--u) * 8) round;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.tex-sac-cadre .sacs.cadre::before {
+  display: none;
+}
+.tex-sac-cadre .sacs .fenetre__entete {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: calc(var(--u) * 30);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.tex-sac-cadre .sacs .fenetre__titre {
+  position: absolute;
+  left: calc(var(--u) * 41);
+  top: calc(var(--u) * 9);
+  width: calc(var(--u) * 116);
+  height: calc(var(--u) * 16);
+  overflow: hidden;
+  font-size: calc(var(--u) * 9.5);
+  line-height: calc(var(--u) * 16);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tex-sac-cadre .sacs .bouton-fermer {
+  position: absolute;
+  left: calc(var(--u) * 162);
+  top: calc(var(--u) * 8);
+  width: calc(var(--u) * 19);
+  height: calc(var(--u) * 19);
+}
+.tex-sac-cadre .sacs__grille {
+  grid-template-columns: repeat(4, calc(var(--u) * 35));
+  grid-auto-rows: calc(var(--u) * 37);
+  column-gap: calc(var(--u) * 7);
+  row-gap: calc(var(--u) * 4);
+}
+.tex-sac-cadre .sacs__grille .case {
+  width: calc(var(--u) * 35);
+  height: calc(var(--u) * 37);
+}
+/* Les cases vides sont deja dessinees sur la planche. */
+.tex-sac-cadre .sacs__grille .case--vide-sac {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Le compte des objets et l'argent : dans la bourse, en bas. */
+.tex-sac-cadre .sacs__pied {
+  position: absolute;
+  left: calc(var(--u) * 14);
+  right: calc(var(--u) * 15);
+  bottom: calc(var(--u) * 12);
+  height: calc(var(--u) * 16);
+  align-items: center;
+  margin: 0;
+  padding: 0 calc(var(--u) * 4);
+  font-size: calc(var(--u) * 7.5);
+}
+
+/* --- Annonce "Nouvelle quete" : le halo et la bande noire de QuestAlert ---------- */
+.tex-annonce-fond .annonce {
+  display: grid;
+  grid-template-rows: 1fr 38%;
+  width: max-content;
+  min-width: 560px;
+  height: 230px;
+  padding: 0 130px;
+  background: var(--tex-annonce-fond) center / 100% 100% no-repeat;
+}
+.tex-annonce-fond .annonce__titre {
+  align-self: end;
+  padding-bottom: 8px;
+}
+.tex-annonce-fond .annonce__texte {
+  align-self: center;
+  line-height: 1;
+}
+
+/* --- Creation : les symboles masculin / feminin (UI-CharacterCreate-Gender) ----- */
+.creation__sexe-icone {
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  filter: grayscale(0.7) brightness(0.75);
+}
+.creation__sexe-bouton--actif .creation__sexe-icone,
+.creation__sexe-bouton:hover .creation__sexe-icone {
+  filter: none;
+}
+.tex-sac-cadre .sacs .fenetre__corps {
+  padding: 0;
+}
