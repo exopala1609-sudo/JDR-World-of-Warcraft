@@ -45,10 +45,13 @@
      centre). minmax(0, ...) : elles peuvent retrecir sous leur contenu, la
      grille ne deborde donc jamais de l'ecran. */
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
+  /* Deux rangees : le haut prend la place qui reste, le bas (discussion, barre
+     d'actions, micro-menu) garde toujours la sienne. minmax(0, 1fr) : meme une
+     longue liste de cadres du groupe ne pousse jamais le bas hors de l'ecran
+     (les cadres rapetissent, voir .groupe). */
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     "groupe      bandeau   minicarte"
-    ".           .         ."
     "discussion  actions   menu";
   gap: 16px;
   padding: var(--marge-hud);
@@ -65,13 +68,26 @@
 }
 
 /* --- Haut gauche : cadres du groupe ----------------------------------------------- */
-.groupe {
+/* La colonne occupe toute la hauteur libre du haut ; si les cadres n'y
+   tiennent pas (6 heros sur un ecran de portable), ils rapetissent tous
+   ensemble (--echelle-groupe, calculee dans CadresGroupe.tsx). */
+.hud > .groupe {
   grid-area: groupe;
-  align-self: start;
+  align-self: stretch;
   justify-self: start;
+  min-height: 0;
+  pointer-events: none; /* la place vide laisse passer les clics vers la carte */
+}
+.groupe__liste {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 14px;
+  transform: scale(var(--echelle-groupe, 1));
+  transform-origin: top left;
+}
+.groupe__liste > * {
+  pointer-events: auto;
 }
 .cadre-unite {
   display: grid;

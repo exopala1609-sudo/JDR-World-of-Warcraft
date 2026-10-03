@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone, urlPortrait } from "@/core/medias";
 import { rolePortrait, useTexture, useTextures } from "@/core/textures";
@@ -151,6 +151,25 @@ export function CadresGroupe() {
   const presence = useJeu((e) => e.presence);
   const profil = useJeu((e) => e.profil);
   const selection = useJeu((e) => e.selection);
+  const refColonne = useRef<HTMLDivElement>(null);
+  const refListe = useRef<HTMLDivElement>(null);
+  const [echelle, setEchelle] = useState(1);
+
+  // Les cadres rapetissent s'ils ne tiennent pas dans la hauteur libre (au-dessus
+  // de la discussion) : 6 heros sur un ecran de portable, par exemple.
+  useLayoutEffect(() => {
+    const colonne = refColonne.current;
+    const liste = refListe.current;
+    if (!colonne || !liste) return;
+    const ajuster = () => {
+      const besoin = liste.offsetHeight; // hauteur naturelle (le scale n'y change rien)
+      setEchelle(besoin > 0 ? Math.min(1, colonne.clientHeight / besoin) : 1);
+    };
+    const observateur = new ResizeObserver(ajuster);
+    observateur.observe(colonne);
+    observateur.observe(liste);
+    return () => observateur.disconnect();
+  }, []);
 
   const moi = profil?.pseudo.toLocaleLowerCase("fr");
   const enLigne = new Set(presence.map((c) => c.pseudo.toLocaleLowerCase("fr")));
@@ -160,7 +179,8 @@ export function CadresGroupe() {
     .sort((a, b) => Number(b.proprietaire?.toLocaleLowerCase("fr") === moi) - Number(a.proprietaire?.toLocaleLowerCase("fr") === moi));
 
   return (
-    <div className="groupe">
+    <div className="groupe" ref={refColonne}>
+      <div className="groupe__liste" ref={refListe} style={echelle < 1 ? ({ "--echelle-groupe": echelle } as CSSProperties) : undefined}>
       {groupe.map((p, index) => (
         <CadreUnite
           key={p.id}
@@ -170,6 +190,7 @@ export function CadresGroupe() {
           choisi={selection === p.id}
         />
       ))}
+      </div>
     </div>
   );
 }
