@@ -1000,3 +1000,85 @@
   background: rgba(255, 250, 235, 0.4);
   color: #6b1b0d;
 }
+
+/* --- Attaques d'un monstre (MJ) : portrait, puis les attaques sur 2 colonnes ------ */
+.attaques {
+  width: 470px;
+}
+.attaques .fenetre__corps {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 10px 12px;
+}
+.attaques__portrait {
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #5a2a1a, #120806);
+  box-shadow: 0 0 0 2px var(--or-bordure), 0 0 0 3px #000;
+  color: var(--or);
+  font-size: 20px;
+}
+.attaques__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.attaques__sous-titre {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.attaques__liste {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.attaques__case {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.attaques__case:hover {
+  border-color: var(--or-bordure);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.35);
+}
+.attaques__icone {
+  --taille-case: 40px;
+}
+.attaques__texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.attaques__nom {
+  overflow: hidden;
+  color: var(--or);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attaques__detail {
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.attaques__aide {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--texte-gris);
+  font-size: 12px;
+}

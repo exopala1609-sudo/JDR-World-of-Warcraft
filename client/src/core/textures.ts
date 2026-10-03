@@ -137,6 +137,7 @@ const ROLES = {
   "bestiaire-rangee-1": ["Professions-Book-Left"], // ... et ses trois rangees, une par monstre
   "bestiaire-rangee-2": ["Professions-Book-Left"],
   "bestiaire-rangee-3": ["Professions-Book-Left"],
+  "panneau-attaques": ["UI-AbilityPanel-TopLeft"], // MJ : les attaques d'un monstre (+ 3 coins, voir AUTRES)
   "sac-cadre": ["UI-BackpackBackground"], // la fenetre du sac (B) : 4 colonnes, la bourse en bas
   "annonce-fond": ["QuestAlert"], // le bandeau noir de "Nouvelle quete" / "Quete terminee"
   "sexe-masculin": ["UI-CharacterCreate-Gender"], // creation : le symbole masculin (moitie gauche)...
@@ -203,6 +204,7 @@ const RECOMPOSER: Partial<Record<string, Recomposition>> = {
   // Le livre des metiers : la page de gauche (signet vert) et le cadre des rangees,
   // puis chacune des trois rangees "a filigrane" (une creature dessinee a l'encre).
   // Le sac : la planche sans sa marge vide a gauche (le dessin fait 186 x 256).
+  "panneau-attaques": panneauDesCapacites,
   "sac-cadre": (image) => decouper(image, 66, 0, 186, 256, 256),
   // Le bandeau d'annonce : le halo et la bande noire, sans le bas d'un autre halo.
   "annonce-fond": (image) => decouper(image, 10, 36, 400, 174, 445),
@@ -216,6 +218,7 @@ const RECOMPOSER: Partial<Record<string, Recomposition>> = {
 const AUTRES: Partial<Record<string, string[][]>> = {
   "quete-cadre": [["UI-QuestGreeting-BotRight-blank", "UI-QuestGreeting-BotRight"]],
   livre: [["Spellbook-Page-2"]],
+  "panneau-attaques": [["UI-AbilityPanel-TopRight"], ["UI-AbilityPanel-BotLeft"], ["UI-AbilityPanel-BotRight"]],
   "chat-saisie": [["UI-ChatInputBorder-Mid2"], ["UI-ChatInputBorder-Right2"]],
 };
 
@@ -470,6 +473,25 @@ function cadreDeQuete(haut: HTMLImageElement, [bas]: (HTMLImageElement | null)[]
  * Le livre des sorts de WoW : Spellbook-Page-1 (512 x 512, la page avec son
  * signet) et Spellbook-Page-2 (32 x 512, le bord droit du livre), cote a cote.
  */
+/**
+ * UI-AbilityPanel : quatre morceaux (TopLeft et BotLeft 256 x 256, TopRight et
+ * BotRight 32 x 256) a remettre en carre, puis on garde le dessin (280 x 405) :
+ * le medaillon (troue : le portrait passe dessous), 2 colonnes de 7 cases.
+ */
+function panneauDesCapacites(hautGauche: HTMLImageElement, [hautDroit, basGauche, basDroit]: (HTMLImageElement | null)[]) {
+  if (!hautDroit || !basGauche || !basDroit) throw new Error("UI-AbilityPanel : il manque un coin");
+  const e = hautGauche.naturalWidth / 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = 280;
+  canvas.height = 405;
+  const g = canvas.getContext("2d")!;
+  g.drawImage(hautGauche, 0, 0, 256 * e, 256 * e, 0, 0, 256, 256);
+  g.drawImage(hautDroit, 0, 0, hautDroit.naturalWidth, hautDroit.naturalHeight, 256, 0, 32, 256);
+  g.drawImage(basGauche, 0, 0, 256 * e, 256 * e, 0, 256, 256, 256);
+  g.drawImage(basDroit, 0, 0, basDroit.naturalWidth, basDroit.naturalHeight, 256, 256, 32, 256);
+  return canvas;
+}
+
 function livreOuvert(page: HTMLImageElement, [bord]: (HTMLImageElement | null)[]) {
   const canvas = document.createElement("canvas");
   canvas.width = page.naturalWidth + (bord?.naturalWidth ?? 0);

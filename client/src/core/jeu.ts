@@ -47,7 +47,9 @@ export type EtatJeu = {
     compendium: boolean;
     carteMJ: boolean;
     carnet: boolean;
+    attaques: boolean; // MJ : les attaques d'un monstre (voir "attaquant")
   };
+  attaquant: string | null; // MJ : le monstre dont la fenetre des attaques est ouverte
   notes: Note[] | null; // MON carnet de notes (charge a l'ouverture)
   quetes: Quete[]; // le journal de quetes du groupe
   jet: Jet | null; // la fenetre de resolution ouverte
@@ -73,6 +75,7 @@ export const FENETRES_FERMEES: EtatJeu["fenetres"] = {
   compendium: false,
   carteMJ: false,
   carnet: false,
+  attaques: false,
 };
 
 const ETAT_INITIAL: EtatJeu = {
@@ -90,6 +93,7 @@ const ETAT_INITIAL: EtatJeu = {
   selection: null,
   cible: null,
   fenetres: FENETRES_FERMEES,
+  attaquant: null,
   quetes: [],
   notes: null,
   jet: null,

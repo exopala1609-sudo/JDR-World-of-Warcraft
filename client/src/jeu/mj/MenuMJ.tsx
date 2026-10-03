@@ -144,19 +144,17 @@ export function MenuMJ() {
       {p.attaquesMonstre.length > 0 && (
         <section className="menu-mj__section">
           <h3 className="menu-mj__titre">Attaques</h3>
-          {p.attaquesMonstre.map((a) => (
-            <button
-              key={a.nom}
-              type="button"
-              className="menu-mj__action"
-              onClick={() => {
-                jeu.attaquerMonstre(p.id, a.nom);
-                fermer();
-              }}
-            >
-              ⚔ {a.nom} <small className="menu-mj__detail">({a.toucher >= 0 ? "+" : ""}{a.toucher}, {a.degats} {a.type})</small>
-            </button>
-          ))}
+          {/* La fenetre des attaques (UI-AbilityPanel) : un clic par attaque. */}
+          <button
+            type="button"
+            className="menu-mj__action"
+            onClick={() => {
+              jeu.modifier((e) => ({ attaquant: p.id, fenetres: { ...e.fenetres, attaques: true } }));
+              fermer();
+            }}
+          >
+            ⚔ Attaques de {p.nom} ({p.attaquesMonstre.length})...
+          </button>
         </section>
       )}
 

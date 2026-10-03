@@ -817,3 +817,113 @@
 .tex-sac-cadre .sacs .fenetre__corps {
   padding: 0;
 }
+
+/* --- Attaques d'un monstre (MJ) : UI-AbilityPanel ---------------------------------
+   Le panneau recompose fait 280 x 405 "pixels de texture" (--u). Le medaillon
+   est troue : le portrait du monstre passe dessous. Les cases noires font
+   32 px, en 2 colonnes (x = 16 et 139) de 7 rangees (y = 88, puis tous les 40). */
+.tex-panneau-attaques .attaques.cadre {
+  --u: 1.5px;
+  width: calc(var(--u) * 280);
+  height: calc(var(--u) * 405);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--tex-panneau-attaques) 0 0 / 100% 100% no-repeat;
+  box-shadow: none;
+}
+.tex-panneau-attaques .attaques.cadre::before {
+  display: none;
+}
+.tex-panneau-attaques .attaques .fenetre__entete {
+  position: absolute;
+  left: calc(var(--u) * 64);
+  top: calc(var(--u) * 42);
+  width: calc(var(--u) * 205);
+  height: calc(var(--u) * 20);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.tex-panneau-attaques .attaques .fenetre__titre {
+  overflow: hidden;
+  font-size: calc(var(--u) * 11);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tex-panneau-attaques .attaques .bouton-fermer {
+  flex: none;
+  width: calc(var(--u) * 16);
+  height: calc(var(--u) * 16);
+}
+.tex-panneau-attaques .attaques .fenetre__corps {
+  display: block;
+  padding: 0;
+}
+.tex-panneau-attaques .attaques__portrait {
+  position: absolute;
+  left: calc(var(--u) * 4.5);
+  top: calc(var(--u) * 26.5);
+  width: calc(var(--u) * 53);
+  height: calc(var(--u) * 53);
+  box-shadow: none;
+  font-size: calc(var(--u) * 16);
+}
+.tex-panneau-attaques .attaques__sous-titre {
+  position: absolute;
+  left: calc(var(--u) * 66);
+  top: calc(var(--u) * 63);
+  color: #f3e3c3;
+  font-size: calc(var(--u) * 7.5);
+  text-shadow: var(--ombre-texte);
+}
+.tex-panneau-attaques .attaques__case {
+  position: absolute;
+  left: calc(var(--u) * (16 + var(--col) * 123));
+  top: calc(var(--u) * (88 + var(--rang) * 40));
+  grid-template-columns: calc(var(--u) * 32) 1fr;
+  gap: calc(var(--u) * 6);
+  width: calc(var(--u) * (117 + var(--col) * 12));
+  height: calc(var(--u) * 32);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.tex-panneau-attaques .attaques__case:hover {
+  box-shadow: none;
+}
+.tex-panneau-attaques .attaques__icone {
+  --taille-case: calc(var(--u) * 32);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tex-panneau-attaques .attaques__icone img {
+  inset: 0; /* l'icone remplit exactement la case noire du panneau */
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.tex-panneau-attaques .attaques__case:hover .attaques__icone {
+  box-shadow: 0 0 calc(var(--u) * 6) rgba(255, 209, 0, 0.8);
+}
+.tex-panneau-attaques .attaques__nom {
+  font-size: calc(var(--u) * 8);
+  text-shadow: var(--ombre-texte);
+}
+.tex-panneau-attaques .attaques__detail {
+  color: #f3e3c3;
+  font-size: calc(var(--u) * 6.5);
+  text-shadow: var(--ombre-texte);
+}
+.tex-panneau-attaques .attaques__aide {
+  position: absolute;
+  left: calc(var(--u) * 20);
+  right: calc(var(--u) * 20);
+  bottom: calc(var(--u) * 16);
+  color: #f3e3c3;
+  font-size: calc(var(--u) * 6.5);
+  text-align: center;
+  text-shadow: var(--ombre-texte);
+}

@@ -158,6 +158,7 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `Professions-Book-Left` | Le bestiaire du MJ : le livre au signet vert, et une rangee de parchemin par monstre |
 | `UI-BackpackBackground` | La fenetre du sac (B) : 4 colonnes et 16 places comme dans WoW (le sac s'allonge d'une rangee si besoin), l'argent dans la bourse du bas |
 | `QuestAlert` | Le bandeau noir de l'annonce "Nouvelle quete" / "Quete terminee" au centre de l'ecran |
+| `UI-AbilityPanel-TopLeft` + `-TopRight` + `-BotLeft` + `-BotRight` | MJ : la fenetre des attaques d'un monstre (clic droit > Attaques) : son portrait dans le medaillon, ses attaques dans les cases (les 4 morceaux sont remis ensemble) |
 | `UI-CharacterCreate-Gender` | Creation de personnage : les symboles masculin / feminin des boutons du sexe |
 | `TemporaryPortrait-Male-Orc`, `TemporaryPortrait-Female-NightElf`... | Portrait par defaut selon la race et le sexe (creation, cadres des joueurs, fiche), quand le joueur n'a pas d'image dans `portraits\` |
 | `QuestBackgroundClassic2` | Parchemin a l'interieur du cadre de quete |

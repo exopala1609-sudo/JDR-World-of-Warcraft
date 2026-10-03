@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useJeu } from "@/core/jeu";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
 import { Bestiaire } from "./Bestiaire";
+import { FenetreAttaques } from "./FenetreAttaques";
 import { FenetreCarte } from "./FenetreCarte";
 import { FenetreCompendium } from "./FenetreCompendium";
 import { MenuMJ } from "./MenuMJ";
@@ -33,6 +34,7 @@ export default function OutilsMJ() {
           {fenetres.bestiaire && <Bestiaire position={{ x: 420, y: 120 }} />}
           {fenetres.compendium && <FenetreCompendium position={{ x: 520, y: 160 }} />}
           {fenetres.carteMJ && <FenetreCarte position={{ x: largeur - 1000, y: 110 }} />}
+          {fenetres.attaques && <FenetreAttaques position={{ x: 470, y: 130 }} />}
         </>,
         couches.fenetres,
       )}

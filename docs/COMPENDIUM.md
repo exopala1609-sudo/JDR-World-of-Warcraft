@@ -183,8 +183,11 @@ Le fichier `exemple-bestiaire.json` (commente) montre tous les champs.
 | `icone` | non | image du dossier `icones/` (par defaut : l'`id`) |
 
 Les `attaques` sont **jouables** : une fois le monstre pose, clic droit sur
-son pion > Attaques, ou cible-le et passe ta barre en page 2 (elles y sont
-deja rangees). La fenetre de des s'ouvre : d20 + `toucher`, puis les degats
+son pion > « Attaques de ... » : une fenetre s'ouvre avec son portrait et ses
+attaques (un clic par attaque ; elle reste ouverte pour enchainer). Ou
+cible-le et passe ta barre en page 2 (elles y sont deja rangees). L'icone
+d'une attaque est l'image du dossier `icones/` qui porte son nom (ex.
+`icones/Morsure.png`). La fenetre de des s'ouvre : d20 + `toucher`, puis les degats
 (le bonus fixe de la formule est affiche a part ; un critique ne double que
 les des).
 

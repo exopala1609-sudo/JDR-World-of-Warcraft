@@ -531,6 +531,7 @@ telecharge meme pas.
 | Carte | bouton rond de la minicarte, touche 4 | televerser / choisir l'image, regler la grille, brouillard, placer les absents |
 | Pinceau / gomme | touches 5 et 6, ou outils sous la minicarte | peindre / effacer le brouillard |
 | Menu clic droit | pion ou cadre | PV, ressources, alterations, repos, fiche et sac, combat, cacher / reveler, cadavre, supprimer, expulser |
+| Attaques d'un monstre | clic droit > Attaques | portrait et attaques du monstre ; un clic = jet d'attaque et degats (fenetre de des) |
 
 Le glisser-deposer du Bestiaire reutilise celui des objets (sprint 7) : la
 carte du jeu est simplement une nouvelle « cible » qui accepte les charges
