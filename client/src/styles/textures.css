@@ -874,7 +874,7 @@
   left: calc(var(--u) * 66);
   top: calc(var(--u) * 63);
   color: #f3e3c3;
-  font-size: calc(var(--u) * 7.5);
+  font-size: calc(var(--u) * 8.5);
   text-shadow: var(--ombre-texte);
 }
 .tex-panneau-attaques .attaques__case {
@@ -909,12 +909,12 @@
   box-shadow: 0 0 calc(var(--u) * 6) rgba(255, 209, 0, 0.8);
 }
 .tex-panneau-attaques .attaques__nom {
-  font-size: calc(var(--u) * 8);
+  font-size: calc(var(--u) * 9.5);
   text-shadow: var(--ombre-texte);
 }
 .tex-panneau-attaques .attaques__detail {
   color: #f3e3c3;
-  font-size: calc(var(--u) * 6.5);
+  font-size: calc(var(--u) * 8);
   text-shadow: var(--ombre-texte);
 }
 .tex-panneau-attaques .attaques__aide {
@@ -923,7 +923,7 @@
   right: calc(var(--u) * 20);
   bottom: calc(var(--u) * 16);
   color: #f3e3c3;
-  font-size: calc(var(--u) * 6.5);
+  font-size: calc(var(--u) * 8);
   text-align: center;
   text-shadow: var(--ombre-texte);
 }

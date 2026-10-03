@@ -9,17 +9,9 @@
    ne sont donc jamais publies sur GitHub. Le navigateur essaie chaque adresse
    dans l'ordre ; si aucune n'existe, il passe a la police de substitution
    indiquee dans les variables --police-* plus bas.
-   Noms acceptes : ceux du dossier Fonts de World of Warcraft (FRIZQT__.TTF,
-   MORPHEUS.TTF, ARIALN.TTF) ou des noms lisibles (FrizQuadrata.ttf...). */
-@font-face {
-  font-family: "Friz Quadrata WoW";
-  src:
-    url("/medias/polices/FRIZQT__.TTF") format("truetype"),
-    url("/medias/polices/FrizQuadrata.woff2") format("woff2"),
-    url("/medias/polices/FrizQuadrata.otf") format("opentype"),
-    url("/medias/polices/FrizQuadrata.ttf") format("truetype");
-  font-display: swap;
-}
+   Noms acceptes : LifeCraft_Font.ttf (toute l'interface), MORPHEUS.TTF (textes
+   narratifs), skurri.ttf (degats et soins), ARIALN.TTF (facultatif : chiffres
+   des barres), ou les variantes lisibles listees ci-dessous. */
 @font-face {
   font-family: "Morpheus WoW";
   src:
@@ -37,7 +29,7 @@
   font-display: swap;
 }
 
-/* Les grands titres (logo de WoW) et les chiffres de combat (degats sur la carte, de). */
+/* L'interface (titres, noms, boutons) et les chiffres des degats et des soins. */
 @font-face {
   font-family: "LifeCraft WoW";
   src:
@@ -54,11 +46,13 @@
 }
 
 :root {
-  /* Polices : la vraie d'abord, puis les substituts installes sur Windows. */
-  --police-ui: "Friz Quadrata WoW", "Friz Quadrata TT", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  /* Le choix du MJ : LifeCraft pour toute l'interface (a la place de Friz
+     Quadrata), Morpheus pour les textes narratifs, Skurri pour les degats et
+     les soins. Sans le fichier : une police serif du systeme. */
+  --police-ui: "LifeCraft WoW", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --police-texte: "Morpheus WoW", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --police-chiffres: "Arial Narrow WoW", "Arial Narrow", Arial, sans-serif;
-  --police-titre: "LifeCraft WoW", var(--police-ui);
+  --police-titre: var(--police-ui);
   --police-combat: "Skurri WoW", var(--police-ui);
 
   /* Textes */

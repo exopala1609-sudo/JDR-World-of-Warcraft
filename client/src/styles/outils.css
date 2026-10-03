@@ -343,7 +343,7 @@
 }
 .bestiaire__fiche {
   padding: 16px 20px;
-  font-family: var(--police-texte);
+  font-family: var(--police-ui);
 }
 .bestiaire__nom {
   margin: 0;
@@ -396,6 +396,7 @@
 }
 .bestiaire__description {
   margin-top: 12px;
+  font-family: var(--police-texte); /* le texte d'ambiance : Morpheus */
   font-style: italic;
 }
 .bestiaire__vide {

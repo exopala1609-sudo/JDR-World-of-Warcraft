@@ -42,8 +42,9 @@ function Puce({ titre, valeur, genre }: { titre: string; valeur: string; genre: 
 /** Une ligne : De (14) + Force (+3) + Maitrise (+2) = 19 */
 function Equation({ ligne }: { ligne: LigneJet }) {
   const termes = ligne.modificateurs.filter((m) => m.valeur !== 0);
+  const combat = /^(Degats|Soins)/.test(ligne.libelle); // chiffres en Skurri
   return (
-    <div className={`equation${ligne.critique ? " equation--critique" : ""}${ligne.echec ? " equation--echec" : ""}`}>
+    <div className={`equation${combat ? " equation--combat" : ""}${ligne.critique ? " equation--critique" : ""}${ligne.echec ? " equation--echec" : ""}`}>
       <div className="equation__libelle">{ligne.libelle}</div>
       <div className="equation__termes">
         {ligne.d20 !== null ? (

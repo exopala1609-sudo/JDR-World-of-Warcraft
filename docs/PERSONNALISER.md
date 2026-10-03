@@ -11,15 +11,13 @@ Copie les fichiers depuis ton installation du jeu
 
 | Fichier | Usage |
 |---|---|
-| `FRIZQT__.TTF` | Titres, noms, boutons, toute l'interface (Friz Quadrata) |
-| `MORPHEUS.TTF` | Textes longs : pages du grimoire, journal de quetes (Morpheus) |
-| `ARIALN.TTF` | Chiffres des barres et discussion (Arial Narrow) |
-| `LifeCraft_Font.ttf` | Grands titres : ecran d'accueil, creation de personnage, annonces (police du logo de WoW) |
-| `skurri.ttf` | Chiffres de combat : degats et soins sur la carte, resultat du de |
+| `LifeCraft_Font.ttf` | Toute l'interface : titres, noms, boutons, fiches, menus (a la place de Friz Quadrata) |
+| `MORPHEUS.TTF` | Textes narratifs : journal de quetes, grimoire, carnet, descriptions des races, des monstres et des objets |
+| `skurri.ttf` | Chiffres des degats et des soins : sur la carte et dans la fenetre des des |
+| `ARIALN.TTF` | Facultatif : chiffres des barres de vie et de ressource (sinon Arial Narrow ou Arial de Windows) |
 
-Noms acceptes aussi : `FrizQuadrata.woff2` / `.otf` / `.ttf` et
-`Morpheus.woff2` / `.otf` / `.ttf` (le fichier `polices\LISEZ-MOI.txt` de ton
-cloud les rappelle). Apres avoir depose une police : **Ctrl + F5**.
+Noms acceptes aussi : `LifeCraft.ttf`, `Morpheus.woff2` / `.otf` / `.ttf`,
+`SKURRI.TTF` (le fichier `polices\LISEZ-MOI.txt` de ton cloud les rappelle). Apres avoir depose une police : **Ctrl + F5**.
 
 Sans ces fichiers, l'interface utilise automatiquement Palatino Linotype, une
 police proche installee avec Windows.
@@ -27,9 +25,10 @@ police proche installee avec Windows.
 **Comment c'est branche** : `client/src/styles/theme.css` declare les polices
 (`@font-face`) avec l'adresse `/medias/polices/<fichier>`. Le serveur sert
 cette adresse depuis le dossier `polices` de **ton** `VTT_ASSETS` (celui du
-`.env` du PC qui lance la partie). Trois variables les distribuent partout :
-`--police-ui` (Friz Quadrata), `--police-texte` (Morpheus), `--police-chiffres`
-(Arial Narrow). Pour changer de police, on ne touche qu'a ces trois lignes.
+`.env` du PC qui lance la partie). Quatre variables les distribuent partout :
+`--police-ui` (LifeCraft), `--police-texte` (Morpheus), `--police-combat`
+(Skurri) et `--police-chiffres` (Arial Narrow). Pour changer de police, on ne
+touche qu'a ces lignes.
 
 ## Les sons
 

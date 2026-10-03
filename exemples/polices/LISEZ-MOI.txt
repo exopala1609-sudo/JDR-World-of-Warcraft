@@ -4,15 +4,17 @@
 
 Depose ici les fichiers de police. Le jeu essaie ces noms, dans l'ordre :
 
-  Friz Quadrata (titres, noms, boutons, toute l'interface) :
-      FRIZQT__.TTF   (nom du dossier Fonts de WoW)
-      FrizQuadrata.woff2, FrizQuadrata.otf, FrizQuadrata.ttf
+  LifeCraft (toute l'interface : titres, noms, boutons, fiches) :
+      LifeCraft_Font.ttf, LifeCraft.ttf
 
-  Morpheus (textes longs : grimoire, journal de quetes) :
+  Morpheus (textes narratifs : quetes, grimoire, carnet, descriptions) :
       MORPHEUS.TTF   (nom du dossier Fonts de WoW)
       Morpheus.woff2, Morpheus.otf, Morpheus.ttf
 
-  Arial Narrow (chiffres : barres de vie, des, discussion) :
+  Skurri (chiffres des degats et des soins : carte, fenetre des des) :
+      skurri.ttf, SKURRI.TTF
+
+  Arial Narrow (facultatif : chiffres des barres de vie) :
       ARIALN.TTF, ArialNarrow.ttf
 
 Respecte exactement ces noms (majuscules comprises) : ton cloud peut etre lu

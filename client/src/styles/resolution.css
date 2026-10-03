@@ -109,7 +109,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   color: #fff;
-  font-family: var(--police-combat); /* Skurri, la police des degats de WoW */
+  font-family: var(--police-ui);
   font-size: 36px;
   font-weight: bold;
   text-shadow: var(--ombre-texte);
@@ -225,6 +225,12 @@
   font-family: var(--police-chiffres);
   font-size: 22px;
   font-weight: bold;
+}
+/* Les degats et les soins : Skurri, la police des chiffres de combat de WoW. */
+.equation--combat .puce__valeur {
+  font-family: var(--police-combat);
+  font-weight: normal;
+  letter-spacing: 0.5px;
 }
 .puce__titre {
   color: var(--texte-doux);
