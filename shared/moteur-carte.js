@@ -667,25 +667,38 @@ export class MoteurCarte {
   }
 
   /**
-   * L'image d'un pion (portrait, jeton), chargee une seule fois. Tant qu'elle
-   * charge, ou si le fichier n'existe pas, on renvoie null (initiales).
+   * L'image d'un pion : son jeton ou son portrait, sinon les images "de
+   * secours" fournies par l'interface (pour un heros : l'icone ou le portrait
+   * de sa race). On prend la premiere qui existe ; tant qu'elle charge, ou si
+   * aucune n'existe, on renvoie null (initiales).
    */
   imageDuPion(pion) {
-    if (!pion.image) return null;
-    const adresse = `/medias/${pion.image.split("/").map(encodeURIComponent).join("/")}?remplacement=non`;
-    const connue = this.images.get(adresse);
-    if (connue === undefined) {
-      const image = new Image();
-      this.images.set(adresse, "chargement");
-      image.onload = () => {
-        this.images.set(adresse, image);
-        this.sale = true;
-      };
-      image.onerror = () => this.images.set(adresse, "absente");
-      image.src = adresse;
-      return null;
+    const adresses = pion.image ? [`/medias/${pion.image.split("/").map(encodeURIComponent).join("/")}?remplacement=non`] : [];
+    adresses.push(...(this.options.imagesDeSecours?.(pion) ?? []));
+    for (const adresse of adresses) {
+      const etat = this.chargerImage(adresse);
+      if (etat === "absente") continue; // fichier introuvable : on essaie la suivante
+      return etat === "chargement" ? null : etat;
     }
-    return typeof connue === "string" ? null : connue;
+    return null;
+  }
+
+  /** Une image chargee une seule fois : l'Image, ou "chargement", ou "absente". */
+  chargerImage(adresse) {
+    const connue = this.images.get(adresse);
+    if (connue !== undefined) return connue;
+    const image = new Image();
+    this.images.set(adresse, "chargement");
+    image.onload = () => {
+      this.images.set(adresse, image);
+      this.sale = true;
+    };
+    image.onerror = () => {
+      this.images.set(adresse, "absente");
+      this.sale = true; // redessiner : l'image suivante de la liste prend le relais
+    };
+    image.src = adresse;
+    return "chargement";
   }
 
   /** Pendant un glisser : ou le pion va tomber (aimante) + distance parcourue. */

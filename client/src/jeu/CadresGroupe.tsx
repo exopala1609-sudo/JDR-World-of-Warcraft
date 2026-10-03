@@ -50,6 +50,78 @@ function Portrait({ nom, niveau, fichier, repose, parDefaut }: { nom: string; ni
   );
 }
 
+// Comme dans WoW : au-dela d'un groupe de 5, on passe en "raid" (cadres compacts).
+const SEUIL_RAID = 6;
+const TAILLE_GROUPE_RAID = 5;
+
+/** Ce que tous les cadres d'un heros partagent : clic (cibler), clic droit (MJ), infobulle. */
+function proprietesCadre(p: Personnage, enLigne: boolean) {
+  const pv = p.pointsDeVie;
+  return {
+    // Clic : ce personnage devient la "cible" (ses sacs / sa fiche s'ouvrent avec B / C).
+    onClick: () => jeu.modifier((e) => (e.selection === p.id ? { selection: null, cible: null } : { selection: p.id, cible: p.id })),
+    // Clic droit (MJ) : le menu contextuel (PV, alterations, expulser...).
+    onContextMenu: (e: React.MouseEvent) => {
+      if (!jeu.estMJ()) return;
+      e.preventDefault();
+      jeu.modifier({ menu: { idPersonnage: p.id, ...versScene(e.clientX, e.clientY) } });
+    },
+    ...avecInfobulle(() => (
+      <>
+        <div className="infobulle__titre infobulle__ligne--or">{p.nom}</div>
+        <div>
+          Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
+        </div>
+        <div className="infobulle__ligne--gris">
+          Joueur : {p.proprietaire}
+          {enLigne ? "" : " (hors ligne)"}
+        </div>
+        <div>
+          PV {pv.actuels}/{pv.max}
+          {pv.temporaires ? ` (+${pv.temporaires})` : ""} - CA {p.classeArmure}
+        </div>
+        {p.repose && <div className="infobulle__ligne--bleu">Repose : il a profite d'un repos long et n'a pas encore combattu.</div>}
+      </>
+    )),
+  };
+}
+
+/**
+ * Cadre de raid (6 heros et plus) : un rectangle compact facon WoW. La vie
+ * remplit le cadre a la couleur de la classe ; la ressource en fin liseré en
+ * bas ; nom au centre. Grise si le joueur est hors ligne ou le heros a 0 PV.
+ */
+function CadreRaid({ p, enLigne, choisi }: { p: Personnage; enLigne: boolean; choisi: boolean }) {
+  const couleurClasse = useJeu((e) => e.referentiel?.classes.find((c) => c.id === p.classe)?.couleur ?? null);
+  const pv = p.pointsDeVie;
+  const ressource = ressourcePrincipale(p);
+  const aTerre = pv.actuels <= 0;
+  const classes = ["cadre-raid", !enLigne && "cadre-raid--hors-ligne", aTerre && "cadre-raid--a-terre", choisi && "cadre-raid--selection"].filter(Boolean);
+  const debuffs = p.etats.filter((e) => e.nature === "debuff").slice(0, 3);
+  return (
+    <div className={classes.join(" ")} {...proprietesCadre(p, enLigne)}>
+      <div
+        className="cadre-raid__vie"
+        style={{ width: `${Math.max(0, Math.min(100, (pv.actuels / pv.max) * 100))}%`, background: couleurClasse ?? undefined }}
+      />
+      {ressource && (
+        <div className="cadre-raid__ressource">
+          <div style={{ width: `${(ressource.actuel / Math.max(1, ressource.max)) * 100}%`, background: couleurRessource(ressource) }} />
+        </div>
+      )}
+      <span className="cadre-raid__nom">{p.nom}</span>
+      <span className="cadre-raid__etat">{!enLigne ? "Hors ligne" : aTerre ? "Inconscient" : `${pv.actuels} / ${pv.max}`}</span>
+      {debuffs.length > 0 && (
+        <span className="cadre-raid__auras">
+          {debuffs.map((etat) => (
+            <img key={etat.id} src={urlIcone(etat.icone)} alt={etat.nom} />
+          ))}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principal: boolean; enLigne: boolean; choisi: boolean }) {
   const pv = p.pointsDeVie;
   const ressource = ressourcePrincipale(p);
@@ -65,34 +137,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
   ].filter(Boolean);
 
   return (
-    <div
-      className={classes.join(" ")}
-      // Clic : ce personnage devient la "cible" (ses sacs / sa fiche s'ouvrent avec B / C).
-      onClick={() => jeu.modifier((e) => (e.selection === p.id ? { selection: null, cible: null } : { selection: p.id, cible: p.id }))}
-      // Clic droit (MJ) : le menu contextuel (PV, alterations, expulser...).
-      onContextMenu={(e) => {
-        if (!jeu.estMJ()) return;
-        e.preventDefault();
-        jeu.modifier({ menu: { idPersonnage: p.id, ...versScene(e.clientX, e.clientY) } });
-      }}
-      {...avecInfobulle(() => (
-        <>
-          <div className="infobulle__titre infobulle__ligne--or">{p.nom}</div>
-          <div>
-            Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
-          </div>
-          <div className="infobulle__ligne--gris">
-            Joueur : {p.proprietaire}
-            {enLigne ? "" : " (hors ligne)"}
-          </div>
-          <div>
-            PV {pv.actuels}/{pv.max}
-            {pv.temporaires ? ` (+${pv.temporaires})` : ""} - CA {p.classeArmure}
-          </div>
-          {p.repose && <div className="infobulle__ligne--bleu">Repose : il a profite d'un repos long et n'a pas encore combattu.</div>}
-        </>
-      ))}
-    >
+    <div className={classes.join(" ")} {...proprietesCadre(p, enLigne)}>
       <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} repose={p.repose} parDefaut={parDefaut} />
       <div className="cadre-unite__infos">
         <div className="plaque-nom">
@@ -177,19 +222,31 @@ export function CadresGroupe() {
   const groupe = Object.values(personnages)
     .filter((p) => p.proprietaire !== null)
     .sort((a, b) => Number(b.proprietaire?.toLocaleLowerCase("fr") === moi) - Number(a.proprietaire?.toLocaleLowerCase("fr") === moi));
+  const principal = groupe[0]?.proprietaire?.toLocaleLowerCase("fr") === moi ? groupe[0] : null;
+  const autres = principal ? groupe.slice(1) : groupe;
+  const raid = groupe.length >= SEUIL_RAID;
+  const estEnLigne = (p: Personnage) => enLigne.has(p.proprietaire!.toLocaleLowerCase("fr"));
 
   return (
     <div className="groupe" ref={refColonne}>
       <div className="groupe__liste" ref={refListe} style={echelle < 1 ? ({ "--echelle-groupe": echelle } as CSSProperties) : undefined}>
-      {groupe.map((p, index) => (
-        <CadreUnite
-          key={p.id}
-          p={p}
-          principal={index === 0 && p.proprietaire?.toLocaleLowerCase("fr") === moi}
-          enLigne={enLigne.has(p.proprietaire!.toLocaleLowerCase("fr"))}
-          choisi={selection === p.id}
-        />
-      ))}
+        {/* Mon personnage garde son grand cadre (comme le cadre du joueur de WoW). */}
+        {principal && <CadreUnite p={principal} principal enLigne={estEnLigne(principal)} choisi={selection === principal.id} />}
+        {raid ? (
+          // Raid : des colonnes de 5 cadres compacts ("Groupe 1", "Groupe 2"...).
+          <div className="raid-groupes">
+            {Array.from({ length: Math.ceil(autres.length / TAILLE_GROUPE_RAID) }, (_, i) => (
+              <div key={i} className="raid-groupes__colonne">
+                <div className="raid-groupes__titre">Groupe {i + 1}</div>
+                {autres.slice(i * TAILLE_GROUPE_RAID, (i + 1) * TAILLE_GROUPE_RAID).map((p) => (
+                  <CadreRaid key={p.id} p={p} enLigne={estEnLigne(p)} choisi={selection === p.id} />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : (
+          autres.map((p) => <CadreUnite key={p.id} p={p} principal={false} enLigne={estEnLigne(p)} choisi={selection === p.id} />)
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { MoteurCarte } from "@partage/moteur-carte.js";
 import { EVENEMENTS } from "@partage/protocole.js";
 import { carte } from "@/core/carte";
+import { imagesDeRace, useTextures } from "@/core/textures";
 import { jeu, useJeu } from "@/core/jeu";
 import type { TexteCombat, Trace } from "@/core/types";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
@@ -25,6 +26,11 @@ export function CarteMonde() {
   const rayonPinceau = useJeu((e) => e.rayonPinceau);
   const { largeur, hauteur } = useEchelleInterface();
   const estMJ = useJeu((e) => e.profil?.role === "mj");
+  // Les textures (portraits de race des pions) arrivent apres la carte : on redessine.
+  const textures = useTextures();
+  useEffect(() => {
+    if (carte.moteur) carte.moteur.sale = true;
+  }, [textures]);
 
   // Zone de depot (MJ) : un monstre du Bestiaire, ou un coffre, lache sur la carte.
   const depot = useCible("carte", {
@@ -89,6 +95,11 @@ export function CarteMonde() {
       },
       // Gomme / pinceau du MJ : chaque morceau de trait part au serveur (qui le diffuse).
       surTrait: (trait: unknown) => jeu.demander(EVENEMENTS.BROUILLARD_TRAIT, trait),
+      // Un heros sans jeton ni portrait : l'icone (ou le portrait) de sa race.
+      imagesDeSecours: (pion: { idPersonnage: string; proprietaire: string | null }) => {
+        const p = pion.proprietaire ? jeu.lire().personnages[pion.idPersonnage] : undefined;
+        return p ? imagesDeRace(p.race, p.sexe) : [];
+      },
       surInfo: () => {},
       surChangement: () => carte.signalerChangement(),
     });

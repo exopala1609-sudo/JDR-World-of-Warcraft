@@ -539,3 +539,35 @@ function barreDeSaisie(gauche: HTMLImageElement, [milieu, droite]: (HTMLImageEle
 export function rolePortrait(race: string | null, sexe: string | null): RoleTexture | null {
   return race ? `portrait-${race}-${sexe ?? "masculin"}` : null;
 }
+
+// Les icones de race de WoW (dossier icones/ : Achievement_Character_Orc_Male...).
+const ICONES_DE_RACE: Record<string, string[]> = {
+  humain: ["Human"],
+  nain: ["Dwarf"],
+  "elfe-de-la-nuit": ["Nightelf", "NightElf"],
+  gnome: ["Gnome"],
+  draenei: ["Draenei"],
+  worgen: ["Worgen"],
+  orc: ["Orc"],
+  "mort-vivant": ["Undead"],
+  tauren: ["Tauren"],
+  troll: ["Troll"],
+  "elfe-de-sang": ["Bloodelf", "BloodElf"],
+  gobelin: ["Goblin"],
+  pandaren: ["Pandaren"],
+  dracthyr: ["Dracthyr"],
+};
+
+/**
+ * Les images d'un heros sans jeton ni portrait, dans l'ordre de preference :
+ * l'icone de sa race (icones/Achievement_Character_<Race>_<Male|Female>), puis
+ * le portrait provisoire de WoW (interface/TemporaryPortrait-...). Sert aux
+ * pions de la carte.
+ */
+export function imagesDeRace(race: string | null, sexe: string | null): string[] {
+  if (!race) return [];
+  const genre = sexe === "feminin" ? "Female" : "Male";
+  const icones = (ICONES_DE_RACE[race] ?? []).map((nom) => `/medias/icones/${encodeURIComponent(`Achievement_Character_${nom}_${genre}`)}?remplacement=non`);
+  const portrait = urlTexture(rolePortrait(race, sexe) as RoleTexture);
+  return portrait ? [...icones, portrait] : icones;
+}

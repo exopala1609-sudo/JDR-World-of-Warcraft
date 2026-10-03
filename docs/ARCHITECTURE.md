@@ -598,6 +598,14 @@ carte (`moteur.versCarte`).
   changement de version), choisi a la creation guidee. Il sert au portrait par
   defaut : role `portrait-<race>-<sexe>` (TemporaryPortrait de WoW), utilise
   quand `portraits/` n'a pas d'image pour le personnage.
+- Pions des heros sur la carte : jeton, sinon portrait, sinon (option
+  `imagesDeSecours` du moteur, `imagesDeRace` dans textures.ts) l'icone
+  `icones/Achievement_Character_<Race>_<Male|Female>`, sinon le portrait
+  provisoire ; la premiere image qui existe est dessinee, sinon les initiales.
+- Cadres du groupe : a partir de 6 heros, "raid" facon WoW (CadreRaid) : mon
+  grand cadre reste, les autres en colonnes de 5 cadres compacts (vie a la
+  couleur de la classe du referentiel). Si les cadres ne tiennent pas dans la
+  hauteur libre, ils rapetissent (--echelle-groupe).
 - Discussion : le serveur ajoute `mj: true|false` a chaque message (icone du MJ
   ou du joueur devant le nom).
 - Polices : `--police-titre` (LifeCraft) et `--police-combat` (Skurri ; la

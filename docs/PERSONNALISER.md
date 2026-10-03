@@ -159,7 +159,8 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `QuestAlert` | Le bandeau noir de l'annonce "Nouvelle quete" / "Quete terminee" au centre de l'ecran |
 | `UI-AbilityPanel-TopLeft` + `-TopRight` + `-BotLeft` + `-BotRight` | MJ : la fenetre des attaques d'un monstre (clic droit > Attaques) : son portrait dans le medaillon, ses attaques dans les cases (les 4 morceaux sont remis ensemble) |
 | `UI-CharacterCreate-Gender` | Creation de personnage : les symboles masculin / feminin des boutons du sexe |
-| `TemporaryPortrait-Male-Orc`, `TemporaryPortrait-Female-NightElf`... | Portrait par defaut selon la race et le sexe (creation, cadres des joueurs, fiche), quand le joueur n'a pas d'image dans `portraits\` |
+| `TemporaryPortrait-Male-Orc`, `TemporaryPortrait-Female-NightElf`... | Portrait par defaut selon la race et le sexe (creation, cadres des joueurs, fiche, pions de la carte), quand le joueur n'a pas d'image dans `portraits\` |
+| Dans `icones\` : `Achievement_Character_Orc_Male`, `Achievement_Character_Human_Female`... (races : Human, Dwarf, Nightelf, Gnome, Draenei, Worgen, Orc, Undead, Tauren, Troll, Bloodelf, Goblin, Pandaren, Dracthyr) | Icone de race dessinee dans le pion d'un heros sur la carte (prioritaire sur le portrait provisoire), quand il n'a ni jeton ni portrait |
 | `QuestBackgroundClassic2` | Parchemin a l'interieur du cadre de quete |
 | `UI_MainMenu_BattleForAzeroth_LowBandwidth` | Fond de l'ecran d'accueil |
 | `Glues-WoW-ClassicLogo` (sinon `-WotLKLogo`) | Logo au-dessus du formulaire de connexion |
