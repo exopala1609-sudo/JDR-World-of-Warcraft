@@ -131,7 +131,7 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `UI-Backpack-EmptySlot` | Cases vides du sac |
 | `UI-PaperDoll-Slot-Head`, `-Neck`, `-Shoulder`, `-Chest`, `-Wrists`, `-Hands`, `-Waist`, `-Legs`, `-Feet`, `-Finger`, `-Trinket`, `-MainHand`, `-SecondaryHand` (et `-Back`, `-Shirt`, `-Tabard`, `-Ranged` si tu les ajoutes) | Silhouettes des emplacements vides de la fiche (C) |
 | `ClassIcon_Warrior`, `_Paladin`, `_Hunter`, `_Rogue`, `_Priest`, `_DeathKnight`, `_Shaman`, `_Mage`, `_Warlock`, `_Monk`, `_Druid`, `_DemonHunter`, `_Evoker` | Icone de classe (fiche, creation de personnage) |
-| `UI-QuestLog-BookIcon`, `Spellbook-Icon`, `LootPanel-Icon` | Medaillons du journal de quetes, du grimoire, du butin |
+| `UI-QuestLog-BookIcon`, `Spellbook-Icon` | Medaillons du journal de quetes et du grimoire |
 | `UI-QuestTitleHighlight` | Surbrillance de la quete choisie |
 | `UI-QuestGreeting-TopRight` + `UI-QuestGreeting-BotRight-blank` | Cadre du parchemin du journal de quetes (le cote gauche est fabrique en miroir) |
 | `QuestBackgroundClassic` | Parchemin du journal de quetes (si le cadre ci-dessus manque) |
@@ -151,6 +151,11 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `TargetFrame` | Cadre de cible (en haut, a droite des cadres du groupe) : cible normale |
 | `TargetFrameElite` / `TargetFrameRare` / `UnitFrameBoss` | Cadre de cible d'un monstre elite (dragon dore), rare (dragon d'argent), boss. Le rang se choisit dans le bestiaire (champ `rang`) |
 | `UI-LootPanel` | Fenetre de butin (coffres, cadavres) : medaillon, titre, bouton fermer |
+| `UI-Calendar-Event-Other` (sinon `LootPanel-Icon`) | Le sac dans le medaillon de la fenetre de butin |
+| `UI-Achievement-Parchment-Horizontal` | Tous les parchemins (fiche d'un monstre du bestiaire, compendium, descriptions de la creation...) |
+| `UI-Achievement-StatsBackground` | Le volet des statistiques de la fiche de personnage (C), le parchemin au dragon |
+| `MOTHERtalenttree` | Le ciel etoile derriere la fenetre des des (jets d'attaque, tests) |
+| `Professions-Book-Left` | Le bestiaire du MJ : le livre au signet vert, et une rangee de parchemin par monstre |
 | `TemporaryPortrait-Male-Orc`, `TemporaryPortrait-Female-NightElf`... | Portrait par defaut selon la race et le sexe (creation, cadres des joueurs, fiche), quand le joueur n'a pas d'image dans `portraits\` |
 | `QuestBackgroundClassic2` | Parchemin a l'interieur du cadre de quete |
 | `UI_MainMenu_BattleForAzeroth_LowBandwidth` | Fond de l'ecran d'accueil |

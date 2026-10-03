@@ -652,3 +652,57 @@
   right: calc(var(--u) * 14);
   top: calc(var(--u) * 42);
 }
+
+/* --- Parchemins : UI-Achievement-Parchment-Horizontal ----------------------------
+   Remplace le parchemin dessine en CSS partout ou il sert (compendium, bestiaire,
+   descriptions de la creation, carnet...). */
+:root.tex-parchemin {
+  --texture-parchemin: var(--tex-parchemin) center / 100% 100% no-repeat, var(--parchemin);
+}
+
+/* --- Fiche de personnage (C) : le parchemin au dragon (UI-Achievement-StatsBackground) */
+.tex-fiche-fond .statistiques {
+  /* un voile clair : le texte reste lisible par-dessus le dragon */
+  background: linear-gradient(rgba(255, 240, 205, 0.42), rgba(255, 240, 205, 0.42)), var(--tex-fiche-fond) 30% top / cover no-repeat, var(--parchemin);
+}
+
+/* --- Fenetre des des : le ciel etoile (MOTHERtalenttree) ---------------------- */
+.tex-des-fond .resolution.cadre {
+  background: linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.45)), var(--tex-des-fond) center / cover no-repeat, #05070c;
+}
+
+/* --- Bestiaire (MJ) : le livre des metiers (Professions-Book-Left) --------------
+   Le fond de la liste est le livre (signet vert a gauche) ; chaque monstre est
+   une rangee de parchemin avec une creature dessinee a l'encre (trois modeles,
+   en alternance). Texte a l'encre brune, comme dans le journal des mascottes. */
+.tex-bestiaire-livre .bestiaire__liste {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 12px 10px 12px 15%;
+  background: var(--tex-bestiaire-livre) left top / 100% 100% no-repeat, #1a120a;
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre {
+  min-height: 64px;
+  padding: 6px 12px;
+  border-color: rgba(60, 35, 10, 0.7);
+  background: var(--tex-bestiaire-rangee-1) center / 100% 100% no-repeat;
+  box-shadow: inset 0 0 10px rgba(60, 35, 10, 0.45);
+}
+.tex-bestiaire-rangee-2 .bestiaire__liste .carte-monstre:nth-child(3n + 2) {
+  background-image: var(--tex-bestiaire-rangee-2);
+}
+.tex-bestiaire-rangee-3 .bestiaire__liste .carte-monstre:nth-child(3n) {
+  background-image: var(--tex-bestiaire-rangee-3);
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre:hover,
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre--choisie {
+  border-color: var(--or-bordure);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 0, 0.5), 0 0 8px rgba(255, 209, 0, 0.45);
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre__nom {
+  color: #4a1606;
+  font-weight: bold;
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre__detail {
+  color: #3a2a14;
+}

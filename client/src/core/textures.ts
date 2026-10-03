@@ -123,12 +123,20 @@ const ROLES = {
   // --- Fenetres : portraits ronds, pages, surbrillance --------------------------
   "portrait-quetes": ["UI-QuestLog-BookIcon"],
   "portrait-grimoire": ["Spellbook-Icon"],
-  "portrait-butin": ["LootPanel-Icon"],
+  "portrait-butin": ["UI-Calendar-Event-Other", "LootPanel-Icon"], // le sac de butin
   "quete-surbrillance": ["UI-QuestTitleHighlight"],
   "quete-parchemin": ["QuestBackgroundClassic2", "QuestBackgroundClassic"],
   "quete-cadre": ["UI-QuestGreeting-TopRight"], // + UI-QuestGreeting-BotRight-blank (voir AUTRES)
   "quete-cadre-fond": ["UI-QuestGreeting-TopRight"],
   livre: ["Spellbook-Page-1"], // + Spellbook-Page-2, le bord droit du livre (voir AUTRES)
+  // --- Parchemins, fonds de fenetres ------------------------------------------------
+  parchemin: ["UI-Achievement-Parchment-Horizontal"], // tous les textes "parchemin"
+  "fiche-fond": ["UI-Achievement-StatsBackground"], // le volet des statistiques de la fiche (C)
+  "des-fond": ["MOTHERtalenttree"], // le ciel etoile de la fenetre des des
+  "bestiaire-livre": ["Professions-Book-Left"], // le livre du bestiaire (MJ)...
+  "bestiaire-rangee-1": ["Professions-Book-Left"], // ... et ses trois rangees, une par monstre
+  "bestiaire-rangee-2": ["Professions-Book-Left"],
+  "bestiaire-rangee-3": ["Professions-Book-Left"],
   // --- Ecran d'accueil -----------------------------------------------------------
   "accueil-fond": ["UI_MainMenu_BattleForAzeroth_LowBandwidth", "UI_MainMenu_BattleForAzeroth"],
   "accueil-logo": ["Glues-WoW-ClassicLogo", "Glues-WoW-WotLKLogo", "Glues-WoW-Logo"],
@@ -186,6 +194,13 @@ const RECOMPOSER: Partial<Record<string, Recomposition>> = {
   "barre-page": (image) => decouper(image, 0, 74, 40, 54, 256),
   "cadre-unite": (image) => decouper(image, 0, 0, 193, 76, 256),
   "butin-cadre": (image) => decouper(image, 0, 0, 188, 252, 256), // le cadre seul, sans la marge vide
+  // Le ciel etoile : sans les coins de metal ni la marge vide (planche de 512 px).
+  "des-fond": (image) => decouper(image, 24, 24, 310, 396, 512),
+  // Le livre des metiers : la page de gauche (signet vert) et le cadre des rangees,
+  // puis chacune des trois rangees "a filigrane" (une creature dessinee a l'encre).
+  "bestiaire-rangee-1": (image) => decouper(image, 72, 239, 434, 68, 512),
+  "bestiaire-rangee-2": (image) => decouper(image, 72, 315, 434, 70, 512),
+  "bestiaire-rangee-3": (image) => decouper(image, 72, 393, 434, 82, 512),
 };
 // Fichiers supplementaires d'un role recompose (une liste de candidats par fichier).
 const AUTRES: Partial<Record<string, string[][]>> = {
