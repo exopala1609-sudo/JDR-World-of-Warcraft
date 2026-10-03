@@ -22,6 +22,10 @@ writeFileSync(join(dossiers.interface, "WOWUNKNOWNITEM01.PNG"), "INCONNUE"); // 
 writeFileSync(join(dossiers.interface, "LISEZ-MOI.txt"), "pas une image");
 writeFileSync(join(dossiers.interface, ".cache.png"), "fichier cache");
 writeFileSync(join(racine, "secret.txt"), "ne doit pas sortir");
+// Un dossier d'icones copie tel quel : un sous-dossier, des minuscules, un .blp du jeu.
+mkdirSync(join(dossiers.icones, "ICONS", "Achievements"), { recursive: true });
+writeFileSync(join(dossiers.icones, "ICONS", "Achievements", "achievement_character_orc_male.png"), "ORC");
+writeFileSync(join(dossiers.icones, "ICONS", "inv_misc_bag_07.blp"), "BLP2");
 let serveur;
 let adresse;
 
@@ -79,4 +83,18 @@ test("bibliotheque d'icones : lue une fois, recherche multi-mots, limite, actual
   await bibliotheque.actualiser();
   assert.deepEqual((await bibliotheque.chercher("sword")).icones, ["inv_sword_04"]);
   assert.equal((await creerBibliothequeIcones(join(racine, "absent")).chercher("")).total, 0);
+});
+
+test("icones rangees dans des sous-dossiers, autres majuscules : trouvees ; .blp comptes a part", async () => {
+  for (const nom of ["Achievement_Character_Orc_Male", "Achievement_Character_Orc_Male.png", "ACHIEVEMENT_CHARACTER_ORC_MALE"]) {
+    const r = await fetch(`${adresse}/medias/icones/${nom}?remplacement=non`);
+    assert.equal(r.status, 200, nom);
+    assert.equal(await r.text(), "ORC");
+  }
+  // Une icone .blp n'est pas affichable : "introuvable", et le diagnostic la compte.
+  assert.equal((await fetch(`${adresse}/medias/icones/inv_misc_bag_07?remplacement=non`)).status, 404);
+  const etat = await creerBibliothequeIcones(dossiers.icones).etat();
+  assert.equal(etat.blp, 1);
+  assert.ok(etat.sousDossiers >= 2);
+  assert.deepEqual((await creerBibliothequeIcones(dossiers.icones).chercher("character orc")).icones, ["achievement_character_orc_male"]);
 });

@@ -12,6 +12,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { basename, extname, join, relative, sep } from "node:path";
 import express from "express";
 import { CATEGORIES_PUBLIQUES } from "./config.js";
+import { bibliothequeIcones } from "./donnees/bibliotheque-icones.js";
 
 const EXTENSIONS_IMAGE = [".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg"];
 export const EXTENSIONS_SON = [".ogg", ".mp3", ".wav", ".m4a", ".webm"];
@@ -102,13 +103,19 @@ export function routesMedias(config) {
     if (!CATEGORIES_IMAGES.includes(categorie)) continue;
 
     // 2. Sinon : recherche sans extension, puis image de remplacement.
-    routeur.get(`/medias/${categorie}/:nom`, (requete, reponse) => {
+    routeur.get(`/medias/${categorie}/:nom`, async (requete, reponse) => {
       const { nom } = requete.params;
       if (nomSur(nom) && !extname(nom)) {
         for (const extension of EXTENSIONS_IMAGE) {
           const chemin = join(dossier, nom + extension);
           if (existsSync(chemin)) return reponse.sendFile(chemin, { maxAge: "1h" });
         }
+      }
+      // Icones : elles peuvent etre rangees dans des sous-dossiers, avec d'autres
+      // majuscules (WoW-Icones\ICONS\inv_sword_04.png pour "INV_Sword_04").
+      if (categorie === "icones" && nomSur(nom)) {
+        const trouve = await bibliothequeIcones(dossier).chemin(extname(nom) ? nom.slice(0, -extname(nom).length) : nom);
+        if (trouve) return reponse.sendFile(trouve, { maxAge: "1h" });
       }
       // "?remplacement=non" : pour un decor facultatif (ex. griffons de la
       // barre d'actions), on prefere "introuvable" : l'interface garde alors

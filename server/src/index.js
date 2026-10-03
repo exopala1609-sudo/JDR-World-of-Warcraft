@@ -8,7 +8,8 @@ import express from "express";
 import { exigerMJ, routesAcces } from "./auth/routes.js";
 import { creerGestionnaireSessions } from "./auth/sessions.js";
 import { anciennesPartiesLocales, chargerConfig, RACINE } from "./config.js";
-import { afficherDiagnostic, creerSousDossiersManquants, diagnostiquerDossiers, installerLisezMoi } from "./diagnostic.js";
+import { afficherDiagnostic, afficherDiagnosticIcones, creerSousDossiersManquants, diagnostiquerDossiers, installerLisezMoi } from "./diagnostic.js";
+import { bibliothequeIcones } from "./donnees/bibliotheque-icones.js";
 import { creerCompendium, installerExemples, installerFichierExemple } from "./donnees/compendium.js";
 import { creerDepot } from "./donnees/depot.js";
 import { creerReferentiel, installerExemplesReferentiel, resumerReferentiel, situerErreur } from "./donnees/referentiel.js";
@@ -135,10 +136,12 @@ let fermerTunnel = () => {};
 // Page d'arrivee de TOUS (joueurs et MJ) : l'interface World of Warcraft.
 const CHEMIN_JOUEURS = "/";
 
-serveurHttp.listen(config.port, "0.0.0.0", () => {
+serveurHttp.listen(config.port, "0.0.0.0", async () => {
   afficherBanniere(config, { modeDev });
   if (dossiersCrees.length) console.log(`  Sous-dossiers crees : ${dossiersCrees.join(", ")}`);
   afficherDiagnostic(config, rapportDossiers);
+  // Les icones (souvent un dossier a part : VTT_ASSETS_ICONES) : ce que le jeu y trouve.
+  await afficherDiagnosticIcones(config, bibliothequeIcones(config.dossiers.icones));
   // La ligne la plus importante pour jouer sur deux PC : OU sont les sauvegardes.
   console.log(`  Sauvegardes      : ${config.dossiers.parties}${config.cloud ? `  (${config.cloud})` : ""}`);
   console.log(`  Donnees chargees : ${bilan.tables} table(s), ${bilan.personnages} personnage(s).`);

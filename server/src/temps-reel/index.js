@@ -20,7 +20,7 @@ import { Server } from "socket.io";
 import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
-import { creerBibliothequeIcones } from "../donnees/bibliotheque-icones.js";
+import { bibliothequeIcones } from "../donnees/bibliotheque-icones.js";
 import { presenterPersonnage, santeVisible } from "../modeles/personnage.js";
 import { butinVisibleParLesJoueurs } from "../regles/butins.js";
 import { pionVisibleParLesJoueurs } from "../regles/scene.js";
@@ -105,7 +105,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
 
     sessions,
     // Les noms des icones du dossier icones/ (selecteur d'icones), lus a la demande.
-    icones: creerBibliothequeIcones(config?.dossiers?.icones),
+    icones: bibliothequeIcones(config?.dossiers?.icones),
     // Joueurs expulses par le MJ, par table (pseudos normalises). En memoire.
     expulsesParTable: new Map(),
     expulses(idTable) {

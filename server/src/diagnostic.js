@@ -98,3 +98,31 @@ export function afficherDiagnostic(config, rapport) {
   }
   console.log("");
 }
+
+/**
+ * Le dossier d'icones, en detail (il peut etre ailleurs que le cloud :
+ * VTT_ASSETS_ICONES). Dit combien d'images le jeu y trouve, et pourquoi il
+ * n'en trouve pas : fichiers .blp du jeu, dossier vide, noms inattendus.
+ */
+export async function afficherDiagnosticIcones(config, bibliotheque) {
+  const { images, blp, autres, sousDossiers } = await bibliotheque.etat();
+  console.log(`  Icones           : ${config.dossiers.icones}`);
+  if (images) {
+    console.log(`    [ OK ] ${images} icone(s) utilisable(s)${sousDossiers ? `, rangees dans ${sousDossiers} sous-dossier(s)` : ""}.`);
+  } else {
+    console.log("    [VIDE] aucune image .png / .jpg / .webp trouvee dans ce dossier (ni ses sous-dossiers).");
+  }
+  if (blp) {
+    console.log(`    !! ${blp} fichier(s) .blp : c'est le format interne de WoW, qu'un navigateur ne sait PAS`);
+    console.log("       afficher. Il faut les memes icones en .png (voir docs/PERSONNALISER.md, \"Bibliotheque d'icones\").");
+  }
+  if (!images && autres) console.log(`    !! ${autres} autre(s) fichier(s) qui ne sont pas des images.`);
+  // Les icones de race (pions de la carte) : un nom temoin.
+  if (images) {
+    const temoin = "Achievement_Character_Human_Male";
+    const trouve = await bibliotheque.chemin(temoin);
+    console.log(`    Icones de race (pions) : ${trouve ? "trouvees" : `absentes (le jeu cherche par exemple ${temoin}.png)`}`);
+  }
+  console.log("");
+}
+

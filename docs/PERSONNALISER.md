@@ -96,6 +96,15 @@ que les resultats d'une recherche.
 - L'icone choisie sert dans le bestiaire ET d'image au pion du monstre sur la
   carte (sauf si tu donnes un « Jeton » : une image du dossier `jetons\`).
 - Icones ajoutees pendant une partie : bouton **Actualiser** du selecteur.
+- **Rangement libre** : a plat ou dans des sous-dossiers (jusqu'a 4 niveaux,
+  ex. `WoW-Icones\ICONS\...`), majuscules indifferentes (`inv_sword_04.png`
+  ou `INV_Sword_04.PNG`).
+- **Format** : `.png` (ou `.jpg`, `.webp`). Les fichiers `.blp` (format
+  interne du jeu, extraits tels quels du client) ne s'affichent PAS dans un
+  navigateur : il faut la version `.png` des icones.
+- **Verifier** : au demarrage, le serveur affiche une ligne « Icones » : le
+  dossier lu, le nombre d'icones utilisables, les `.blp` trouves, et si les
+  icones de race (`Achievement_Character_Human_Male`...) sont presentes.
 
 ## Textures d'interface (dossier interface)
 
