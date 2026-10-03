@@ -23,8 +23,14 @@ test("un chemin relatif (l'ancien ./donnees-mj) est refuse", () => {
 
 test("un dossier situe dans le projet est refuse, meme ecrit en absolu", () => {
   for (const dedans of [RACINE, join(RACINE, "donnees-mj")]) {
-    assert.match(construireConfig({ VTT_ASSETS: dedans }).problemes[0], /DANS le projet/);
+    assert.match(construireConfig({ VTT_ASSETS: dedans }).problemes[0], /DANS le dossier du projet/);
   }
+});
+
+test("bibliotheque d'icones rangee dans le projet : refusee, avec le conseil de la deplacer", () => {
+  const config = construireConfig({ VTT_ASSETS: "/srv/Google Drive/JDR", VTT_ASSETS_ICONES: join(RACINE, "ICONS") });
+  assert.equal(config.problemes.length, 1);
+  assert.match(config.problemes[0], /VTT_ASSETS_ICONES=.*DANS le dossier du projet.*Deplace-le HORS du projet/);
 });
 
 test("chemin cloud valide : toutes les donnees, sauvegardes comprises, vont dedans", () => {

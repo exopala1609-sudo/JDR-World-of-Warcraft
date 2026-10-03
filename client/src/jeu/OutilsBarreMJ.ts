@@ -4,9 +4,11 @@
 // serveur refuse tout ce qui vient d'un joueur. Voir docs/ARCHITECTURE.md.)
 import { EVENEMENTS } from "@partage/protocole.js";
 import { jeu, type EtatJeu } from "@/core/jeu";
+import type { RoleTexture } from "@/core/textures";
 
 export type OutilMJ = {
   symbole: string;
+  icone?: RoleTexture; // l'icone de WoW (dossier interface/) qui remplace le symbole
   nom: string;
   aide: string;
   action: () => void;
@@ -35,14 +37,14 @@ async function recharger() {
 }
 
 export const OUTILS_MJ: OutilMJ[] = [
-  { symbole: "☠", nom: "Bestiaire", aide: "Monstres et PNJ : les creer, les glisser sur la carte.", action: () => basculer("bestiaire"), actif: (e) => e.fenetres.bestiaire },
-  { symbole: "✦", nom: "Compendium", aide: "Donner objets, sorts, auras ; remplir un coffre.", action: () => basculer("compendium"), actif: (e) => e.fenetres.compendium },
-  { symbole: "⚔", nom: "Initiative", aide: "Lancer et mener le combat (aussi : touche I).", action: () => basculer("initiative"), actif: (e) => e.fenetres.initiative },
-  { symbole: "⌖", nom: "Carte", aide: "Image de fond, grille, brouillard.", action: () => basculer("carteMJ"), actif: (e) => e.fenetres.carteMJ },
-  { symbole: "☀", nom: "Reveler (gomme)", aide: "Effacer le brouillard sur la carte.", action: () => outilCarte("gomme"), actif: (e) => e.outil === "gomme" },
+  { symbole: "☠", icone: "outil-bestiaire", nom: "Bestiaire", aide: "Monstres et PNJ : les creer, les glisser sur la carte.", action: () => basculer("bestiaire"), actif: (e) => e.fenetres.bestiaire },
+  { symbole: "✦", icone: "outil-compendium", nom: "Compendium", aide: "Donner objets, sorts, auras ; remplir un coffre.", action: () => basculer("compendium"), actif: (e) => e.fenetres.compendium },
+  { symbole: "⚔", icone: "outil-initiative", nom: "Initiative", aide: "Lancer et mener le combat (aussi : touche I).", action: () => basculer("initiative"), actif: (e) => e.fenetres.initiative },
+  { symbole: "⌖", icone: "outil-carte", nom: "Carte", aide: "Image de fond, grille, brouillard.", action: () => basculer("carteMJ"), actif: (e) => e.fenetres.carteMJ },
+  { symbole: "☀", icone: "outil-reveler", nom: "Reveler (gomme)", aide: "Effacer le brouillard sur la carte.", action: () => outilCarte("gomme"), actif: (e) => e.outil === "gomme" },
   { symbole: "☁", nom: "Cacher (pinceau)", aide: "Repeindre le brouillard sur la carte.", action: () => outilCarte("pinceau"), actif: (e) => e.outil === "pinceau" },
-  { symbole: "!", nom: "Journal de quetes", aide: "Donner une quete au groupe (aussi : touche L).", action: () => basculer("quetes"), actif: (e) => e.fenetres.quetes },
-  { symbole: "☾", nom: "Repos long (table)", aide: "Repos long pour toute la table. Deux appuis pour confirmer.", action: reposLongTable },
-  { symbole: "✎", nom: "Carnet du MJ", aide: "Tes notes privees (aussi : touche N).", action: () => basculer("carnet"), actif: (e) => e.fenetres.carnet },
-  { symbole: "↻", nom: "Recharger", aide: "Relire les fichiers du compendium et du referentiel apres modification.", action: recharger },
+  { symbole: "!", icone: "outil-quetes", nom: "Journal de quetes", aide: "Donner une quete au groupe (aussi : touche L).", action: () => basculer("quetes"), actif: (e) => e.fenetres.quetes },
+  { symbole: "☾", icone: "outil-repos", nom: "Repos long (table)", aide: "Repos long pour toute la table. Deux appuis pour confirmer.", action: reposLongTable },
+  { symbole: "✎", icone: "outil-carnet", nom: "Carnet du MJ", aide: "Tes notes privees (aussi : touche N).", action: () => basculer("carnet"), actif: (e) => e.fenetres.carnet },
+  { symbole: "↻", icone: "outil-recharger", nom: "Recharger", aide: "Relire les fichiers du compendium et du referentiel apres modification.", action: recharger },
 ];

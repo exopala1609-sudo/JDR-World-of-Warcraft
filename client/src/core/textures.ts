@@ -30,8 +30,8 @@ const ROLES = {
   "bordure-or": ["UI-DialogBox-Gold-Border"],
   dragon: ["UI-DialogBox-Gold-Dragon"],
   // --- Micro-menu (bas droite) ------------------------------------------------
-  "micro-personnage": ["UI-MicroButton-Character-Up"],
-  "micro-personnage-appui": ["UI-MicroButton-Character-Down"],
+  "micro-personnage": ["UI-MicroButton-Character-Up", "UI-MicroButton-Raid-Up"],
+  "micro-personnage-appui": ["UI-MicroButton-Character-Down", "UI-MicroButton-Raid-Down"],
   "micro-grimoire": ["UI-MicroButton-Spellbook-Up"],
   "micro-grimoire-appui": ["UI-MicroButton-Spellbook-Down"],
   "micro-quetes": ["UI-MicroButton-Quest-Up"],
@@ -44,6 +44,31 @@ const ROLES = {
   "micro-quitter-appui": ["UI-MicroButton-MainMenu-Down"],
   sac: ["Button-Backpack-Up"],
   "sac-appui": ["Button-Backpack-Down"],
+  // Boutons a icone (pas au format micro-bouton) : ils passent devant le micro-bouton.
+  "icone-initiative": ["UI-Battlefield-Icon"],
+  "icone-son": ["VOICECHAT-SPEAKER"],
+  des: ["UI-GroupLoot-Dice-Up"], // le bouton du lanceur de des, pres de la discussion
+  "des-appui": ["UI-GroupLoot-Dice-Down"],
+  // --- Outils du MJ (page 1 de sa barre d'actions) -------------------------------
+  "outil-bestiaire": ["LootPanel-Icon"],
+  "outil-compendium": ["INV_Misc_Book_07"],
+  "outil-initiative": ["Spell-Reset"],
+  "outil-carte": ["INV_Misc_Map_01"],
+  "outil-reveler": ["Ability_Paladin_LightoftheProtector"],
+  "outil-quetes": ["Achievement_Quests_Completed_07"],
+  "outil-repos": ["Spell_Nature_Sleep"],
+  "outil-carnet": ["INV_Scroll_11"],
+  "outil-recharger": ["misc_arrowleft"],
+  // --- Discussion -------------------------------------------------------------------
+  "chat-joueur": ["UI-ChatIcon-Battlenet"],
+  "chat-mj": ["UI-ChatIcon-Blizz"],
+  "chat-saisie": ["UI-ChatInputBorder-Left2"], // + Mid2 et Right2 (voir AUTRES)
+  // --- Argent (sac) -------------------------------------------------------------------
+  "piece-or": ["UI-GoldIcon"],
+  "piece-argent": ["UI-SilverIcon"],
+  "piece-cuivre": ["UI-CopperIcon"],
+  // --- Curseur de la souris (le gantelet de WoW) ------------------------------------
+  curseur: ["Point"],
   // --- Barre d'actions : la barre de WoW, et ses griffons (Dwarf) ou lions (Human)
   griffon: ["UI-MainMenuBar-EndCap-Dwarf", "UI-MainMenuBar-EndCap-Human"],
   "barre-actions": ["UI-MainMenuBar-Dwarf", "UI-MainMenuBar-Human"],
@@ -93,7 +118,7 @@ const ROLES = {
   "portrait-grimoire": ["Spellbook-Icon"],
   "portrait-butin": ["LootPanel-Icon"],
   "quete-surbrillance": ["UI-QuestTitleHighlight"],
-  "quete-parchemin": ["QuestBackgroundClassic"],
+  "quete-parchemin": ["QuestBackgroundClassic2", "QuestBackgroundClassic"],
   "quete-cadre": ["UI-QuestGreeting-TopRight"], // + UI-QuestGreeting-BotRight-blank (voir AUTRES)
   "quete-cadre-fond": ["UI-QuestGreeting-TopRight"],
   livre: ["Spellbook-Page-1"], // + Spellbook-Page-2, le bord droit du livre (voir AUTRES)
@@ -103,13 +128,43 @@ const ROLES = {
   roche: ["UI-Background-Rock"],
 } satisfies Record<string, string[]>;
 
-export type RoleTexture = keyof typeof ROLES;
+// --- Roles fabriques d'apres le referentiel ----------------------------------------
+// Les portraits provisoires de WoW (TemporaryPortrait-Female-NightElf...) par race
+// et par sexe, les fonds de l'ecran de creation et les logos par faction.
+const RACES_WOW: Record<string, string[]> = {
+  humain: ["Human"],
+  nain: ["Dwarf"],
+  "elfe-de-la-nuit": ["NightElf"],
+  gnome: ["Gnome"],
+  draenei: ["Draenei"],
+  worgen: ["Worgen"],
+  orc: ["Orc"],
+  "mort-vivant": ["Scourge"],
+  tauren: ["Tauren", "HighmountainTauren"],
+  troll: ["Troll"],
+  "elfe-de-sang": ["BloodElf"],
+  gobelin: ["Goblin"],
+  pandaren: ["Pandaren"],
+  dracthyr: ["Dracthyr"],
+};
+const ROLES_DU_REFERENTIEL: Record<string, string[]> = {
+  "fond-alliance": ["Hurlevents", "Stormwind"],
+  "fond-horde": ["Orgrimmar"],
+  "logo-alliance": ["Alliance-Logo"],
+  "logo-horde": ["Horde-Logo"],
+};
+for (const [race, noms] of Object.entries(RACES_WOW)) {
+  ROLES_DU_REFERENTIEL[`portrait-${race}-masculin`] = noms.map((n) => `TemporaryPortrait-Male-${n}`);
+  ROLES_DU_REFERENTIEL[`portrait-${race}-feminin`] = noms.map((n) => `TemporaryPortrait-Female-${n}`);
+}
+
+export type RoleTexture = keyof typeof ROLES | `portrait-${string}` | `fond-${string}` | `logo-${string}`;
 
 // Les roles qu'on recompose dans un canvas avant de s'en servir. La fonction
 // recoit l'image du role et, dans l'ordre, celles des fichiers AUTRES (null
 // si absent).
 type Recomposition = (image: HTMLImageElement, autres: (HTMLImageElement | null)[]) => HTMLCanvasElement;
-const RECOMPOSER: Partial<Record<RoleTexture, Recomposition>> = {
+const RECOMPOSER: Partial<Record<string, Recomposition>> = {
   "bordure-dialogue": bordureNeufParties,
   "bordure-or": bordureNeufParties,
   "minicarte-bordure": anneauMinicarte,
@@ -119,14 +174,16 @@ const RECOMPOSER: Partial<Record<RoleTexture, Recomposition>> = {
   "quete-cadre": cadreDeQuete,
   "quete-cadre-fond": (image) => decouper(image, 0, 92, 60, 164, 128),
   livre: livreOuvert,
+  "chat-saisie": barreDeSaisie,
   "barre-actions": barreDActions,
   "barre-page": (image) => decouper(image, 0, 74, 40, 54, 256),
   "cadre-unite": (image) => decouper(image, 0, 0, 193, 76, 256),
 };
 // Fichiers supplementaires d'un role recompose (une liste de candidats par fichier).
-const AUTRES: Partial<Record<RoleTexture, string[][]>> = {
+const AUTRES: Partial<Record<string, string[][]>> = {
   "quete-cadre": [["UI-QuestGreeting-BotRight-blank", "UI-QuestGreeting-BotRight"]],
   livre: [["Spellbook-Page-2"]],
+  "chat-saisie": [["UI-ChatInputBorder-Mid2"], ["UI-ChatInputBorder-Right2"]],
 };
 
 // --- Le petit magasin des textures trouvees (pour les composants React) ----------
@@ -182,7 +239,7 @@ export async function chargerTextures() {
     const fichier = candidats.map((c) => index.get(c.toLowerCase())).find(Boolean);
     return fichier ? `/medias/interface/${fichier.split("/").map(encodeURIComponent).join("/")}` : null;
   };
-  for (const [role, candidats] of Object.entries(ROLES) as [RoleTexture, string[]][]) {
+  for (const [role, candidats] of Object.entries({ ...ROLES, ...ROLES_DU_REFERENTIEL }) as [RoleTexture, string[]][]) {
     const url = adresse(candidats);
     if (!url) continue;
     const recomposer = RECOMPOSER[role];
@@ -408,4 +465,22 @@ function barreDActions(image: HTMLImageElement) {
   g.drawImage(image, 0, 202 * e, 256 * e, 54 * e, 0, 0, 256, 54);
   g.drawImage(image, 0, 138 * e, 256 * e, 54 * e, 256, 0, 256, 54);
   return canvas;
+}
+
+/** La barre de saisie de la discussion : gauche | milieu | droite (32 x 32 chacun), cote a cote. */
+function barreDeSaisie(gauche: HTMLImageElement, [milieu, droite]: (HTMLImageElement | null)[]) {
+  if (!milieu || !droite) throw new Error("UI-ChatInputBorder-Mid2 / -Right2 manquant");
+  const canvas = document.createElement("canvas");
+  canvas.width = 96;
+  canvas.height = 32;
+  const g = canvas.getContext("2d")!;
+  g.drawImage(gauche, 0, 0, 32, 32);
+  g.drawImage(milieu, 32, 0, 32, 32);
+  g.drawImage(droite, 64, 0, 32, 32);
+  return canvas;
+}
+
+/** Le portrait provisoire de WoW d'un personnage (race + sexe), ou null. */
+export function rolePortrait(race: string | null, sexe: string | null): RoleTexture | null {
+  return race ? `portrait-${race}-${sexe ?? "masculin"}` : null;
 }

@@ -10,6 +10,15 @@ client/dist/
 # Donnees de jeu locales (quand VTT_ASSETS pointe dans le projet)
 donnees-mj/
 
+# Images du jeu (icones, textures, polices...) posees par erreur dans le
+# projet : elles ne doivent JAMAIS partir sur GitHub.
+/ICONS/
+/Icons/
+/icones/
+/interface/
+/polices/
+*.blp
+
 # Divers
 .DS_Store
 *.log

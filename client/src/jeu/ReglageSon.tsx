@@ -1,3 +1,4 @@
+import { useTexture } from "@/core/textures";
 import { useEffect, useState } from "react";
 import { EVENEMENTS } from "@partage/protocole.js";
 import { audio, useAudio } from "@/core/audio";
@@ -29,6 +30,7 @@ export function ReglageSon() {
   const sons = [...new Set([...SONS_DU_JEU, ...fichiers])];
 
   const icone = !pret ? "?" : muet || volume === 0 ? "x" : volume < 0.4 ? ")" : "))";
+  const hautParleur = useTexture("icone-son"); // VOICECHAT-SPEAKER, s'il est dans interface/
   return (
     <div className="reglage-son">
       <button
@@ -47,12 +49,16 @@ export function ReglageSon() {
           </>
         ))}
       >
+        {hautParleur ? (
+          <img src={hautParleur} alt="" className={`reglage-son__image${icone === "x" ? " reglage-son__image--muet" : ""}`} />
+        ) : (
         <svg viewBox="0 0 24 24" aria-hidden="true" className="reglage-son__icone">
           <path d="M3 9h4l5-4v14l-5-4H3z" />
           {icone === "x" && <path d="M16 9l5 6M21 9l-5 6" className="reglage-son__trait" />}
           {(icone === ")" || icone === "))") && <path d="M15 9.5a3.5 3.5 0 0 1 0 5" className="reglage-son__trait" />}
           {icone === "))" && <path d="M17.5 7a7 7 0 0 1 0 10" className="reglage-son__trait" />}
         </svg>
+        )}
       </button>
       {ouvert && (
         <div className="reglage-son__panneau cadre">

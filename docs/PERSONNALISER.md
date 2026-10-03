@@ -14,6 +14,8 @@ Copie les fichiers depuis ton installation du jeu
 | `FRIZQT__.TTF` | Titres, noms, boutons, toute l'interface (Friz Quadrata) |
 | `MORPHEUS.TTF` | Textes longs : pages du grimoire, journal de quetes (Morpheus) |
 | `ARIALN.TTF` | Chiffres des barres et discussion (Arial Narrow) |
+| `LifeCraft_Font.ttf` | Grands titres : ecran d'accueil, creation de personnage, annonces (police du logo de WoW) |
+| `skurri.ttf` | Chiffres de combat : degats et soins sur la carte, resultat du de |
 
 Noms acceptes aussi : `FrizQuadrata.woff2` / `.otf` / `.ttf` et
 `Morpheus.woff2` / `.otf` / `.ttf` (le fichier `polices\LISEZ-MOI.txt` de ton
@@ -84,6 +86,8 @@ que les resultats d'une recherche.
 - **Ou les mettre ?** Conseille : sur le disque LOCAL de chaque PC (elles ne
   changent jamais, et Google Drive gere mal des milliers de petits fichiers).
   Dans le `.env` de chaque PC : `VTT_ASSETS_ICONES=D:\WoW-Icones`.
+  **Jamais dans le dossier du projet** (celui du code) : le serveur refuse de
+  demarrer, car ces images partiraient sur GitHub au prochain envoi.
   Les deux PC doivent avoir la meme bibliotheque (une copie unique, ex. un zip).
 - **Le selecteur** (MJ) : Bestiaire > Nouveau monstre (ou Modifier) > Icone >
   « Choisir... ». On cherche par mots du NOM DE FICHIER, en anglais :
@@ -133,9 +137,28 @@ dessin actuel. Apres avoir ajoute des fichiers : recharge la page (F5).
 | `QuestBackgroundClassic` | Parchemin du journal de quetes (si le cadre ci-dessus manque) |
 | `Spellbook-Page-1` + `Spellbook-Page-2` | Le livre ouvert du grimoire (P) et du carnet (N) : la page 1 et son bord droit (la page 2, 32 px de large) |
 | `WoWUnknownItem01` | Icone "?" pour un objet ou un sort dont l'icone manque |
+| `UI-MicroButton-Raid-Up` / `-Down` (si pas de `-Character-`) | Micro-menu : personnage (C) |
+| `UI-Battlefield-Icon` | Micro-menu : initiative (I) |
+| `VOICECHAT-SPEAKER` | Bouton du son |
+| `UI-GroupLoot-Dice-Up` / `-Down` | Bouton du lanceur de des (a cote de la discussion) |
+| `LootPanel-Icon`, `INV_Misc_Book_07`, `Spell-Reset`, `INV_Misc_Map_01`, `Ability_Paladin_LightoftheProtector`, `Achievement_Quests_Completed_07`, `Spell_Nature_Sleep`, `INV_Scroll_11`, `misc_arrowleft` | Barre du MJ : bestiaire, compendium, initiative, carte, reveler, quetes, repos long, carnet, recharger |
+| `UI-ChatIcon-Battlenet` / `UI-ChatIcon-Blizz` | Discussion : icone devant le nom d'un joueur / du MJ |
+| `UI-ChatInputBorder-Left2` + `-Mid2` + `-Right2` | Cadre de la barre de saisie de la discussion |
+| `UI-GoldIcon`, `UI-SilverIcon`, `UI-CopperIcon` | Argent du sac (1 po = 10 pa = 100 pc) |
+| `Point` | Curseur de la souris (le gantelet) |
+| `Hurlevents` / `Orgrimmar` | Fond de l'ecran de creation, selon la faction choisie |
+| `Alliance-Logo` / `Horde-Logo` | Blasons des factions (creation) |
+| `TemporaryPortrait-Male-Orc`, `TemporaryPortrait-Female-NightElf`... | Portrait par defaut selon la race et le sexe (creation, cadres des joueurs, fiche), quand le joueur n'a pas d'image dans `portraits\` |
+| `QuestBackgroundClassic2` | Parchemin a l'interieur du cadre de quete |
 | `UI_MainMenu_BattleForAzeroth_LowBandwidth` | Fond de l'ecran d'accueil |
 | `Glues-WoW-ClassicLogo` (sinon `-WotLKLogo`) | Logo au-dessus du formulaire de connexion |
 | `UI-Background-Rock` | Fond de pierre des ecrans hors jeu |
+
+Correspondance races du referentiel -> portraits : humain = Human, nain =
+Dwarf, elfe-de-la-nuit = NightElf, gnome = Gnome, draenei = Draenei, worgen =
+Worgen, orc = Orc, mort-vivant = Scourge, tauren = Tauren (ou
+HighmountainTauren), troll = Troll, elfe-de-sang = BloodElf, gobelin = Goblin,
+pandaren = Pandaren, dracthyr = Dracthyr.
 
 Correspondance classes du referentiel -> icones : rodeur = Hunter,
 clerc = Priest, occultiste = Warlock, magicien = Mage. Barbare, barde et

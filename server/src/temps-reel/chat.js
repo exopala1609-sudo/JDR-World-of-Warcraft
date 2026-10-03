@@ -30,7 +30,8 @@ export function brancher(socket, ctx) {
   ctx.guichet(socket, EVENEMENTS.CHAT_ENVOYER, Envoyer, async ({ canal, texte, destinataire }) => {
     const idTable = ctx.exigerTable(socket);
     if (!ctx.quota(socket, "chat", 5)) throw new ErreurRegle("Doucement : 5 messages par seconde au plus.");
-    const message = { canal, de: pseudo, texte, horodatage: new Date().toISOString() };
+    // "mj" : l'interface met l'icone du MJ (ou d'un joueur) devant le nom.
+    const message = { canal, de: pseudo, mj: ctx.estMJ(socket), texte, horodatage: new Date().toISOString() };
 
     if (canal !== "murmure") {
       // "Dire" : en jeu, au nom du personnage ("Garrosh dit : ..."). "Groupe" :

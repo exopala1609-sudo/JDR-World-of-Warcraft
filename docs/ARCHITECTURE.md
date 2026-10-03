@@ -588,4 +588,16 @@ carte (`moteur.versCarte`).
   plusieurs fichiers listent les suivants dans `AUTRES`.
 - `client/src/styles/textures.css` (charge en dernier) : toutes les regles sont
   sous `.tex-<role>` : sans fichier, le dessin CSS d'origine reste.
+- Fiche : champ `sexe` ("masculin" | "feminin" | null, defaut null : pas de
+  changement de version), choisi a la creation guidee. Il sert au portrait par
+  defaut : role `portrait-<race>-<sexe>` (TemporaryPortrait de WoW), utilise
+  quand `portraits/` n'a pas d'image pour le personnage.
+- Discussion : le serveur ajoute `mj: true|false` a chaque message (icone du MJ
+  ou du joueur devant le nom).
+- Polices : `--police-titre` (LifeCraft) et `--police-combat` (Skurri ; la
+  carte demande son chargement avec `document.fonts.load`, un canvas ne le
+  declenchant pas).
+- Demarrage : un dossier d'assets (`VTT_ASSETS_*`) situe dans le projet est
+  refuse (il partirait sur GitHub) ; `.gitignore` exclut aussi `/ICONS/`,
+  `/icones/`, `/interface/`, `/polices/` a la racine, par securite.
 

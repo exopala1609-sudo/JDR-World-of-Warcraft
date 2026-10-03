@@ -22,6 +22,7 @@ import { z } from "./zod.js";
 // Version du format des fiches. Si elle change, modeles/migrations.js sait
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
 export const VERSION_FICHE = 6;
+export const SEXES = /** @type {const} */ (["masculin", "feminin"]);
 
 const entier = (min, max) => z.int().min(min).max(max);
 
@@ -123,6 +124,9 @@ export const SchemaPersonnage = z
     race: schemaIdReferentiel.nullable(),
     faction: schemaIdReferentiel.nullable(),
     portrait: schemaPortrait.nullable(),
+    // Choisi a la creation : donne le portrait par defaut (race + sexe) quand
+    // aucune image n'est choisie. null pour un monstre ou une fiche ancienne.
+    sexe: z.enum(SEXES).nullable().default(null),
     niveau: entier(1, 20),
     caracteristiques: SchemaCaracteristiques,
     classeArmure: entier(1, 40),
@@ -163,6 +167,7 @@ export const SchemaCreationGuidee = z.strictObject({
   caracteristiques: SchemaCaracteristiques,
   bonusAuChoix: z.array(z.enum(CARACTERISTIQUES)).max(6).default([]),
   portrait: schemaPortrait.nullable().default(null),
+  sexe: z.enum(SEXES).nullable().default(null),
 });
 
 // --- Creation libre par le MJ (outils du MJ : PNJ, monstres, fiches existantes) -------
@@ -195,7 +200,7 @@ function exigerDansReferentiel(referentiel, { classe, race, faction }) {
   return trouvee;
 }
 
-function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrait, niveau, caracteristiques, classeArmure, pvMaximum, ressources }) {
+function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrait, sexe = null, niveau, caracteristiques, classeArmure, pvMaximum, ressources }) {
   const maintenant = new Date().toISOString();
   return SchemaPersonnage.parse({
     versionSchema: VERSION_FICHE,
@@ -207,6 +212,7 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
     race: race?.id ?? null,
     faction: faction?.id ?? null,
     portrait,
+    sexe,
     niveau,
     caracteristiques,
     classeArmure, // sans armure : l'equipement viendra plus tard
@@ -252,6 +258,7 @@ export function fabriquerPersonnageGuide(entree, { idTable, proprietaire, refere
     race,
     faction,
     portrait: choix.portrait,
+    sexe: choix.sexe,
     niveau: 1,
     caracteristiques: apercu.caracteristiques,
     classeArmure: apercu.classeArmure,

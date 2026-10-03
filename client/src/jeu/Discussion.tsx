@@ -1,3 +1,4 @@
+import { useTexture } from "@/core/textures";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 import type { LigneJournal } from "@/core/types";
@@ -29,11 +30,17 @@ function separerMurmure(reste: string, presents: string[]): { vers: string; text
 /** Une ligne du journal, formatee comme dans WoW. Le [Nom] se clique pour murmurer. */
 function Ligne({ ligne, surNom }: { ligne: LigneJournal; surNom: (pseudo: string) => void }) {
   const m = ligne.message;
+  const iconeJoueur = useTexture("chat-joueur"); // UI-ChatIcon-Battlenet
+  const iconeMJ = useTexture("chat-mj"); // UI-ChatIcon-Blizz
   if (!m) return <div className={`discussion__ligne--${ligne.type}`}>{ligne.texte}</div>;
+  const icone = m.envoye ? null : m.mj ? iconeMJ : iconeJoueur;
   const nom = (
-    <button type="button" className="discussion__nom" onClick={() => surNom(m.pseudo)} title={`Murmurer a ${m.pseudo}`}>
-      [{m.nom}]
-    </button>
+    <>
+      {icone && <img className="discussion__icone" src={icone} alt={m.mj ? "MJ" : ""} />}
+      <button type="button" className="discussion__nom" onClick={() => surNom(m.pseudo)} title={`Murmurer a ${m.pseudo}`}>
+        [{m.nom}]
+      </button>
+    </>
   );
   return (
     <div className={`discussion__ligne--${ligne.type}`} title={m.heure}>

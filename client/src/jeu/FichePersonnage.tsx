@@ -6,7 +6,7 @@ import { signe } from "@/core/journal";
 import { jeu, useJeu } from "@/core/jeu";
 import { iconeObjet, urlIcone, urlPortrait } from "@/core/medias";
 import type { Personnage } from "@/core/types";
-import { useTexture, type RoleTexture } from "@/core/textures";
+import { rolePortrait, useTexture, useTextures, type RoleTexture } from "@/core/textures";
 import { InfobulleObjet } from "@/jeu/Sacs";
 import { Fenetre } from "@/ui/Fenetre";
 import { preparerGlisser, useCible } from "@/ui/glisser";
@@ -72,6 +72,21 @@ function Emplacement({ id, p, modifiable }: { id: string; p: Personnage; modifia
         <span className="case__libelle">{nom}</span>
       )}
     </div>
+  );
+}
+
+/** Le portrait du mannequin : portraits/<nom>.png, sinon le portrait provisoire de WoW (race + sexe). */
+function PortraitFiche({ p }: { p: Personnage }) {
+  const [absent, setAbsent] = useState(false);
+  const parDefaut = useTextures()[rolePortrait(p.race, p.sexe) ?? "fond-"];
+  if (absent && parDefaut) return <img src={parDefaut} alt="" className="mannequin__portrait-wow" />;
+  return (
+    <img
+      src={`${p.portrait ? `/medias/portraits/${encodeURIComponent(p.portrait)}` : urlPortrait(p.nom)}?remplacement=non`}
+      alt=""
+      style={absent ? { visibility: "hidden" } : undefined}
+      onError={() => setAbsent(true)}
+    />
   );
 }
 
@@ -168,11 +183,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
                 .slice(0, 2)
                 .toUpperCase()}
             </span>
-            <img
-              src={`${urlPortrait(p.nom)}?remplacement=non`}
-              alt=""
-              onError={(e) => ((e.currentTarget as HTMLImageElement).style.visibility = "hidden")}
-            />
+            <PortraitFiche p={p} />
           </div>
           <div className="mannequin__colonne mannequin__colonne--droite">
             {COLONNE_DROITE.map((id) => (

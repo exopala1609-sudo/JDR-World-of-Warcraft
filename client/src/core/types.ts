@@ -137,6 +137,7 @@ export type Personnage = {
   race: string | null;
   faction: string | null;
   portrait: string | null; // fichier du dossier portraits/
+  sexe: "masculin" | "feminin" | null; // choisi a la creation (portrait par defaut race + sexe)
   repose: boolean; // apres un repos long : portrait "repose" facon WoW (Zzz)
   attaquesMonstre: AttaqueMonstre[]; // monstres du bestiaire : leurs attaques
   jeton: string | null; // image du pion (dossier jetons/), sinon le portrait
@@ -257,8 +258,8 @@ export type LigneJournal = {
   texte: string;
   type: "systeme" | "des" | "combat" | "butin" | "erreur" | "dire" | "groupe" | "murmure";
   // Messages de joueurs : qui parle (son pseudo, pour lui murmurer d'un clic) et sous quel nom.
-  message?: { pseudo: string; nom: string; vers?: string; envoye?: boolean; heure: string };
+  message?: { pseudo: string; nom: string; vers?: string; envoye?: boolean; heure: string; mj?: boolean };
 };
 
 /** Un message de la discussion, tel que le serveur le diffuse. */
-export type MessageChat = { canal: "dire" | "groupe" | "murmure"; de: string; nom: string; texte: string; vers?: string; horodatage: string };
+export type MessageChat = { canal: "dire" | "groupe" | "murmure"; de: string; mj?: boolean; nom: string; texte: string; vers?: string; horodatage: string };

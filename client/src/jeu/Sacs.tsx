@@ -1,3 +1,4 @@
+import { useTextures } from "@/core/textures";
 import { RARETES } from "@partage/raretes.js";
 import { jeu, useJeu } from "@/core/jeu";
 import { typeEmplacement, referenceObjet } from "@partage/equipement.js";
@@ -99,6 +100,33 @@ function CaseObjet({ objet, personnage, modifiable }: { objet: Objet; personnage
   );
 }
 
+/**
+ * La valeur du sac en pieces d'or, d'argent et de cuivre (D&D : 1 po = 10 pa
+ * = 100 pc), avec les icones de WoW si elles sont dans le dossier interface/.
+ */
+function Argent({ valeur }: { valeur: number }) {
+  const textures = useTextures();
+  const cuivre = Math.round(valeur * 100);
+  const pieces: [number, string, string | undefined][] = [
+    [Math.floor(cuivre / 100), "po", textures["piece-or"]],
+    [Math.floor(cuivre / 10) % 10, "pa", textures["piece-argent"]],
+    [cuivre % 10, "pc", textures["piece-cuivre"]],
+  ];
+  if (!textures["piece-or"]) return <span>{cuivre / 100} po</span>;
+  return (
+    <span className="argent" title={`${cuivre / 100} po`}>
+      {pieces
+        .filter(([n], i) => n > 0 || i === 0)
+        .map(([n, unite, icone]) => (
+          <span key={unite} className="argent__piece">
+            {n}
+            <img src={icone} alt={unite} />
+          </span>
+        ))}
+    </span>
+  );
+}
+
 export function Sacs({ position }: { position: { x: number; y: number } }) {
   const personnage = useJeu((e) => jeu.personnageDesSacs(e));
   const modifiable = useJeu((e) => Boolean(personnage && (e.profil?.role === "mj" || jeu.mesPersonnages(e).some((p) => p.id === personnage.id))));
@@ -128,7 +156,7 @@ export function Sacs({ position }: { position: { x: number; y: number } }) {
       </div>
       <div className="sacs__pied">
         <span>{personnage ? `${objets.length} objet(s) - ${Math.round(poids * 10) / 10} kg` : "Aucun personnage"}</span>
-        <span>{Math.round(valeur * 100) / 100} po</span>
+        <Argent valeur={valeur} />
       </div>
     </Fenetre>
   );

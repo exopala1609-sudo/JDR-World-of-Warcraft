@@ -43,6 +43,7 @@
      coupes (et une barre de defilement apparaitrait). Seule la description defile. */
 }
 .creation__titre {
+  font-family: var(--police-titre);
   margin: 4px 0 0;
   font-size: 22px;
   letter-spacing: 0.04em;
@@ -497,4 +498,30 @@
   .creation__resume {
     font-size: 28px;
   }
+}
+
+/* --- Choix du sexe (sous les races) ------------------------------------------------ */
+.creation__sexe {
+  display: flex;
+  gap: 8px;
+}
+.creation__sexe-bouton {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--texte-doux);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  cursor: pointer;
+}
+.creation__sexe-bouton:hover {
+  border-color: var(--or-bordure);
+}
+.creation__sexe-bouton--actif {
+  border-color: var(--or);
+  background: rgba(60, 50, 20, 0.6);
+  color: var(--or);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
 }

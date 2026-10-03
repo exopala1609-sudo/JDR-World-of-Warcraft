@@ -17,6 +17,7 @@
   padding: 30px 34px;
 }
 .accueil__titre {
+  font-family: var(--police-titre); /* LifeCraft (logo de WoW) si installee */
   font-size: 34px;
   text-align: center;
 }

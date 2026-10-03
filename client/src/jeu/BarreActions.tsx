@@ -1,4 +1,5 @@
 import { exemplairesDuRaccourci, objetRaccourcissable, referenceObjet } from "@partage/equipement.js";
+import { useTextures } from "@/core/textures";
 import { jeu, useJeu } from "@/core/jeu";
 import { iconeObjet, urlIcone } from "@/core/medias";
 import type { Objet, Personnage, Raccourci, SortConnu } from "@/core/types";
@@ -127,6 +128,8 @@ function CaseRaccourci({ index, p, modifiable }: { index: number; p: Personnage 
 function CaseOutilMJ({ index }: { index: number }) {
   const outil = OUTILS_MJ[index];
   const actif = useJeu((e) => Boolean(outil?.actif?.(e)));
+  const textures = useTextures();
+  const icone = outil?.icone ? textures[outil.icone] : null;
   const touche = RACCOURCIS[index];
   if (!outil) return <div className="case case--vide-mj" />;
   return (
@@ -143,7 +146,7 @@ function CaseOutilMJ({ index }: { index: number }) {
         </>
       ))}
     >
-      <span className="case-outil-mj__symbole">{outil.symbole}</span>
+      {icone ? <img src={icone} alt="" /> : <span className="case-outil-mj__symbole">{outil.symbole}</span>}
       <span className="actions__raccourci">{touche}</span>
     </button>
   );

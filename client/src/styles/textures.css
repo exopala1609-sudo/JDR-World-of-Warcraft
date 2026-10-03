@@ -342,6 +342,11 @@
   padding: calc(72px * var(--k) + 4px) calc(37px * var(--k) + 14px) calc(41px * var(--k) + 8px);
 }
 
+/* Avec un parchemin de quete (QuestBackgroundClassic2...) : c'est lui, rogne, au centre du cadre. */
+.tex-quete-cadre.tex-quete-cadre-fond.tex-quete-parchemin .quetes__parchemin {
+  background-image: var(--tex-quete-parchemin);
+}
+
 /* --- Grimoire et carnet : le livre des sorts de WoW (Spellbook-Page-1 + -2) ------
    Une seule grande page avec son signet a gauche, sur toute la largeur du
    livre ; nos deux "pages" deviennent deux colonnes de cette page. */
@@ -399,4 +404,100 @@
 }
 :root.tex-roche {
   --texture-pierre: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), var(--tex-roche) 0 0 / 512px repeat;
+}
+
+/* --- Micro-menu : bouton a icone (UI-Battlefield-Icon pour l'initiative) ------ */
+.menu__bouton--icone {
+  background:
+    var(--micro) center / 78% no-repeat,
+    linear-gradient(180deg, #4a4a55, #1a1a20);
+}
+
+/* --- Son (VOICECHAT-SPEAKER) et lanceur de des (UI-GroupLoot-Dice) ------------- */
+.reglage-son__image {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+.reglage-son__image--muet {
+  filter: grayscale(1) brightness(0.6);
+}
+.bouton-des__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* --- Barre d'actions du MJ : les icones de WoW a la place des symboles ---------- */
+.case-outil-mj > img {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+/* --- Discussion : icone du joueur / du MJ, cadre de la saisie ---------------------- */
+.discussion__icone {
+  width: 1.1em;
+  height: 1.1em;
+  margin-right: 3px;
+  vertical-align: -0.2em;
+}
+/* UI-ChatInputBorder-Left2 / -Mid2 / -Right2, recomposes en une barre de 96 x 32. */
+.tex-chat-saisie .discussion__saisie .champ {
+  border: 0 solid transparent;
+  border-image: var(--tex-chat-saisie) 9 9 9 10 fill / 9px 9px 9px 10px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 8px 14px;
+}
+
+/* --- Sac : l'argent (UI-GoldIcon, -SilverIcon, -CopperIcon) ---------------------- */
+.argent {
+  display: inline-flex;
+  gap: 8px;
+  font-family: var(--police-chiffres);
+}
+.argent__piece {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.argent__piece img {
+  width: 14px;
+  height: 14px;
+}
+
+/* --- Curseur : le gantelet de WoW (Point), pointe en haut a gauche ---------------- */
+.tex-curseur,
+.tex-curseur * {
+  cursor: var(--tex-curseur) 1 1, auto;
+}
+.tex-curseur :is(input:not([type="range"], [type="checkbox"]), textarea, [contenteditable]) {
+  cursor: text;
+}
+
+/* --- Creation de personnage : capitale de la faction, sexe, portrait provisoire --- */
+.creation--fond {
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.85) 100%),
+    linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25)),
+    var(--fond-faction) center / cover no-repeat,
+    #000;
+}
+.creation__portrait-wow {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px var(--metal),
+    0 0 0 6px #000,
+    0 8px 24px rgba(0, 0, 0, 0.8);
+}
+.mannequin__portrait-wow {
+  border-radius: 50%;
+  object-fit: cover;
 }

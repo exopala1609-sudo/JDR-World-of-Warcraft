@@ -95,7 +95,13 @@ export function construireConfig(env = process.env) {
     }
     const chemin = developper(brut);
     if (dansLeProjet(chemin)) {
-      problemes.push(`${variable}=${brut} : ce dossier est DANS le projet. Les donnees doivent vivre dans ton dossier cloud, pas a cote du code.`);
+      // Un dossier range DANS le projet partirait sur GitHub au prochain envoi
+      // (et, pour les donnees de jeu, ne serait pas synchronise entre les PC).
+      const conseil =
+        variable === "VTT_ASSETS_ICONES"
+          ? "Deplace-le HORS du projet, par exemple dans C:\\Users\\<toi>\\Documents\\WoW-Icones, puis mets ce nouveau chemin ici."
+          : "Les donnees doivent vivre dans ton dossier cloud, pas a cote du code.";
+      problemes.push(`${variable}=${brut} : ce dossier est DANS le dossier du projet (le code), il risquerait de partir sur GitHub. ${conseil}`);
       return null;
     }
     return chemin;

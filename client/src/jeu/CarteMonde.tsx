@@ -42,8 +42,11 @@ export function CarteMonde() {
 
   // 1. Creation du moteur (une seule fois) et branchement sur le serveur.
   useEffect(() => {
-    // Les chiffres de combat utilisent la police de l'interface (Friz Quadrata si installee).
-    const police = getComputedStyle(document.documentElement).getPropertyValue("--police-ui").trim() || "sans-serif";
+    // Les chiffres de combat : Skurri (la police des degats de WoW) si elle est
+    // dans le dossier polices/, sinon celle de l'interface. Un canvas ne
+    // declenche pas le telechargement d'une police : on le demande nous-memes.
+    const police = getComputedStyle(document.documentElement).getPropertyValue("--police-combat").trim() || "sans-serif";
+    document.fonts?.load('20px "Skurri WoW"').catch(() => {});
 
     const moteur = new MoteurCarte(refCanvas.current!, {
       get estMJ() {

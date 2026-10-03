@@ -1,3 +1,4 @@
+import { useTexture } from "@/core/textures";
 import { useEffect, useState } from "react";
 import { CARACTERISTIQUES, bonusDeTest } from "@partage/dnd5e.js";
 import { NOMS_CARACTERISTIQUES } from "@partage/creation.js";
@@ -215,6 +216,8 @@ export function LanceurDes({ surFermer }: { surFermer: () => void }) {
 
 /** Le petit bouton "d20" a cote de la saisie de la discussion. */
 export function BoutonDes({ ouvert, surClic }: { ouvert: boolean; surClic: () => void }) {
+  const des = useTexture("des"); // UI-GroupLoot-Dice-Up
+  const desAppui = useTexture("des-appui") ?? des;
   return (
     <button
       type="button"
@@ -229,7 +232,7 @@ export function BoutonDes({ ouvert, surClic }: { ouvert: boolean; surClic: () =>
         </>
       ))}
     >
-      <IconeDe faces={20} />
+      {des ? <img className="bouton-des__image" src={ouvert ? desAppui! : des} alt="" /> : <IconeDe faces={20} />}
     </button>
   );
 }

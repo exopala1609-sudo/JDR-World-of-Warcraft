@@ -37,11 +37,29 @@
   font-display: swap;
 }
 
+/* Les grands titres (logo de WoW) et les chiffres de combat (degats sur la carte, de). */
+@font-face {
+  font-family: "LifeCraft WoW";
+  src:
+    url("/medias/polices/LifeCraft_Font.ttf") format("truetype"),
+    url("/medias/polices/LifeCraft.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Skurri WoW";
+  src:
+    url("/medias/polices/skurri.ttf") format("truetype"),
+    url("/medias/polices/SKURRI.TTF") format("truetype");
+  font-display: swap;
+}
+
 :root {
   /* Polices : la vraie d'abord, puis les substituts installes sur Windows. */
   --police-ui: "Friz Quadrata WoW", "Friz Quadrata TT", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --police-texte: "Morpheus WoW", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --police-chiffres: "Arial Narrow WoW", "Arial Narrow", Arial, sans-serif;
+  --police-titre: "LifeCraft WoW", var(--police-ui);
+  --police-combat: "Skurri WoW", var(--police-ui);
 
   /* Textes */
   --or: #ffd100; /* le jaune-or des titres de WoW */

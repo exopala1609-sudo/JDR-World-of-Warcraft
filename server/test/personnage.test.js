@@ -139,3 +139,9 @@ test("creation libre : champs inconnus, caracteristiques hors limites et classe 
   assert.throws(() => fabriquerPersonnage({ nom: "Titan", classe: "guerrier", caracteristiques: { ...caracs, force: 45 } }, contexte));
   assert.throws(() => fabriquerPersonnage({ nom: "X", classe: "inconnue", caracteristiques: caracs }, contexte), /Classe inconnue/);
 });
+
+test("creation guidee : le sexe choisi est garde (portrait par defaut race + sexe), absent = null", () => {
+  assert.equal(fabriquerPersonnageGuide({ ...choixValides, sexe: "feminin" }, contexte).sexe, "feminin");
+  assert.equal(fabriquerPersonnageGuide(choixValides, contexte).sexe, null);
+  assert.throws(() => fabriquerPersonnageGuide({ ...choixValides, sexe: "autre" }, contexte));
+});

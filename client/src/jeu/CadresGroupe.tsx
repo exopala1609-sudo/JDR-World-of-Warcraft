@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone, urlPortrait } from "@/core/medias";
-import { useTexture } from "@/core/textures";
+import { rolePortrait, useTexture, useTextures } from "@/core/textures";
 import type { Personnage, Ressource } from "@/core/types";
 import { Barre } from "@/ui/Barre";
 import { avecInfobulle, versScene } from "@/ui/InfoBulle";
@@ -21,7 +21,7 @@ function couleurRessource(r: Ressource) {
   return APPARENCES_DU_THEME.has(r.apparence) ? `var(--ressource-${r.apparence})` : "var(--ressource-autre)";
 }
 
-function Portrait({ nom, niveau, fichier, repose }: { nom: string; niveau: number; fichier: string | null; repose: boolean }) {
+function Portrait({ nom, niveau, fichier, repose, parDefaut }: { nom: string; niveau: number; fichier: string | null; repose: boolean; parDefaut: string | null }) {
   const [absent, setAbsent] = useState(false);
   const initiales = nom
     .split(/\s+/)
@@ -43,6 +43,8 @@ function Portrait({ nom, niveau, fichier, repose }: { nom: string; niveau: numbe
           style={{ position: "relative" }}
         />
       )}
+      {/* Sinon : le portrait provisoire de WoW pour sa race et son sexe (dossier interface/). */}
+      {absent && parDefaut && <img src={parDefaut} alt="" style={{ position: "relative" }} />}
       <div className="portrait__niveau">{repose ? <span className="portrait__zzz">Zzz</span> : niveau}</div>
     </div>
   );
@@ -53,6 +55,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
   const ressource = ressourcePrincipale(p);
   // UI-Player-Portrait dans le dossier interface/ : le cadre de WoW remplace le cadre dessine.
   const texture = useTexture("cadre-unite");
+  const parDefaut = useTextures()[rolePortrait(p.race, p.sexe) ?? "fond-"] ?? null;
   const classes = [
     "cadre-unite",
     texture ? "cadre-unite--texture" : "cadre",
@@ -90,7 +93,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
         </>
       ))}
     >
-      <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} repose={p.repose} />
+      <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} repose={p.repose} parDefaut={parDefaut} />
       <div className="cadre-unite__infos">
         <div className="plaque-nom">
           <span className="plaque-nom__nom">{p.nom}</span>

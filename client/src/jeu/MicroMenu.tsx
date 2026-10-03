@@ -9,11 +9,17 @@ import { avecInfobulle } from "@/ui/InfoBulle";
  * (ex. UI-MicroButton-Quest-Up), il la porte, avec son etat "enfonce" (-Down)
  * quand on clique ou que sa fenetre est ouverte. Sinon : une lettre.
  */
-function BoutonMicro({ libelle, aide, action, actif = false, role }: { libelle: string; aide: string; action: () => void; actif?: boolean; role: RoleTexture }) {
-  const haut = useTexture(role);
-  const bas = useTexture(`${role}-appui` as RoleTexture) ?? haut;
+function BoutonMicro(props: { libelle: string; aide: string; action: () => void; actif?: boolean; role: RoleTexture; icone?: RoleTexture }) {
+  const { libelle, aide, action, actif = false, role, icone } = props;
+  // Une icone choisie (ex. UI-Battlefield-Icon pour l'initiative) passe devant le micro-bouton.
+  const imageIcone = useTexture(icone ?? role);
+  const microHaut = useTexture(role);
+  const microBas = useTexture(`${role}-appui` as RoleTexture) ?? microHaut;
+  const avecIcone = Boolean(icone && imageIcone);
+  const haut = avecIcone ? imageIcone : microHaut;
+  const bas = avecIcone ? imageIcone : microBas;
   const style = haut ? ({ "--micro": `url("${haut}")`, "--micro-appui": `url("${bas}")` } as CSSProperties) : undefined;
-  const forme = !haut ? "" : role === "sac" ? " menu__bouton--sac" : " menu__bouton--texture";
+  const forme = !haut ? "" : avecIcone ? " menu__bouton--icone" : role === "sac" ? " menu__bouton--sac" : " menu__bouton--texture";
   return (
     <button
       type="button"
@@ -39,7 +45,7 @@ export function MicroMenu() {
       <BoutonMicro libelle="C" aide="Personnage (C)" role="micro-personnage" action={() => basculer("personnage")} actif={fenetres.personnage} />
       <BoutonMicro libelle="P" aide="Grimoire (P)" role="micro-grimoire" action={() => basculer("grimoire")} actif={fenetres.grimoire} />
       <BoutonMicro libelle="L" aide="Journal de quetes (L)" role="micro-quetes" action={() => basculer("quetes")} actif={fenetres.quetes} />
-      <BoutonMicro libelle="I" aide="Initiative (I)" role="micro-initiative" action={() => basculer("initiative")} actif={fenetres.initiative} />
+      <BoutonMicro libelle="I" aide="Initiative (I)" role="micro-initiative" icone="icone-initiative" action={() => basculer("initiative")} actif={fenetres.initiative} />
       <BoutonMicro libelle="N" aide="Carnet de notes (N)" role="micro-carnet" action={() => basculer("carnet")} actif={fenetres.carnet} />
       <BoutonMicro libelle="B" aide="Sacs (B)" role="sac" action={() => basculer("sacs")} actif={fenetres.sacs} />
       <ReglageSon />

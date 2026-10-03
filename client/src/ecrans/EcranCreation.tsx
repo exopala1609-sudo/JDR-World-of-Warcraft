@@ -70,6 +70,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   const [idRace, setIdRace] = useState(racesDeLaFaction[0]?.id ?? "");
   const race = referentiel.races.find((r) => r.id === idRace) ?? racesDeLaFaction[0];
   const [idClasse, setIdClasse] = useState(race?.classesPermises[0] ?? "");
+  const [sexe, setSexe] = useState<"masculin" | "feminin">("masculin");
   const classe = referentiel.classes.find((c) => c.id === idClasse);
   const [methode, setMethode] = useState<MethodeCaracteristiques>(regles.methodes[0]);
   const [base, setBase] = useState<Base>(() => baseParDefaut(regles.methodes[0], regles, classe?.caracteristiquesPrincipales));
@@ -151,6 +152,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
       caracteristiques: base,
       bonusAuChoix,
       portrait,
+      sexe,
     });
     // En cas de succes, le magasin bascule tout seul sur l'ecran de jeu.
     if (!r.ok) {
@@ -160,8 +162,16 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   };
 
   const faction = referentiel.factions.find((f) => f.id === idFaction);
+  // Fond de l'ecran : la capitale de la faction (Hurlevents, Orgrimmar) si elle est dans interface/.
+  const fond = textures[`fond-${idFaction}`];
+  // Portrait provisoire de WoW pour la race et le sexe choisis.
+  const portraitWow = race ? textures[`portrait-${race.id}-${sexe}`] : undefined;
   return (
-    <form className="creation" style={{ "--couleur-faction": faction?.couleur ?? "#ffd100" } as CSSProperties} onSubmit={entrer}>
+    <form
+      className={`creation${fond ? " creation--fond" : ""}`}
+      style={{ "--couleur-faction": faction?.couleur ?? "#ffd100", ...(fond ? { "--fond-faction": `url("${fond}")` } : {}) } as CSSProperties}
+      onSubmit={entrer}
+    >
       {/* ===== Gauche : loyaute et race ===== */}
       <section className="creation__colonne cadre">
         <h2 className="creation__titre titre-or">Loyaute</h2>
@@ -180,7 +190,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
                 </>
               ))}
             >
-              <Image src={urlIcone(f.embleme)} texte={f.nom.slice(0, 1)} classe="banniere__embleme" />
+              <Image src={urlIcone(f.embleme)} texte={f.nom.slice(0, 1)} classe="banniere__embleme" secours={textures[`logo-${f.id}`]} />
               <span className="banniere__nom">{f.nom}</span>
             </button>
           ))}
@@ -189,7 +199,36 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         <h2 className="creation__titre titre-or">Race</h2>
         <div className="grille-choix grille-choix--races">
           {racesDeLaFaction.map((r) => (
-            <BoutonChoix key={r.id} nom={r.nom} icone={r.icone} actif={r.id === race?.id} onClick={() => choisirRace(r)} aide={<AideRace race={r} />} />
+            <BoutonChoix
+              key={r.id}
+              nom={r.nom}
+              icone={r.icone}
+              actif={r.id === race?.id}
+              onClick={() => choisirRace(r)}
+              aide={<AideRace race={r} />}
+              secours={textures[`portrait-${r.id}-${sexe}`]}
+            />
+          ))}
+        </div>
+
+        {/* Le sexe du personnage : il choisit le portrait provisoire de WoW (race + sexe). */}
+        <div className="creation__sexe" role="radiogroup" aria-label="Sexe">
+          {(
+            [
+              ["masculin", "Masculin", "♂"],
+              ["feminin", "Feminin", "♀"],
+            ] as const
+          ).map(([valeur, nomSexe, symbole]) => (
+            <button
+              key={valeur}
+              type="button"
+              role="radio"
+              aria-checked={sexe === valeur}
+              className={`creation__sexe-bouton${sexe === valeur ? " creation__sexe-bouton--actif" : ""}`}
+              onClick={() => setSexe(valeur)}
+            >
+              <span aria-hidden="true">{symbole}</span> {nomSexe}
+            </button>
           ))}
         </div>
 
@@ -221,6 +260,13 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         <div className="creation__portrait">
           {portrait ? (
             <img src={`/medias/portraits/${encodeURIComponent(portrait)}`} alt={`Portrait ${race?.nom}`} />
+          ) : portraitWow ? (
+            <div className="creation__portrait-vide">
+              <img className="creation__portrait-wow" src={portraitWow} alt={`Portrait ${race?.nom}`} />
+              <p>
+                Portrait provisoire. Pour le tien : <code>portraits/{race?.id}-1.png</code>...
+              </p>
+            </div>
           ) : (
             <div className="creation__portrait-vide">
               <Image src={race ? urlIcone(race.icone) : ""} texte={race?.nom.slice(0, 2) ?? "?"} classe="creation__portrait-icone" />

@@ -240,7 +240,7 @@ class Jeu {
     const moi = this.etat.profil?.pseudo.toLocaleLowerCase("fr");
     const envoye = m.canal === "murmure" && m.de.toLocaleLowerCase("fr") === moi;
     const heure = new Date(m.horodatage).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" });
-    this.journaliser(m.texte, m.canal, { pseudo: envoye ? m.vers! : m.de, nom: envoye ? m.vers! : m.nom, vers: m.vers, envoye, heure });
+    this.journaliser(m.texte, m.canal, { pseudo: envoye ? m.vers! : m.de, nom: envoye ? m.vers! : m.nom, vers: m.vers, envoye, heure, mj: !envoye && m.mj });
   }
 
   // --- Journal de quetes (MJ seulement : le serveur refuse les joueurs) ---------
