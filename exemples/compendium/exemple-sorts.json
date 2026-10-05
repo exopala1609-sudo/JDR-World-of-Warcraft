@@ -30,7 +30,8 @@
         "ressource": "mana",
         "quantite": 10
       },
-      "resolution": "automatique"
+      "resolution": "automatique",
+      "parNiveauSuperieur": "1d4+1"
     },
     {
       "id": "soins",
@@ -44,7 +45,8 @@
       "cout": {
         "ressource": "mana",
         "quantite": 15
-      }
+      },
+      "parNiveauSuperieur": "1d8"
     },
     {
       "id": "boule-de-feu",
@@ -64,7 +66,28 @@
         "quantite": 40
       },
       "resolution": "sauvegarde",
-      "sauvegarde": "dexterite"
+      "sauvegarde": "dexterite",
+      "parNiveauSuperieur": "1d6"
+    },
+    {
+      "id": "rayon-de-lune",
+      "nom": "Rayon de lune",
+      "niveau": 2,
+      "ecole": "evocation",
+      "icone": "spell_nature_moonglow",
+      "incantation": "1 action",
+      "portee": "36 metres",
+      "composantes": "V, S, M (quelques graines de lunaire)",
+      "duree": "Jusqu'a 1 minute",
+      "concentration": true,
+      "description": "Donnee de test. Un rayon de lumiere argentee brule les creatures dans un cylindre de 1,50 m de rayon.",
+      "degats": {
+        "formule": "2d10",
+        "type": "radiant"
+      },
+      "parNiveauSuperieur": "1d10",
+      "resolution": "sauvegarde",
+      "sauvegarde": "constitution"
     }
   ]
 }

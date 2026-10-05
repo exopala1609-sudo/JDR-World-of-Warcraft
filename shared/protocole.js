@@ -86,6 +86,8 @@ export const EVENEMENTS = /** @type {const} */ ({
   BESTIAIRE_INVOQUER: "bestiaire:invoquer",
   BESTIAIRE_ENREGISTRER: "bestiaire:enregistrer", // creer / modifier un monstre (ecrit dans mes-monstres.json)
   BESTIAIRE_SUPPRIMER: "bestiaire:supprimer", // retirer un monstre de mes-monstres.json
+  SORT_ENREGISTRER: "sort:enregistrer", // MJ : creer / modifier un sort (ecrit dans mes-sorts.json)
+  SORT_SUPPRIMER: "sort:supprimer", // MJ : retirer un sort de mes-sorts.json
 
   // Combat
   COMBAT_DEMARRER: "combat:demarrer", // MJ : lance l'initiative

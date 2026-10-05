@@ -15,6 +15,7 @@ import { ErreurRegle } from "../regles/erreurs.js";
 import { sortirUn } from "../regles/inventaire.js";
 import { appliquerPointsDeVie, texteDeCombat } from "../regles/points-de-vie.js";
 import { jetArme } from "../regles/resolution.js";
+import { cibleDuJet, idCible } from "../regles/cible.js";
 import { proposerJet, sortDuGrimoire } from "./resolution.js";
 
 const idPersonnage = schemaId("p");
@@ -23,7 +24,13 @@ const Demandes = {
   equiper: z.strictObject({ idPersonnage, idObjet: schemaId("o"), emplacement: emplacement.optional() }),
   desequiper: z.strictObject({ idPersonnage, emplacement }),
   barre: z.strictObject({ idPersonnage, index: z.int().min(0).max(TAILLE_BARRE - 1), raccourci: SchemaRaccourci.nullable() }),
-  utiliser: z.strictObject({ idPersonnage, reference: z.string().min(1).max(80) }),
+  // Arme : avec avantage / desavantage, et une cible facultative (texte flottant).
+  utiliser: z.strictObject({
+    idPersonnage,
+    reference: z.string().min(1).max(80),
+    avantage: z.enum(["normal", "avantage", "desavantage"]).default("normal"),
+    idCible,
+  }),
 };
 
 export function brancher(socket, ctx) {
@@ -67,7 +74,7 @@ export function brancher(socket, ctx) {
   });
 
   // --- Utiliser un objet (clic sur la barre d'actions, ou clic droit dans le sac) ---
-  ctx.guichet(socket, EVENEMENTS.OBJET_UTILISER, Demandes.utiliser, ({ idPersonnage, reference }) => {
+  ctx.guichet(socket, EVENEMENTS.OBJET_UTILISER, Demandes.utiliser, ({ idPersonnage, reference, avantage, idCible: cible }) => {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
     const { dansLeSac, equipes } = exemplairesDuRaccourci(personnage, reference);
 
@@ -90,7 +97,13 @@ export function brancher(socket, ctx) {
     if (arme) {
       const objet = equipes.find(([, o]) => o.id === arme.idObjet)[1];
       ctx.publierPersonnage({ ...personnage, repose: false }, { action: "attaque", par: pseudo, nom: objet.nom });
-      return { jet: proposerJet(ctx, socket, personnage, { ...jetArme(personnage, arme, objet), cout: null }) };
+      return {
+        jet: proposerJet(ctx, socket, personnage, {
+          ...jetArme(personnage, arme, objet, undefined, avantage),
+          cout: null,
+          cible: cibleDuJet(ctx, socket, personnage, cible),
+        }),
+      };
     }
 
     const objet = dansLeSac[0] ?? equipes[0]?.[1];

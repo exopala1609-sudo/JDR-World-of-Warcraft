@@ -105,6 +105,9 @@ export const champsSort = {
   description: z.string().max(4000).default(""),
   degats: z.strictObject({ formule: schemaFormule, type: z.string().trim().min(1).max(30) }).optional(),
   soins: schemaFormule.optional(),
+  // Lance avec un emplacement de niveau superieur ("upcast") : ce qui s'ajoute
+  // aux degats (ou aux soins) pour CHAQUE niveau au-dessus du sien. Ex. "1d6".
+  parNiveauSuperieur: schemaFormule.optional(),
   // Comment le sort se resout (voir shared/magie.js) : "attaque" (jet d'attaque
   // de sort), "sauvegarde" (la cible resiste : indiquer "sauvegarde"), ou
   // "automatique" (touche toujours, soigne). Absent : deduit (degats -> attaque).

@@ -29,4 +29,12 @@ export const ETATS_DE_BASE = /** @type {const} */ ({
   entrave: { nom: "Entrave", nature: "debuff", description: "Vitesse 0 ; desavantage a ses attaques et jets de DEX." },
   etourdi: { nom: "Etourdi", nature: "debuff", description: "Neutralise ; echoue aux jets de FOR et DEX." },
   inconscient: { nom: "Inconscient", nature: "debuff", description: "Neutralise, a terre, ne percoit plus rien." },
+  // Pas une condition : l'aura posee d'elle-meme quand on lance un sort a
+  // concentration (un seul a la fois : le suivant remplace le precedent).
+  concentration: {
+    nom: "Concentration",
+    nature: "buff",
+    icone: "Spell_Arcane_MindMastery",
+    description: "Maintient un sort. Subir des degats impose un jet de sauvegarde de Constitution (DD 10 ou la moitie des degats).",
+  },
 });

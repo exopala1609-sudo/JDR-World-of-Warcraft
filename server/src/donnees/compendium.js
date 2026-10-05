@@ -51,6 +51,8 @@ export function installerFichierExemple(dossierCompendium, cheminExemple) {
 
 /** Le fichier ou le jeu ecrit les monstres crees depuis le Bestiaire (dans compendium/). */
 export const FICHIER_MONSTRES_MJ = "mes-monstres.json";
+/** Le fichier ou le jeu ecrit les sorts crees ou modifies depuis le Compendium. */
+export const FICHIER_SORTS_MJ = "mes-sorts.json";
 /**
  * Le fichier ou le jeu ecrit les icones choisies depuis le Compendium :
  * { "objets": { "epee-longue": "INV_Sword_04" }, "sorts": { ... } }. Il
@@ -65,9 +67,11 @@ export function creerCompendium(dossier) {
   let etats = new Map();
   let monstres = new Map();
   let fichierDuMonstre = new Map(); // id -> fichier (relatif) ou il est ecrit
+  let fichierDuSort = new Map();
 
   function charger() {
     const origines = new Map();
+    const originesSorts = new Map();
     const nouveaux = { objets: new Map(), sorts: new Map(), etats: new Map(), monstres: new Map() };
     const erreurs = [];
     const signaler = (fichier, emplacement, message) =>
@@ -113,6 +117,7 @@ export function creerCompendium(dossier) {
           } else {
             nouveaux[section].set(resultat.data.id, resultat.data);
             if (section === "monstres") origines.set(resultat.data.id, relative(dossier, fichier));
+            if (section === "sorts") originesSorts.set(resultat.data.id, relative(dossier, fichier));
           }
         });
       }
@@ -130,6 +135,7 @@ export function creerCompendium(dossier) {
     // On ne remplace l'ancien contenu qu'une fois la lecture terminee.
     ({ objets, sorts, etats, monstres } = nouveaux);
     fichierDuMonstre = origines;
+    fichierDuSort = originesSorts;
     return { objets: objets.size, sorts: sorts.size, etats: etats.size, monstres: monstres.size, erreurs };
   }
 
@@ -165,12 +171,14 @@ export function creerCompendium(dossier) {
     charger,
     lister: () => ({
       objets: [...objets.values()],
-      sorts: [...sorts.values()],
+      // "modifiable" : ecrit dans mes-sorts.json (cree depuis le jeu), donc modifiable depuis le jeu.
+      sorts: [...sorts.values()].map((s) => ({ ...s, modifiable: fichierDuSort.get(s.id) === FICHIER_SORTS_MJ })),
       etats: toutesLesDefinitionsEtat(),
       // "modifiable" : cree depuis le jeu (mes-monstres.json), donc modifiable depuis le jeu.
       monstres: [...monstres.values()].map((m) => ({ ...m, modifiable: fichierDuMonstre.get(m.id) === FICHIER_MONSTRES_MJ })),
     }),
     fichierDuMonstre: (id) => fichierDuMonstre.get(id) ?? null,
+    fichierDuSort: (id) => fichierDuSort.get(id) ?? null,
     dossier,
     obtenirMonstre: (id) => monstres.get(id) ?? null,
     lireChoixIcones,

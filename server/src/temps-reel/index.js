@@ -41,10 +41,11 @@ import * as repos from "./repos.js";
 import * as resolution from "./resolution.js";
 import * as scene from "./scene.js";
 import * as sons from "./sons.js";
+import * as sorts from "./sorts.js";
 import * as tables from "./tables.js";
 import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs, bestiaire, notes];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs, bestiaire, notes, sorts];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
@@ -252,10 +253,11 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
      * et pour un monstre SEULEMENT si son pion leur est visible : un monstre
      * tapi dans le brouillard ne se trahit pas par ses chiffres de degats.
      */
-    publierTexteCombat(personnage, texte) {
+    publierTexteCombat(personnage, texte, { seulementMJ = false } = {}) {
       if (!texte) return;
       const message = { idPersonnage: personnage.id, ...texte };
       io.to(salleMJ(personnage.idTable)).emit(EVENEMENTS.COMBAT_TEXTE, message);
+      if (seulementMJ) return; // jet secret (monstre cache) : les joueurs ne voient rien
       const scene = depot.obtenirScene(personnage.idTable);
       const pion = scene.pions.find((p) => p.idPersonnage === personnage.id);
       if (personnage.proprietaire !== null || (pion && pionVisibleParLesJoueurs(scene, pion, personnage))) {

@@ -12,18 +12,29 @@
 // creation, et un seul jet peut etre en attente par personnage.
 import { EVENEMENTS } from "../../../shared/protocole.js";
 import { CARACTERISTIQUES } from "../../../shared/dnd5e.js";
-import { sortDebloque } from "../../../shared/magie.js";
+import { ETATS_DE_BASE } from "../../../shared/etats.js";
+import { emplacementsDuPersonnage, sortDebloque } from "../../../shared/magie.js";
 import { nouvelId, schemaId } from "../modeles/identifiants.js";
 import { z } from "../modeles/zod.js";
+import { cibleDuJet, effetSurLaCible, idCible } from "../regles/cible.js";
+import { depenserEmplacement } from "../regles/emplacements.js";
 import { ErreurRegle } from "../regles/erreurs.js";
+import { poserEtat } from "../regles/etats.js";
 import { modifierRessource } from "../regles/ressources.js";
 import { jetAttaqueMonstre, jetSort, jetTest } from "../regles/resolution.js";
 import { salleMJ, salleTable } from "./index.js";
 
+const avantage = z.enum(["normal", "avantage", "desavantage"]).default("normal");
+
 const Demandes = {
-  lancer: z.strictObject({ idPersonnage: schemaId("p"), reference: z.string().min(1).max(80) }),
+  lancer: z.strictObject({
+    idPersonnage: schemaId("p"),
+    reference: z.string().min(1).max(80),
+    niveau: z.int().min(1).max(9).optional(), // l'emplacement utilise (upcast) ; par defaut celui du sort
+    idCible,
+  }),
   valider: z.strictObject({ idJet: schemaId("r") }),
-  attaque: z.strictObject({ idPersonnage: schemaId("p"), reference: z.string().min(1).max(60) }),
+  attaque: z.strictObject({ idPersonnage: schemaId("p"), reference: z.string().min(1).max(60), avantage, idCible }),
   test: z.strictObject({
     idPersonnage: schemaId("p"),
     genre: z.enum(["caracteristique", "sauvegarde"]),
@@ -67,19 +78,27 @@ export function proposerJet(ctx, socket, personnage, jet, { secret = false } = {
   return visible;
 }
 
-/** Annonce le resultat a toute la table et oublie le jet. */
+/**
+ * Annonce le resultat a toute la table et oublie le jet. Avec une cible : le
+ * texte de combat flottant au-dessus de son pion (couleur du type de degats,
+ * gros et secoue sur un critique) et "touche / rate" dans la discussion.
+ */
 function validerJet(ctx, jet) {
   ctx.jets.delete(jet.id);
   const { idSocket: _s, cle: _c, ...visible } = jet;
+  const cible = jet.cible ? ctx.depot.obtenirPersonnage(jet.cible.idPersonnage) : null;
+  const effet = cible ? effetSurLaCible(jet, cible) : null;
   const salle = jet.secret ? salleMJ(jet.idTable) : salleTable(jet.idTable);
-  ctx.io.to(salle).emit(EVENEMENTS.JET_RESULTAT, { jet: { ...visible, statut: "valide" } });
+  const resultat = { ...visible, statut: "valide", ...(effet && { cible: { ...jet.cible, touche: effet.touche } }) };
+  ctx.io.to(salle).emit(EVENEMENTS.JET_RESULTAT, { jet: resultat });
+  if (cible && effet?.texte) ctx.publierTexteCombat(cible, effet.texte, { seulementMJ: jet.secret });
 }
 
 export function brancher(socket, ctx) {
   const pseudo = socket.data.profil.pseudo;
 
   // Lancer un sort du grimoire (clic sur la barre d'actions).
-  ctx.guichet(socket, EVENEMENTS.SORT_LANCER, Demandes.lancer, ({ idPersonnage, reference }) => {
+  ctx.guichet(socket, EVENEMENTS.SORT_LANCER, Demandes.lancer, ({ idPersonnage, reference, niveau, idCible: cible }) => {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
     const sort = sortDuGrimoire(personnage, reference);
     if (!sort) throw new ErreurRegle("Ce sort n'est pas (ou plus) dans le grimoire.");
@@ -91,6 +110,17 @@ export function brancher(socket, ctx) {
     // Le cout (Mana...) est paye au lancement : une fois les des jetes, pas de retour en arriere.
     let fiche = { ...personnage, repose: false };
     let cout = null;
+
+    // Emplacement de sort (sorts de niveau 1 et plus, pour un lanceur de sorts) :
+    // au niveau du sort, ou plus haut pour le renforcer ("upcast").
+    const niveauLance = sort.niveau === 0 ? 0 : (niveau ?? sort.niveau);
+    if (niveauLance < sort.niveau) throw new ErreurRegle(`${sort.nom} se lance au niveau ${sort.niveau} au minimum.`);
+    const aDesEmplacements = emplacementsDuPersonnage(personnage, classe).length > 0;
+    if (sort.niveau > 0 && aDesEmplacements) {
+      fiche = { ...fiche, ressources: depenserEmplacement(fiche, niveauLance, classe) };
+    } else if (niveauLance > sort.niveau) {
+      throw new ErreurRegle(`${personnage.nom} n'a pas d'emplacement de sort pour le renforcer.`);
+    }
     if (sort.cout) {
       const ressource = personnage.ressources.find((r) => r.cle === sort.cout.ressource);
       if (!ressource) {
@@ -98,10 +128,23 @@ export function brancher(socket, ctx) {
         throw new ErreurRegle(`${personnage.nom} n'a pas de ${nom} pour lancer ${sort.nom}.`);
       }
       const apres = modifierRessource(ressource, -sort.cout.quantite); // refuse si pas assez
-      fiche = { ...fiche, ressources: personnage.ressources.map((r) => (r.cle === ressource.cle ? apres : r)) };
+      fiche = { ...fiche, ressources: fiche.ressources.map((r) => (r.cle === ressource.cle ? apres : r)) };
       cout = `${sort.cout.quantite} ${ressource.nom}`;
     }
-    const jet = proposerJet(ctx, socket, personnage, { ...jetSort(personnage, sort, classe), cout });
+    if (sort.niveau > 0 && aDesEmplacements) cout = [`Emplacement de niveau ${niveauLance}`, cout].filter(Boolean).join(" + ");
+
+    // Sort a concentration : l'aura s'affiche sous le portrait du lanceur (une
+    // seule a la fois : la nouvelle remplace l'ancienne, comme dans les regles).
+    if (sort.concentration) {
+      const definition = { cle: "concentration", ...ETATS_DE_BASE.concentration, nom: `Concentration : ${sort.nom}` };
+      fiche = poserEtat(fiche, definition, { par: pseudo }).personnage;
+    }
+
+    const jet = proposerJet(ctx, socket, personnage, {
+      ...jetSort(personnage, sort, classe, undefined, niveauLance),
+      cout,
+      cible: cibleDuJet(ctx, socket, personnage, cible),
+    });
     ctx.publierPersonnage(fiche, { action: "sort-lance", par: pseudo, nom: sort.nom, cout });
     return { jet };
   });
@@ -116,11 +159,17 @@ export function brancher(socket, ctx) {
   });
 
   // Attaque d'un monstre du bestiaire (menu du MJ, ou barre d'actions du monstre).
-  ctx.guichet(socket, EVENEMENTS.MONSTRE_ATTAQUER, Demandes.attaque, ({ idPersonnage, reference }) => {
+  ctx.guichet(socket, EVENEMENTS.MONSTRE_ATTAQUER, Demandes.attaque, ({ idPersonnage, reference, avantage: mode, idCible: cible }) => {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
     const attaque = personnage.attaquesMonstre.find((a) => a.nom === reference);
     if (!attaque) throw new ErreurRegle(`${personnage.nom} ne connait pas l'attaque "${reference}".`);
-    return { jet: proposerJet(ctx, socket, personnage, { ...jetAttaqueMonstre(personnage, attaque), cout: null }) };
+    return {
+      jet: proposerJet(ctx, socket, personnage, {
+        ...jetAttaqueMonstre(personnage, attaque, undefined, mode),
+        cout: null,
+        cible: cibleDuJet(ctx, socket, personnage, cible),
+      }),
+    };
   });
 
   // "Valider" : le lanceur (ou le MJ) annonce le resultat a la table.

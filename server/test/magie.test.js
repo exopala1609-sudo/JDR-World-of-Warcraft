@@ -132,3 +132,63 @@ test("attaque de monstre : bonus de degats affiche a part ; un critique ne doubl
   const critique = jetAttaqueMonstre({ nom: "Gnoll" }, attaque, desTruques(20, 5));
   assert.equal(critique.lignes[1].des.formule, "2d6"); // le +2 n'est pas double
 });
+
+// --- Sprint 11 : emplacements, upcast, effet sur la cible -----------------------------
+import { emplacementsDeLaTable, emplacementsDuPersonnage, formuleAuNiveau } from "../../shared/magie.js";
+import { couleurDegats } from "../../shared/types-degats.js";
+import { depenserEmplacement } from "../src/regles/emplacements.js";
+import { effetSurLaCible } from "../src/regles/cible.js";
+
+test("emplacements de sorts : table D&D (complet, demi-lanceur), ressources du personnage", () => {
+  assert.deepEqual(emplacementsDeLaTable(1), [2]);
+  assert.deepEqual(emplacementsDeLaTable(5), [4, 3, 2]);
+  assert.deepEqual(emplacementsDeLaTable(20), [4, 3, 3, 3, 3, 2, 2, 1, 1]);
+  assert.deepEqual(emplacementsDeLaTable(1, "demi"), []);
+  assert.deepEqual(emplacementsDeLaTable(5, "demi"), [4, 2]);
+  // Pas de ressource "emplacements" : pas un lanceur de sorts (guerrier).
+  assert.deepEqual(emplacementsDuPersonnage({ niveau: 5, ressources: [] }), []);
+  // La ressource du personnage l'emporte (niv. 1) ; la table complete les autres niveaux.
+  const fiche = { nom: "Jaina", niveau: 3, ressources: [{ cle: "emplacements-niveau-1", nom: "E", type: "compteur", actuel: 1, max: 2, reposCourt: "aucun", reposLong: "remplir", apparence: "emplacement-sort" }] };
+  assert.deepEqual(emplacementsDuPersonnage(fiche), [{ niveau: 1, max: 2, actuel: 1 }, { niveau: 2, max: 2, actuel: 2 }]);
+  // Depenser un niveau 2 : la ressource est creee (repos long : remplir).
+  const apres = depenserEmplacement(fiche, 2);
+  assert.deepEqual(apres.find((r) => r.cle === "emplacements-niveau-2"), { cle: "emplacements-niveau-2", nom: "Emplacements de sort (niv. 2)", type: "compteur", actuel: 1, max: 2, reposCourt: "aucun", reposLong: "remplir", apparence: "emplacement-sort" });
+  assert.throws(() => depenserEmplacement({ ...fiche, ressources: depenserEmplacement(fiche, 1) }, 1), /plus d'emplacement de niveau 1/);
+  assert.throws(() => depenserEmplacement(fiche, 3), /pas d'emplacement de sort de niveau 3/);
+});
+
+test("upcast : chaque niveau en plus ajoute 'parNiveauSuperieur' (degats ou soins)", () => {
+  assert.equal(formuleAuNiveau("8d6", "1d6", 2), "8d6+2d6");
+  assert.equal(formuleAuNiveau("3d4+3", "1d4+1", 1), "3d4+3+1d4+1");
+  assert.equal(formuleAuNiveau("8d6", "1d6", 0), "8d6");
+  const formules = [];
+  const lancer = (f) => (formules.push(f), { total: 5, termes: [{ type: "des", jets: [5], gardes: [0], faces: 6 }] });
+  const boule = { nom: "Boule de feu", niveau: 3, ecole: "evocation", degats: { formule: "8d6", type: "feu" }, parNiveauSuperieur: "1d6", resolution: "sauvegarde" };
+  const jet = jetSort(mage, boule, referentiel.obtenirClasse("magicien"), lancer, 5);
+  assert.ok(formules.includes("8d6+2d6"));
+  assert.match(jet.note, /Lance au niveau 5/);
+  assert.match(jet.action.detail, /lance au niveau 5/);
+});
+
+test("effet sur la cible (affichage seulement) : touche contre la CA, critique, rate, couleur du type", () => {
+  const cible = { classeArmure: 15 };
+  const jet = (d20, total, degats = "Degats (feu)") => ({
+    action: { genre: "sort" },
+    lignes: [
+      { libelle: "Attaque de sort", d20, total, critique: d20 === 20, echec: d20 === 1 },
+      { libelle: degats, d20: null, total: 9 },
+    ],
+  });
+  assert.deepEqual(effetSurLaCible(jet(12, 17), cible), { touche: true, texte: { genre: "degats", montant: 9, critique: false, type: "feu", couleur: couleurDegats("feu") } });
+  assert.equal(effetSurLaCible(jet(12, 14), cible).texte.genre, "rate");
+  assert.equal(effetSurLaCible(jet(1, 30), cible).touche, false); // 1 naturel : rate toujours
+  const critique = effetSurLaCible(jet(20, 5), cible);
+  assert.equal(critique.touche, true); // 20 naturel : touche toujours
+  assert.equal(critique.texte.critique, true);
+  assert.equal(couleurDegats("Nécrotique"), "#a26bd6");
+  assert.equal(couleurDegats("tranchant"), "#ffffff");
+  // Un sort a sauvegarde (pas de d20) : le montant, sans verdict.
+  const boule = { action: { genre: "sort" }, lignes: [{ libelle: "Degats (feu)", d20: null, total: 28 }] };
+  assert.equal(effetSurLaCible(boule, cible).touche, null);
+  assert.equal(effetSurLaCible(boule, cible).texte.montant, 28);
+});

@@ -4,7 +4,7 @@
 // des est passe en parametre (un "faux de" dans les tests).
 import { bonusDeMaitrise, bonusDeTest, modificateur } from "../../../shared/dnd5e.js";
 import { NOMS_CARACTERISTIQUES } from "../../../shared/creation.js";
-import { caracteristiqueIncantation, resolutionDuSort } from "../../../shared/magie.js";
+import { caracteristiqueIncantation, formuleAuNiveau, resolutionDuSort } from "../../../shared/magie.js";
 import { lancerDes } from "./des.js";
 
 const modif = (nom, valeur) => ({ nom, valeur });
@@ -63,12 +63,13 @@ function ligneDes(libelle, formule, modificateurs, lancer) {
  * Attaque avec une arme equipee. "attaque" : une entree de attaquesEquipees()
  * (shared/equipement.js) : arme, caracteristique utilisee et son modificateur.
  */
-export function jetArme(fiche, attaque, objet, lancer = lancerDes) {
+export function jetArme(fiche, attaque, objet, lancer = lancerDes, avantage = "normal") {
   const maitrise = bonusDeMaitrise(fiche.niveau);
   const toucher = ligneD20(
     "Jet d'attaque",
     [modif(NOMS_CARACTERISTIQUES[attaque.caracteristique], attaque.modificateur), modif("Maitrise", maitrise)],
     lancer,
+    avantage,
   );
   const formule = toucher.critique ? doublerDes(objet.arme.degats) : objet.arme.degats;
   const degats = ligneDes(`Degats (${objet.arme.typeDegats})`, formule, [modif(NOMS_CARACTERISTIQUES[attaque.caracteristique], attaque.modificateur)], lancer);
@@ -141,8 +142,8 @@ export function jetTest(fiche, genre, caracteristique, classe, avantage = "norma
  * degats (la formule du bestiaire inclut deja son bonus, ex. "1d6+2").
  * 20 naturel : des de degats doubles ; 1 naturel : rate.
  */
-export function jetAttaqueMonstre(fiche, attaque, lancer = lancerDes) {
-  const toucher = ligneD20("Jet d'attaque", [modif("Toucher", attaque.toucher)], lancer);
+export function jetAttaqueMonstre(fiche, attaque, lancer = lancerDes, avantage = "normal") {
+  const toucher = ligneD20("Jet d'attaque", [modif("Toucher", attaque.toucher)], lancer, avantage);
   // "1d6+2" : les des d'un cote, le bonus fixe de l'autre (affiche a part ;
   // un critique ne double que les des, comme dans les regles).
   const [, des, bonus] = attaque.degats.replace(/\s+/g, "").match(/^(.*?)((?:[+-]\d+)*)$/);
@@ -157,8 +158,13 @@ export function jetAttaqueMonstre(fiche, attaque, lancer = lancerDes) {
   };
 }
 
-/** Lancer un sort du grimoire. "classe" : l'entree du referentiel (caracteristique d'incantation). */
-export function jetSort(fiche, sort, classe, lancer = lancerDes) {
+/**
+ * Lancer un sort du grimoire. "classe" : l'entree du referentiel (caracteristique
+ * d'incantation). "niveauLance" : le niveau de l'emplacement utilise (upcast :
+ * plus haut que le sort, ses degats / soins grossissent de "parNiveauSuperieur").
+ */
+export function jetSort(fiche, sort, classe, lancer = lancerDes, niveauLance = sort.niveau) {
+  const enPlus = sort.niveau > 0 ? Math.max(0, niveauLance - sort.niveau) : 0;
   const carac = caracteristiqueIncantation(classe);
   const mod = modificateur(fiche.caracteristiques[carac]);
   const maitrise = bonusDeMaitrise(fiche.niveau);
@@ -182,19 +188,27 @@ export function jetSort(fiche, sort, classe, lancer = lancerDes) {
     note = `DD ${dd} (8 + Maitrise ${maitrise} + ${nomCarac} ${mod >= 0 ? "+" : ""}${mod}) : les cibles font un jet de sauvegarde de ${sauvegarde}.`;
   }
   if (sort.degats) {
-    const formule = critique ? doublerDes(sort.degats.formule) : sort.degats.formule;
+    const base = formuleAuNiveau(sort.degats.formule, sort.parNiveauSuperieur, enPlus);
+    const formule = critique ? doublerDes(base) : base;
     lignes.push(ligneDes(`Degats (${sort.degats.type})`, formule, [], lancer));
   }
-  if (sort.soins) lignes.push(ligneDes("Soins", sort.soins, [modif(nomCarac, mod)], lancer));
-  return { action: actionSort(sort), lignes, note };
+  if (sort.soins) {
+    const soins = sort.degats ? sort.soins : formuleAuNiveau(sort.soins, sort.parNiveauSuperieur, enPlus);
+    lignes.push(ligneDes("Soins", soins, [modif(nomCarac, mod)], lancer));
+  }
+  if (enPlus > 0) note = [`Lance au niveau ${niveauLance} (+${enPlus}).`, note].filter(Boolean).join(" ");
+  return { action: actionSort(sort, niveauLance), lignes, note };
 }
 
-function actionSort(sort) {
+function actionSort(sort, niveauLance = sort.niveau) {
   return {
     genre: "sort",
     nom: sort.nom,
     icone: sort.icone ?? sort.source ?? null,
     rarete: null,
-    detail: sort.niveau === 0 ? `Sort mineur - ${sort.ecole}` : `Sort de niveau ${sort.niveau} - ${sort.ecole}`,
+    detail:
+      sort.niveau === 0
+        ? `Sort mineur - ${sort.ecole}`
+        : `Sort de niveau ${sort.niveau}${niveauLance > sort.niveau ? ` lance au niveau ${niveauLance}` : ""} - ${sort.ecole}`,
   };
 }

@@ -837,3 +837,59 @@ test("compendium : le MJ choisit l'icone d'un objet, les exemplaires deja donnes
   assert.equal(retour.icone, "inv_sword_04");
   assert.equal(depot.obtenirPersonnage(perso.Garrosh.id).inventaire.find((o) => o.source === "epee-longue").icone, "inv_sword_04");
 });
+
+test("sprint 11 : sort renforce (emplacement eteint), concentration, texte flottant sur la cible, PV inchanges", async () => {
+  const r = await demander(mj, EVENEMENTS.PERSONNAGE_CREER, {
+    donnees: { nom: "Khadgar", classe: "magicien", niveau: 3, caracteristiques: { ...CARAC, intelligence: 16 }, proprietaire: "Jaina" },
+  });
+  assert.equal(r.ok, true, r.erreur);
+  const khadgar = r.personnage.id;
+  assert.equal((await demander(mj, EVENEMENTS.GRIMOIRE_APPRENDRE, { idPersonnage: khadgar, idSort: "rayon-de-lune" })).ok, true);
+
+  // Pas sous le niveau du sort, ni au-dessus de ses emplacements (niveau 3 de personnage : jusqu'au niv. 2).
+  assert.match((await demander(jaina, EVENEMENTS.SORT_LANCER, { idPersonnage: khadgar, reference: "rayon-de-lune", niveau: 1 })).erreur, /niveau 2 au minimum/);
+  assert.match((await demander(jaina, EVENEMENTS.SORT_LANCER, { idPersonnage: khadgar, reference: "rayon-de-lune", niveau: 3 })).erreur, /pas d'emplacement de sort de niveau 3/);
+
+  const pvAvant = depot.obtenirPersonnage(perso.Garrosh.id).pointsDeVie.actuels;
+  const lance = await demander(jaina, EVENEMENTS.SORT_LANCER, { idPersonnage: khadgar, reference: "rayon-de-lune", niveau: 2, idCible: perso.Garrosh.id });
+  assert.equal(lance.ok, true, lance.erreur);
+  assert.deepEqual(lance.jet.cible, { idPersonnage: perso.Garrosh.id, nom: "Garrosh" });
+  assert.match(lance.jet.cout, /Emplacement de niveau 2/);
+  const fiche = depot.obtenirPersonnage(khadgar);
+  assert.equal(fiche.ressources.find((x) => x.cle === "emplacements-niveau-2").actuel, 1); // une gemme eteinte sur 2
+  assert.equal(fiche.etats.find((e) => e.cle === "concentration")?.nom, "Concentration : Rayon de lune");
+
+  // "Valider" : le resultat (avec la cible) a toute la table, le texte flottant au-dessus de Garrosh.
+  const texte = attendre(thrall, EVENEMENTS.COMBAT_TEXTE, 800, (t) => t.idPersonnage === perso.Garrosh.id);
+  const resultat = attendre(thrall, EVENEMENTS.JET_RESULTAT, 800, (d) => d.jet.id === lance.jet.id);
+  assert.equal((await demander(jaina, EVENEMENTS.JET_VALIDER, { idJet: lance.jet.id })).ok, true);
+  const t = await texte;
+  assert.equal(t.genre, "degats");
+  assert.equal(t.type, "radiant");
+  assert.equal(t.couleur, "#ffe36e");
+  assert.equal((await resultat).jet.cible.nom, "Garrosh");
+  // REGLE D'OR : le serveur n'a retire aucun PV (c'est le MJ qui le fera, a la main).
+  assert.equal(depot.obtenirPersonnage(perso.Garrosh.id).pointsDeVie.actuels, pvAvant);
+  await demander(mj, EVENEMENTS.PERSONNAGE_SUPPRIMER, { idPersonnage: khadgar });
+});
+
+test("sprint 11 : le MJ cree, modifie et supprime ses sorts (mes-sorts.json) ; refuse aux joueurs", async () => {
+  const sort = { nom: "Eclair de givre", niveau: 0, ecole: "evocation", icone: "spell_frost_frostbolt02", portee: "18 metres", degats: { formule: "1d8", type: "froid" }, resolution: "attaque" };
+  assert.equal((await demander(thrall, EVENEMENTS.SORT_ENREGISTRER, { sort })).ok, false);
+  const cree = await demander(mj, EVENEMENTS.SORT_ENREGISTRER, { sort });
+  assert.equal(cree.ok, true, cree.erreur);
+  assert.equal(cree.sort.id, "eclair-de-givre");
+  let liste = (await demander(mj, EVENEMENTS.COMPENDIUM_LISTER)).sorts;
+  assert.equal(liste.find((s) => s.id === "eclair-de-givre").modifiable, true);
+  assert.equal(liste.find((s) => s.id === "boule-de-feu").modifiable, false); // ecrit par le MJ dans SON fichier
+  assert.match(readFileSync(join(dossier, "compendium", "mes-sorts.json"), "utf8"), /"Eclair de givre"/);
+  // Modifier (concentration, autre niveau) ; un sort mal rempli est refuse avec la raison.
+  assert.equal((await demander(mj, EVENEMENTS.SORT_ENREGISTRER, { sort: { ...sort, id: "eclair-de-givre", niveau: 1, concentration: true }, remplace: "eclair-de-givre" })).ok, true);
+  liste = (await demander(mj, EVENEMENTS.COMPENDIUM_LISTER)).sorts;
+  assert.equal(liste.find((s) => s.id === "eclair-de-givre").concentration, true);
+  assert.match((await demander(mj, EVENEMENTS.SORT_ENREGISTRER, { sort: { ...sort, niveau: 12 } })).erreur, /niveau/);
+  // Supprimer : seulement les sorts crees depuis le jeu.
+  assert.equal((await demander(mj, EVENEMENTS.SORT_SUPPRIMER, { idSort: "boule-de-feu" })).ok, false);
+  assert.equal((await demander(mj, EVENEMENTS.SORT_SUPPRIMER, { idSort: "eclair-de-givre" })).ok, true);
+  assert.ok(!(await demander(mj, EVENEMENTS.COMPENDIUM_LISTER)).sorts.some((s) => s.id === "eclair-de-givre"));
+});
