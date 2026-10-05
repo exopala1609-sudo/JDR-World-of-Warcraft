@@ -111,6 +111,7 @@ Exemple : armure de cuir (11) + DEX +2 + bouclier (2) + cape (1) = CA 16.
   "composantes": "V, S, M",
   "description": "Une explosion de flammes de 6 metres de rayon.",
   "degats": { "formule": "8d6", "type": "feu" },
+  "parNiveauSuperieur": "1d6",
   "resolution": "sauvegarde",
   "sauvegarde": "dexterite",
   "cout": { "ressource": "mana", "quantite": 40 }
@@ -123,13 +124,37 @@ Exemple : armure de cuir (11) + DEX +2 + bouclier (2) + cape (1) = CA 16.
 | `niveau` | oui | 0 (sort mineur) a 9 |
 | `ecole` | oui | `abjuration`, `divination`, `enchantement`, `evocation`, `illusion`, `invocation`, `necromancie`, `transmutation` |
 | `incantation`, `portee`, `composantes`, `duree` | non | textes libres |
-| `concentration`, `rituel` | non | `true` / `false` |
-| `degats` | non | `formule` et `type` |
+| `concentration`, `rituel` | non | `true` / `false`. Un sort de concentration pose l'aura « Concentration : <sort> » sous le portrait du lanceur (elle remplace la precedente) |
+| `degats` | non | `formule` et `type`. Le `type` colore le texte flottant (`feu` rouge, `froid` bleu glace, `radiant` dore... voir PERSONNALISER.md) |
 | `soins` | non | formule de des |
-| `cout` | non | cout dans une ressource facon WoW : `ressource` (`mana`, `rage`, `energie`...) et `quantite` |
+| `parNiveauSuperieur` | non | ce que le sort gagne par niveau d'emplacement au-dessus du sien (« renforcement ») : `"1d6"` -> Boule de feu lancee au niveau 5 = `8d6+2d6` |
+| `cout` | non | cout dans une ressource facon WoW : `ressource` (`mana`, `rage`, `energie`...) et `quantite`. **S'ajoute** a l'emplacement de sort : un Mage qui lance un sort avec un `cout` depense un emplacement ET le mana. Retire ce champ si tu ne joues qu'avec les emplacements |
 | `resolution` | non | `attaque` (jet d'attaque de sort), `sauvegarde` (la cible resiste contre ton DD) ou `automatique` (touche toujours). Par defaut : `attaque` si le sort a des `degats`, sinon `automatique` |
 | `sauvegarde` | non | pour `"resolution": "sauvegarde"` : la caracteristique de la cible (`dexterite`, `sagesse`...) |
 | `icone`, `description` | non | comme pour les objets |
+
+### Les sorts crees dans le jeu (`mes-sorts.json`)
+
+Le MJ ouvre le **Compendium** (barre MJ), onglet **Sorts** :
+
+- **+ Nouveau sort** : un formulaire (nom, icone choisie dans la galerie,
+  niveau, ecole, degats et type, renforcement...). Rien a taper pour l'icone.
+- **Modifier** / **Supprimer** : seulement sur les sorts crees dans le jeu.
+  Sur un sort de tes fichiers, **Dupliquer** en fait une copie modifiable.
+- **Glisser** le nom d'un sort sur la fenetre *Actions & Sorts* d'un joueur
+  ou sur son cadre de groupe : il l'apprend.
+
+Le jeu ecrit ces sorts dans `compendium/mes-sorts.json` (ton dossier cloud),
+un fichier JSON normal que tu peux aussi corriger a la main.
+
+### Emplacements de sorts
+
+Les lanceurs (classes qui ont une ressource `emplacements-niveau-N` dans
+`classes.json`) suivent la table D&D 5e : un Mage niveau 5 a 4 / 3 / 2
+emplacements de niveau 1 / 2 / 3. Lancer un sort eteint une gemme ; le
+**repos long** (bouton du MJ sur la fiche) les rallume toutes. Un sort peut
+etre lance dans un emplacement plus haut que son niveau : il est alors
+renforce (`parNiveauSuperieur`). Les sorts mineurs (niveau 0) sont gratuits.
 
 ## Auras et debuffs (etats)
 

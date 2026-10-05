@@ -147,13 +147,19 @@ test("emplacements de sorts : table D&D (complet, demi-lanceur), ressources du p
   assert.deepEqual(emplacementsDeLaTable(5, "demi"), [4, 2]);
   // Pas de ressource "emplacements" : pas un lanceur de sorts (guerrier).
   assert.deepEqual(emplacementsDuPersonnage({ niveau: 5, ressources: [] }), []);
-  // La ressource du personnage l'emporte (niv. 1) ; la table complete les autres niveaux.
+  // Niveau 3 : la table donne 4 emplacements de niv. 1 (la ressource n'en avait que 2,
+  // dont 1 depense : les 2 gagnes en montant de niveau arrivent allumes) et 2 de niv. 2.
   const fiche = { nom: "Jaina", niveau: 3, ressources: [{ cle: "emplacements-niveau-1", nom: "E", type: "compteur", actuel: 1, max: 2, reposCourt: "aucun", reposLong: "remplir", apparence: "emplacement-sort" }] };
-  assert.deepEqual(emplacementsDuPersonnage(fiche), [{ niveau: 1, max: 2, actuel: 1 }, { niveau: 2, max: 2, actuel: 2 }]);
+  assert.deepEqual(emplacementsDuPersonnage(fiche), [{ niveau: 1, max: 4, actuel: 3 }, { niveau: 2, max: 2, actuel: 2 }]);
+  // Depenser au niv. 1 met la ressource a la taille de la table.
+  assert.deepEqual(depenserEmplacement(fiche, 1).find((r) => r.cle === "emplacements-niveau-1").max, 4);
+  // Magie de pacte (Occultiste) : seulement sa ressource, pas la table.
+  assert.deepEqual(emplacementsDuPersonnage({ ...fiche, niveau: 5 }, { progressionSorts: "pacte" }), [{ niveau: 1, max: 2, actuel: 1 }]);
   // Depenser un niveau 2 : la ressource est creee (repos long : remplir).
   const apres = depenserEmplacement(fiche, 2);
   assert.deepEqual(apres.find((r) => r.cle === "emplacements-niveau-2"), { cle: "emplacements-niveau-2", nom: "Emplacements de sort (niv. 2)", type: "compteur", actuel: 1, max: 2, reposCourt: "aucun", reposLong: "remplir", apparence: "emplacement-sort" });
-  assert.throws(() => depenserEmplacement({ ...fiche, ressources: depenserEmplacement(fiche, 1) }, 1), /plus d'emplacement de niveau 1/);
+  const vide = { ...fiche, niveau: 1, ressources: [{ ...fiche.ressources[0], actuel: 0 }] };
+  assert.throws(() => depenserEmplacement(vide, 1), /plus d'emplacement de niveau 1/);
   assert.throws(() => depenserEmplacement(fiche, 3), /pas d'emplacement de sort de niveau 3/);
 });
 

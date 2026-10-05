@@ -921,6 +921,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab; /* on deplace la galerie en tirant sa barre de titre */
+  touch-action: none;
+}
+.selecteur-icone__entete:active {
+  cursor: grabbing;
+}
+.selecteur-icone__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.selecteur-icone__pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  color: var(--texte-doux);
 }
 .selecteur-icone__recherche {
   display: flex;

@@ -130,7 +130,7 @@ export const SchemaClasse = z.strictObject({
   maitriseSauvegardes: z.array(schemaCaracteristique).max(6).default([]),
   // Magie : caracteristique des sorts (jet d'attaque, DD) et rythme de progression.
   caracteristiqueIncantation: schemaCaracteristique.optional(),
-  progressionSorts: z.enum(["complete", "demi"], 'progressionSorts : "complete" ou "demi".').default("complete"),
+  progressionSorts: z.enum(["complete", "demi", "pacte"], 'progressionSorts : "complete", "demi" ou "pacte".').default("complete"),
   ressources: z
     .array(
       z.strictObject({

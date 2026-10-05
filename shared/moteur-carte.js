@@ -31,11 +31,15 @@ const DUREE_PING_MS = 1600;
 
 // Textes de combat flottants (facon WoW) : taille en pixels d'ECRAN, pour
 // rester lisibles quel que soit le zoom de la carte.
+// Une attaque ciblee donne aussi sa couleur (type de degats : rouge = feu,
+// vert = poison... voir shared/types-degats.js), qui remplace celle du style.
 const STYLES_TEXTE = {
   degats: { couleur: "#ffffff", taille: 30, duree: 1400 },
-  critique: { couleur: "#ffd100", taille: 48, duree: 1800 },
+  critique: { couleur: "#ffd100", taille: 52, duree: 1900 },
   soins: { couleur: "#3cff3c", taille: 30, duree: 1400 },
+  rate: { couleur: "#d8d8d8", taille: 24, duree: 1200 }, // attaque qui manque sa cible
 };
+const DUREE_SECOUSSE = 0.35; // part de la duree pendant laquelle un critique tremble
 
 export class MoteurCarte {
   /**
@@ -185,7 +189,7 @@ export class MoteurCarte {
 
   /**
    * Texte de combat flottant au-dessus du pion d'un personnage.
-   * texte = { genre: "degats" | "soins", montant, critique, absorbe }
+   * texte = { genre: "degats" | "soins" | "rate", montant, critique, absorbe, couleur? }
    * Renvoie false si le personnage n'a pas de pion sur la carte.
    */
   afficherTexteCombat(idPersonnage, texte) {
@@ -194,7 +198,8 @@ export class MoteurCarte {
     const maintenant = performance.now();
     // Plusieurs coups rapproches : on les decale a gauche / a droite pour qu'ils restent lisibles.
     const voisins = this.effets.filter((e) => e.type === "texte" && e.idPion === pion.id && maintenant - e.debut < 500).length;
-    const style = STYLES_TEXTE[texte.genre === "soins" ? "soins" : texte.critique ? "critique" : "degats"];
+    const base = STYLES_TEXTE[texte.genre === "soins" ? "soins" : texte.genre === "rate" ? "rate" : texte.critique ? "critique" : "degats"];
+    const style = texte.couleur ? { ...base, couleur: texte.couleur } : base;
     this.effets.push({ type: "texte", idPion: pion.id, ...texte, style, colonne: [0, -1, 1][voisins % 3], debut: maintenant, duree: style.duree });
     this.sale = true;
     return true;
@@ -531,9 +536,11 @@ export class MoteurCarte {
     // Un coup critique "claque" : il apparait en grand puis revient a sa taille.
     const zoomCritique = texte.critique && t < 0.12 ? 1.6 - (t / 0.12) * 0.6 : 1;
     const taille = texte.style.taille * zoomCritique;
-    const px = base.x + texte.colonne * Math.max(r, 20) * 0.9;
-    const py = base.y - r - 12 - montee * 70;
-    const valeur = texte.genre === "soins" ? `+${texte.montant}` : `${texte.montant}`;
+    // Un coup critique tremble (secousse qui s'amortit), comme dans WoW.
+    const secousse = texte.critique && t < DUREE_SECOUSSE ? (1 - t / DUREE_SECOUSSE) * 7 : 0;
+    const px = base.x + texte.colonne * Math.max(r, 20) * 0.9 + Math.sin(t * 160) * secousse;
+    const py = base.y - r - 12 - montee * 70 + Math.cos(t * 130) * secousse * 0.6;
+    const valeur = texte.genre === "rate" ? "Raté" : texte.genre === "soins" ? `+${texte.montant}` : `${texte.montant}${texte.critique ? " !" : ""}`;
 
     c.globalAlpha = opacite;
     c.textAlign = "center";

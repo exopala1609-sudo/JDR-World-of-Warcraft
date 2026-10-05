@@ -39,13 +39,14 @@ export type Charge =
   | { origine: "equipement"; objet: Objet; idPersonnage: string; emplacement: string }
   | { origine: "butin"; objet: Objet; idButin: string }
   | { origine: "grimoire"; sort: SortConnu; idPersonnage: string } // un sort tire du grimoire (P)
+  | { origine: "compendium-sort"; sort: SortConnu } // MJ : un sort du compendium, a apprendre a un heros
   | { origine: "bestiaire"; monstre: Monstre } // MJ : un monstre a poser sur la carte
   | { origine: "coffre" } // MJ : un coffre vide a poser sur la carte
   | { origine: "barre"; image: string; rarete?: string; idPersonnage: string; index: number };
 
 /** L'image du fantome : l'icone de l'objet ou du sort transporte. */
 function apparence(charge: Charge): { image: string; rarete?: string; quantite: number } {
-  if (charge.origine === "grimoire") return { image: iconeObjet(charge.sort), quantite: 0 };
+  if (charge.origine === "grimoire" || charge.origine === "compendium-sort") return { image: iconeObjet(charge.sort), quantite: 0 };
   if (charge.origine === "bestiaire") return { image: urlIcone(charge.monstre.icone ?? charge.monstre.id), quantite: 0 };
   if (charge.origine === "coffre") return { image: urlIcone("coffre"), rarete: "classique", quantite: 0 };
   if (charge.origine === "barre") return { image: charge.image, rarete: charge.rarete, quantite: 0 };

@@ -6,6 +6,9 @@ import { InfobulleSort, rangDuSort } from "@/jeu/Grimoire";
 import { InfobulleObjet } from "@/jeu/Sacs";
 import { Fenetre } from "@/ui/Fenetre";
 import { avecInfobulle } from "@/ui/InfoBulle";
+import { preparerGlisser } from "@/ui/glisser";
+import type { SortConnu } from "@/core/types";
+import { FormulaireSort } from "./FormulaireSort";
 import { SelecteurIcone } from "./SelecteurIcone";
 
 type Onglet = "objets" | "sorts" | "etats";
@@ -29,6 +32,9 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
   const [recherche, setRecherche] = useState("");
   const [cible, setCible] = useState<string>("");
   const [quantite, setQuantite] = useState(1);
+  // Le formulaire de sort ouvert : nouveau (modele null), modification ou copie.
+  const [edition, setEdition] = useState<{ modele: SortConnu | null } | null>(null);
+  const [aSupprimer, setASupprimer] = useState<string | null>(null);
   // Le selecteur d'icones ouvert pour un objet ou un sort (clic sur son icone).
   const [choixIcone, setChoixIcone] = useState<{ genre: "objets" | "sorts"; id: string; icone: string | null } | null>(null);
   const changerIcone = async (icone: string | null) => {
@@ -123,7 +129,17 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
                 )}
               </div>
             ))}
+        {onglet === "sorts" && edition && <FormulaireSort modele={edition.modele} surFin={() => setEdition(null)} />}
+        {onglet === "sorts" && !edition && (
+          <div className="compendium-mj__outils">
+            <button type="button" className="bouton" onClick={() => setEdition({ modele: null })}>
+              + Nouveau sort
+            </button>
+            <span className="compendium-mj__aide">Glisse un sort (son nom) sur la fenetre Actions & Sorts d'un joueur, ou sur son cadre, pour le lui apprendre.</span>
+          </div>
+        )}
         {onglet === "sorts" &&
+          !edition &&
           compendium?.sorts
             .filter((s) => garder(s.nom))
             .map((s) => (
@@ -141,9 +157,30 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
                 >
                   <img src={iconeObjet(s)} alt="" />
                 </button>
-                <span className="compendium-mj__nom">
+                <span
+                  className="compendium-mj__nom compendium-mj__nom--glissable"
+                  onPointerDown={(e) => preparerGlisser(e, { origine: "compendium-sort", sort: s })}
+                  title="Glisse-le sur la fenetre Actions & Sorts d'un joueur (ou sur son cadre) pour le lui apprendre"
+                >
                   {s.nom} <small>{rangDuSort(s)}</small>
+                  {s.concentration && <small className="compendium-mj__tag">C</small>}
                 </span>
+                <button type="button" className="compendium-mj__action" onClick={() => setEdition({ modele: s })}>
+                  {s.modifiable ? "Modifier" : "Dupliquer"}
+                </button>
+                {s.modifiable && (
+                  <button
+                    type="button"
+                    className={`compendium-mj__action${aSupprimer === s.id ? " compendium-mj__action--danger" : ""}`}
+                    onClick={() => {
+                      if (aSupprimer !== s.id) return setASupprimer(s.id); // deux clics : pas de suppression par megarde
+                      setASupprimer(null);
+                      jeu.demander(EVENEMENTS.SORT_SUPPRIMER, { idSort: s.id });
+                    }}
+                  >
+                    {aSupprimer === s.id ? "Confirmer ?" : "Supprimer"}
+                  </button>
+                )}
                 <button type="button" className="compendium-mj__action" disabled={!idCible} onClick={() => jeu.demander(EVENEMENTS.GRIMOIRE_APPRENDRE, { idPersonnage: idCible, idSort: s.id })}>
                   Apprendre a {nomCible}
                 </button>
@@ -167,7 +204,7 @@ export function FenetreCompendium({ position }: { position: { x: number; y: numb
             ))}
       </div>
       <p className="compendium-mj__astuce">Clic sur une icone : en choisir une autre. Tes fichiers : dossier compendium/ du cloud. Apres modification : bouton "Recharger" de la barre MJ.</p>
-      {choixIcone && <SelecteurIcone valeur={choixIcone.icone} surChoix={changerIcone} surFermer={() => setChoixIcone(null)} />}
+      {choixIcone && <SelecteurIcone valeur={choixIcone.icone} surChoix={changerIcone} surFermer={() => setChoixIcone(null)} categorie={choixIcone.genre === "sorts" ? "spell_" : "inv_"} />}
     </Fenetre>
   );
 }

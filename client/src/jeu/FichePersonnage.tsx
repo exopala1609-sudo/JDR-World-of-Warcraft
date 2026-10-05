@@ -116,6 +116,7 @@ function ReposCourt({ p }: { p: Personnage }) {
   const restants = p.desDeVie.restants;
   const [nombre, setNombre] = useState(Math.min(1, restants));
   const enCombat = useJeu((e) => Boolean(e.combat));
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
   const valeur = Math.min(nombre, restants);
   return (
     <div className="repos-court">
@@ -138,6 +139,23 @@ function ReposCourt({ p }: { p: Personnage }) {
       >
         Se reposer
       </button>
+      {/* Repos long (8 heures) : PV, des de vie, emplacements de sorts (les gemmes se
+          rallument). C'est le MJ qui l'accorde (le serveur le refuse a un joueur). */}
+      {estMJ ? (
+        <button
+          type="button"
+          className="bouton repos-court__bouton"
+          disabled={enCombat}
+          title={enCombat ? "Pas en plein combat !" : "PV au maximum, moitie des des de vie, emplacements de sorts rallumes"}
+          onClick={() => jeu.demander(EVENEMENTS.REPOS_LONG, { idPersonnage: p.id })}
+        >
+          Repos long
+        </button>
+      ) : (
+        <span className="repos-court__long" title="PV, des de vie et emplacements de sorts : le MJ accorde le repos long (8 heures).">
+          Repos long : par le MJ
+        </span>
+      )}
     </div>
   );
 }

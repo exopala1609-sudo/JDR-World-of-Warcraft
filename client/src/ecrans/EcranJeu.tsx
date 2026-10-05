@@ -9,12 +9,13 @@ import { FenetreButin } from "@/jeu/FenetreButin";
 import { CarteMonde } from "@/jeu/CarteMonde";
 import { Discussion } from "@/jeu/Discussion";
 import { FichePersonnage } from "@/jeu/FichePersonnage";
-import { Grimoire } from "@/jeu/Grimoire";
+import { ActionsSorts } from "@/jeu/ActionsSorts";
 import { JournalQuetes } from "@/jeu/JournalQuetes";
 import { MicroMenu } from "@/jeu/MicroMenu";
 import { Carnet } from "@/jeu/Carnet";
 import { FenetreInitiative } from "@/jeu/FenetreInitiative";
 import { Minicarte } from "@/jeu/Minicarte";
+import { ModaleIncantation } from "@/jeu/ModaleIncantation";
 import { Annonce, ModaleResolution } from "@/jeu/ModaleResolution";
 import { Sacs } from "@/jeu/Sacs";
 import { CoucheGlisser } from "@/ui/glisser";
@@ -83,7 +84,7 @@ export function EcranJeu() {
       <div className="fenetres">
         {fenetres.personnage && <FichePersonnage position={{ x: 560, y: 150 }} />}
         {fenetres.sacs && <Sacs position={{ x: largeur - 420, y: hauteur - 560 }} />}
-        {fenetres.grimoire && <Grimoire position={{ x: Math.max(20, largeur / 2 - 560), y: 120 }} />}
+        {fenetres.grimoire && <ActionsSorts position={{ x: Math.max(20, largeur / 2 - 560), y: 120 }} />}
         {fenetres.quetes && <JournalQuetes position={{ x: Math.max(20, largeur / 2 - 80), y: 140 }} />}
         {fenetres.carnet && <Carnet position={{ x: Math.max(20, largeur / 2 - 450), y: 150 }} />}
         {fenetres.initiative && <FenetreInitiative position={{ x: largeur - 680, y: 430 }} />}
@@ -91,6 +92,7 @@ export function EcranJeu() {
       </div>
       <div className="couche-modale">
         <Annonce />
+        <ModaleIncantation />
         <ModaleResolution />
       </div>
       {estMJ && (

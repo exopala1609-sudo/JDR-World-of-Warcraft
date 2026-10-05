@@ -88,11 +88,13 @@ que les resultats d'une recherche.
   **Jamais dans le dossier du projet** (celui du code) : le serveur refuse de
   demarrer, car ces images partiraient sur GitHub au prochain envoi.
   Les deux PC doivent avoir la meme bibliotheque (une copie unique, ex. un zip).
-- **Le selecteur** (MJ) : Bestiaire > Nouveau monstre (ou Modifier) > Icone >
-  « Choisir... ». On cherche par mots du NOM DE FICHIER, en anglais :
-  `head gnoll`, `fire ball`, `sword`. Raccourcis : `inv_misc_head` (tetes de
-  creatures), `achievement_boss` (boss), `inv_` (objets), `spell_` (sorts),
-  `ability_` (techniques), `achievement_character` (races).
+- **La galerie d'icones** (MJ) : bouton « Choisir... » d'un monstre, d'un sort
+  (Compendium > Sorts > + Nouveau sort) ou d'un objet du compendium. Des
+  onglets trient la bibliotheque sans rien taper : Sorts (`spell_`),
+  Techniques (`ability_`), Objets (`inv_`), Tetes (`inv_misc_head`), Boss,
+  Races, Classes. Pages de 240 icones. Le champ de recherche reste
+  facultatif (mots du NOM DE FICHIER, en anglais : `fire ball`, `sword`).
+  La fenetre se deplace par son titre ; Echap la ferme.
 - L'icone choisie sert dans le bestiaire ET d'image au pion du monstre sur la
   carte (sauf si tu donnes un « Jeton » : une image du dossier `jetons\`).
 - Icones ajoutees pendant une partie : bouton **Actualiser** du selecteur.
@@ -105,6 +107,19 @@ que les resultats d'une recherche.
 - **Verifier** : au demarrage, le serveur affiche une ligne « Icones » : le
   dossier lu, le nombre d'icones utilisables, les `.blp` trouves, et si les
   icones de race (`Achievement_Character_Human_Male`...) sont presentes.
+
+## Couleurs des degats (textes flottants)
+
+Au-dessus du pion touche, les degats s'affichent en police Skurri, colores
+selon le type : `feu` rouge, `froid` bleu glace, `foudre` bleu electrique,
+`acide` vert vif, `poison` vert, `necrotique` violet, `radiant` dore, `force`
+rose, `psychique` magenta, `tonnerre` lavande ; les degats physiques
+(`contondant`, `perforant`, `tranchant`) restent blancs, les soins verts.
+Un 20 naturel (critique) double les des de degats : chiffre plus gros, avec
+une secousse. Pour changer une couleur : `shared/types-degats.js` (code
+`#RRVVBB`), puis `npm run build`.
+
+L'aura de concentration utilise l'icone `Spell_Arcane_MindMastery`.
 
 ## Textures d'interface (dossier interface)
 

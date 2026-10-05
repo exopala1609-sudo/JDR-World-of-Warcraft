@@ -53,6 +53,8 @@ export type SortConnu = {
   cout?: { ressource: string; quantite: number };
   resolution?: "attaque" | "sauvegarde" | "automatique";
   sauvegarde?: string;
+  parNiveauSuperieur?: string; // upcast : ajoute par niveau d'emplacement au-dessus du sien
+  modifiable?: boolean; // compendium (MJ) : cree depuis le jeu (mes-sorts.json)
 };
 
 /** Un modele de monstre du bestiaire (compendium, section "monstres"). MJ seulement. */
@@ -112,6 +114,8 @@ export type Jet = {
   lignes: LigneJet[];
   note: string | null;
   cout: string | null;
+  // La cible (facultative) ; "touche" n'arrive qu'avec le resultat valide (null : sort a sauvegarde, soins).
+  cible?: { idPersonnage: string; nom: string; touche?: boolean | null } | null;
 };
 export type Attaque = { emplacement: string; idObjet: string; nom: string; bonus: number; degats: string; typeDegats: string };
 
@@ -238,10 +242,12 @@ export type Trace = { id: string; auteur?: string; couleur: string; points: [num
 /** Texte de combat flottant envoye par le serveur. */
 export type TexteCombat = {
   idPersonnage: string;
-  genre: "degats" | "soins";
+  genre: "degats" | "soins" | "rate";
   montant: number;
   critique: boolean;
-  absorbe: number;
+  absorbe?: number;
+  couleur?: string; // attaque ciblee : la couleur du type de degats
+  type?: string | null;
 };
 
 export type OutilCarte = "deplacer" | "tracer" | "ping" | "gomme" | "pinceau"; // gomme / pinceau : MJ (brouillard)

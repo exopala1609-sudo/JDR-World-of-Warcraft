@@ -98,21 +98,28 @@ export function emplacementsDeLaTable(niveau, progression = "complete") {
  * [{ niveau, max, actuel }]. Ne concerne que les LANCEURS de sorts : ceux dont
  * la classe (classes.json) donne une ressource "emplacements-niveau-N", ou qui
  * en ont deja une sur leur fiche. "classe" : l'entree du referentiel (ou null).
- *  - un niveau ou le personnage a deja sa ressource : on la lit (le MJ peut
- *    l'avoir ajustee, ex. l'Occultiste) ;
- *  - un autre niveau : le maximum de la table, tous les emplacements "allumes"
- *    (la ressource sera creee au premier emplacement depense).
+ *  - le maximum : le plus grand de la ressource (classes.json, ou ajuste par
+ *    le MJ) et de la table D&D (le personnage gagne des emplacements en montant
+ *    de niveau ; ceux-la arrivent "allumes") ;
+ *  - un niveau sans ressource : tous ses emplacements allumes (la ressource
+ *    sera creee au premier emplacement depense).
+ * Magie de "pacte" (Occultiste) : pas de table, seulement ses ressources.
+ * @param {{ niveau: number, ressources?: { cle: string, actuel: number, max: number }[] }} fiche
+ * @param {{ progressionSorts?: string, ressources?: { ressource?: string }[] } | null} [classe]
+ * @returns {{ niveau: number, max: number, actuel: number }[]}
  */
 export function emplacementsDuPersonnage(fiche, classe = null) {
   const ressources = (fiche.ressources ?? []).filter((r) => EST_EMPLACEMENT.test(r.cle));
   const lanceur = ressources.length > 0 || (classe?.ressources ?? []).some((r) => EST_EMPLACEMENT.test(r.ressource ?? ""));
   if (!lanceur) return [];
-  const table = emplacementsDeLaTable(fiche.niveau, classe?.progressionSorts ?? "complete");
+  const progression = classe?.progressionSorts ?? "complete";
+  const table = progression === "pacte" ? [] : emplacementsDeLaTable(fiche.niveau, progression);
   const liste = [];
   for (let niveau = 1; niveau <= 9; niveau++) {
     const ressource = ressources.find((r) => r.cle === cleEmplacement(niveau));
-    const max = ressource ? ressource.max : (table[niveau - 1] ?? 0);
-    if (max > 0) liste.push({ niveau, max, actuel: ressource ? ressource.actuel : max });
+    const max = Math.max(ressource?.max ?? 0, table[niveau - 1] ?? 0);
+    const actuel = ressource ? ressource.actuel + (max - ressource.max) : max;
+    if (max > 0) liste.push({ niveau, max, actuel });
   }
   return liste;
 }

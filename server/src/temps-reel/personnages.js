@@ -23,6 +23,8 @@ const Demandes = {
     type: z.enum(Object.values(TYPES_PV)),
     montant: z.int().min(0).max(10_000),
     critique: z.boolean().default(false), // coup critique : gros chiffres jaunes
+    // Le MJ applique le resultat d'un jet cible : son texte flottant s'est deja affiche.
+    sansTexte: z.boolean().default(false),
   }),
   modifierRessource: z.strictObject({ idPersonnage, cle: cleRessource, variation: z.int().min(-999).max(999) }),
   ajouterRessource: z.strictObject({
@@ -121,7 +123,7 @@ export function brancher(socket, ctx) {
 
   // --- Points de vie -------------------------------------------------------------
 
-  ctx.guichet(socket, EVENEMENTS.PERSONNAGE_MODIFIER_PV, Demandes.modifierPv, ({ idPersonnage, type, montant, critique }) => {
+  ctx.guichet(socket, EVENEMENTS.PERSONNAGE_MODIFIER_PV, Demandes.modifierPv, ({ idPersonnage, type, montant, critique, sansTexte }) => {
     const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
     const { pointsDeVie, detail } = appliquerPointsDeVie(personnage.pointsDeVie, type, montant);
     const coupCritique = critique && type === TYPES_PV.DEGATS; // un soin n'est jamais "critique"
@@ -130,7 +132,7 @@ export function brancher(socket, ctx) {
       { ...personnage, pointsDeVie, repose: type === TYPES_PV.DEGATS && montant > 0 ? false : personnage.repose },
       { action: "points-de-vie", par: pseudo, ...detail, critique: coupCritique },
     );
-    ctx.publierTexteCombat(personnage, texteDeCombat(detail, { critique: coupCritique }));
+    if (!sansTexte) ctx.publierTexteCombat(personnage, texteDeCombat(detail, { critique: coupCritique }));
     return { personnage: publie };
   });
 

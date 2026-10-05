@@ -288,8 +288,9 @@ export function fabriquerPersonnage(entree, { idTable, proprietaire, referentiel
     caracteristiques,
     classeArmure: demande.classeArmure ?? classeArmureSansArmure(classe, caracteristiques),
     pvMaximum: demande.pvMax ?? pvMax(classe.deDeVie, niveau, caracteristiques.constitution, race?.pvParNiveau ?? 0),
-    // Ressources de depart du niveau 1 ; la progression viendra avec la montee de niveau.
-    ressources: niveau === 1 ? ressourcesDeDepart(classe, caracteristiques, modeles) : [],
+    // Les ressources de depart de sa classe (Mana, emplacements de sorts...), quel
+    // que soit son niveau : le MJ ajuste ensuite les maximums (menu clic droit).
+    ressources: ressourcesDeDepart(classe, caracteristiques, modeles),
   });
 }
 

@@ -19,8 +19,9 @@ const sortDuRaccourci = (p: Personnage, raccourci: Raccourci): SortConnu | undef
   p.grimoire.find((s) => s.source === raccourci.reference || s.id === raccourci.reference);
 
 /**
- * Utiliser le raccourci n (clic, ou touche 1 a =) : boire la potion, attaquer
- * avec l'arme, lancer le sort. Une attaque ou un sort ouvre la fenetre de resolution.
+ * Utiliser le raccourci n (clic, ou touche 1 a =) : boire la potion (aussitot),
+ * attaquer avec l'arme ou lancer le sort (la modale d'incantation s'ouvre :
+ * niveau d'emplacement, avantage... puis la fenetre de resolution).
  */
 export function utiliserRaccourci(index: number) {
   // Le MJ, sur la page "outils" : la touche declenche l'outil (Bestiaire, Carte...).
@@ -28,8 +29,11 @@ export function utiliserRaccourci(index: number) {
   const p = personnageDeLaBarre();
   const raccourci = p?.barreActions[index];
   if (!p || !raccourci || jeu.lire().jet) return; // un jet attend deja "Valider"
-  if (raccourci.type === "sort") jeu.lancerSort(p.id, raccourci.reference);
-  else if (raccourci.type === "attaque") jeu.attaquerMonstre(p.id, raccourci.reference);
+  if (raccourci.type === "sort") return jeu.preparerAction(p.id, "sort", raccourci.reference);
+  if (raccourci.type === "attaque") return jeu.attaquerMonstre(p.id, raccourci.reference);
+  const { dansLeSac, equipes } = exemplairesDuRaccourci(p, raccourci.reference);
+  const arme = !dansLeSac.some((o) => o.soins) && equipes.some(([, o]) => o.arme);
+  if (arme) jeu.preparerAction(p.id, "arme", raccourci.reference);
   else jeu.utiliser(p.id, raccourci.reference);
 }
 

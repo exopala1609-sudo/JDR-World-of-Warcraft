@@ -1,0 +1,366 @@
+/* =============================================================================
+   ACTIONS & SORTS (touche P) et MODALE D'INCANTATION
+   Facon D&D Beyond dans un cadre WoW : des onglets, une ligne par action qui
+   se deplie (la regle complete sur parchemin), des gemmes d'emplacements.
+   ============================================================================= */
+
+.grimoire.actions-sorts {
+  width: 760px;
+}
+.actions-sorts__corps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 4px;
+}
+.actions-sorts__bandeau {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 22px;
+  color: var(--or);
+  font-size: 14px;
+  text-shadow: var(--ombre-texte);
+}
+.actions-sorts__bandeau span + span::before {
+  content: "\2666";
+  margin-right: 22px;
+  color: var(--or-bordure-sombre);
+}
+.actions-sorts__emplacements {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 20px;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.actions-sorts__emplacement {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.actions-sorts__onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-bottom: 1px solid var(--or-bordure-sombre);
+  padding-bottom: 6px;
+}
+.actions-sorts__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 520px;
+  min-height: 160px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* --- Une ligne d'action --------------------------------------------------------------- */
+.action {
+  border: 1px solid #000;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(40, 36, 30, 0.95), rgba(18, 16, 13, 0.95));
+  box-shadow: 0 0 0 1px var(--metal-sombre);
+}
+.action--ouverte {
+  box-shadow: 0 0 0 1px var(--or-bordure), 0 0 10px rgba(255, 209, 0, 0.18);
+}
+.action__entete {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 150px 170px 18px;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 4px 4px;
+  cursor: pointer;
+}
+.action__entete:hover {
+  background: rgba(255, 209, 0, 0.06);
+}
+.action__icone {
+  --taille-case: 40px;
+}
+.action__nom {
+  overflow: hidden;
+  color: var(--or);
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action__etiquette {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--or-bordure-sombre);
+  border-radius: 3px;
+  color: var(--or-pale);
+  font-size: 11px;
+  vertical-align: middle;
+}
+.action__verrou {
+  margin-left: 8px;
+  color: var(--texte-rouge);
+  font-size: 12px;
+}
+.action--verrouillee .action__icone img {
+  filter: grayscale(1) brightness(0.6);
+}
+.action__portee,
+.action__effet {
+  overflow: hidden;
+  color: var(--texte-doux);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.action__effet {
+  color: #fff;
+  font-family: var(--police-chiffres);
+}
+.action__chevron {
+  color: var(--or-bordure);
+}
+/* Le detail deplie : la regle complete, sur parchemin */
+.action__detail {
+  margin: 0 6px 6px;
+  padding: 10px 14px 12px;
+  border-radius: 3px;
+  background: var(--texture-parchemin);
+  box-shadow: inset 0 0 18px rgba(95, 62, 20, 0.5);
+  color: var(--encre);
+}
+.action__regles {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 14px;
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.action__regles dt {
+  color: #6b1b0d;
+  font-weight: bold;
+}
+.action__regles dd {
+  margin: 0;
+}
+.action__description {
+  margin: 0 0 10px;
+  font-family: var(--police-texte);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.action__boutons {
+  display: flex;
+  gap: 10px;
+}
+
+/* --- Gemmes d'emplacements de sorts ------------------------------------------------------ */
+.gemmes {
+  display: inline-flex;
+  gap: 3px;
+}
+.gemme {
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  border: 1px solid #0d1a33;
+  background: linear-gradient(135deg, #1a2238, #0b0f1a);
+  box-shadow: inset 0 0 2px #000;
+}
+.gemme--allumee {
+  border-color: #9fd0ff;
+  background: radial-gradient(circle at 35% 35%, #e6f6ff, #4aa3ff 45%, #134a9e 100%);
+  box-shadow: 0 0 6px rgba(80, 170, 255, 0.85), inset 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.gemmes--choisies .gemme--allumee:first-child {
+  animation: gemme-pulse 1.1s ease-in-out infinite;
+}
+@keyframes gemme-pulse {
+  50% {
+    box-shadow: 0 0 12px rgba(120, 200, 255, 1), inset 0 0 3px #fff;
+  }
+}
+
+/* --- Modale d'incantation ------------------------------------------------------------------ */
+.incantation {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 520px;
+  padding: 18px 22px 20px;
+  animation: surgir 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+.incantation__entete {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 14px;
+}
+.incantation__icone {
+  --taille-case: 56px;
+}
+.incantation__titre {
+  margin: 0;
+  font-size: 22px;
+}
+.incantation__sous-titre {
+  margin: 2px 0 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.incantation__cible {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--texte-rouge);
+  background: rgba(120, 10, 10, 0.25);
+  color: #fff;
+  font-size: 14px;
+}
+.incantation__cible--aucune {
+  border-left-color: var(--metal);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.incantation__niveaux {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.incantation__niveau {
+  display: grid;
+  grid-template-columns: 90px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--texte-doux);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.incantation__niveau:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+}
+.incantation__niveau:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.incantation__niveau--choisi {
+  border-color: var(--or);
+  background: rgba(60, 50, 20, 0.6);
+  color: var(--or);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.35);
+}
+.incantation__niveau-reste {
+  font-family: var(--police-chiffres);
+  text-align: right;
+}
+.incantation__info {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.incantation__info--or {
+  color: var(--or);
+}
+.incantation__modes {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.incantation__modes .onglet {
+  min-width: 120px;
+}
+.incantation__mode--avantage.onglet--actif {
+  border-color: var(--texte-vert);
+  color: var(--texte-vert);
+}
+.incantation__mode--desavantage.onglet--actif {
+  border-color: var(--texte-rouge);
+  color: #ff6060;
+}
+.incantation__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* --- Compendium du MJ : sorts ---------------------------------------------------------- */
+.compendium-mj__outils {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.compendium-mj__aide {
+  color: var(--texte-gris);
+  font-size: 12px;
+}
+.compendium-mj__nom--glissable {
+  cursor: grab;
+}
+.compendium-mj__tag {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid var(--or-bordure-sombre);
+  border-radius: 3px;
+  color: var(--or-pale);
+}
+.compendium-mj__action--danger {
+  border-color: var(--texte-rouge);
+  color: #ff6060;
+}
+.formulaire-sort__case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Fenetre de resolution : les boutons du MJ (appliquer a la cible, a la main) --- */
+.resolution__mj {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+  padding: 8px 10px;
+  border: 1px dashed var(--or-bordure-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+}
+.resolution__mj-titre {
+  width: 100%;
+  color: var(--or);
+  font-size: 13px;
+  text-align: center;
+}
+.resolution__mj-fait {
+  color: var(--texte-vert);
+  font-size: 14px;
+}
+/* Cadre de raid : l'icone de concentration, liseré bleu (un buff) */
+.cadre-raid__auras img.cadre-raid__concentration {
+  border-color: #4aa3ff;
+}
+
+/* Le formulaire de sort du MJ : sur parchemin, comme celui du bestiaire */
+.formulaire-sort {
+  padding: 14px 18px;
+  border-radius: 4px;
+  background: var(--texture-parchemin);
+  box-shadow: inset 0 0 26px rgba(95, 62, 20, 0.6);
+  color: var(--encre);
+}
+.repos-court {
+  flex-wrap: wrap;
+}
+.repos-court__long {
+  color: #5a1d0a;
+  font-size: 12px;
+}

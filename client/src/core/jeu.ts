@@ -53,6 +53,9 @@ export type EtatJeu = {
   notes: Note[] | null; // MON carnet de notes (charge a l'ouverture)
   quetes: Quete[]; // le journal de quetes du groupe
   jet: Jet | null; // la fenetre de resolution ouverte
+  // La modale d'incantation ouverte : le sort ou l'arme qu'on s'apprete a utiliser
+  // (choix du niveau d'emplacement, de l'avantage), avant que les des ne roulent.
+  incantation: { idPersonnage: string; genre: "sort" | "arme"; reference: string } | null;
   annonce: { id: number; titre: string; texte: string } | null; // "Nouvelle quete !" au centre de l'ecran
   butin: ButinOuvert | null; // la fenetre de butin ouverte (coffre, cadavre)
   menu: { idPersonnage: string; x: number; y: number } | null; // menu contextuel du MJ (clic droit)
@@ -97,6 +100,7 @@ const ETAT_INITIAL: EtatJeu = {
   quetes: [],
   notes: null,
   jet: null,
+  incantation: null,
   annonce: null,
   butin: null,
   menu: null,
@@ -163,15 +167,19 @@ class Jeu {
     return this.demander(EVENEMENTS.BARRE_DEFINIR, { idPersonnage, index, raccourci });
   }
   /** Utiliser un objet : une potion agit tout de suite ; une arme ouvre la fenetre de resolution. */
-  async utiliser(idPersonnage: string, reference: string) {
-    const r = await this.demander(EVENEMENTS.OBJET_UTILISER, { idPersonnage, reference });
+  /**
+   * Utiliser un objet (potion), ou attaquer avec une arme : "avantage" et la
+   * CIBLE (le personnage cible, s'il y en a un : texte flottant sur son pion).
+   */
+  async utiliser(idPersonnage: string, reference: string, options: { avantage?: Avantage } = {}) {
+    const r = await this.demander(EVENEMENTS.OBJET_UTILISER, { idPersonnage, reference, ...options, ...this.cibleDeLAction(idPersonnage) });
     if (r.ok && r.jet) this.modifier({ jet: r.jet as Jet });
     return r;
   }
 
-  /** Lancer un sort : le serveur lance les des, la fenetre de resolution s'ouvre. */
-  async lancerSort(idPersonnage: string, reference: string) {
-    const r = await this.demander(EVENEMENTS.SORT_LANCER, { idPersonnage, reference });
+  /** Lancer un sort ("niveau" : l'emplacement choisi, upcast) : le serveur lance les des, la fenetre de resolution s'ouvre. */
+  async lancerSort(idPersonnage: string, reference: string, options: { niveau?: number } = {}) {
+    const r = await this.demander(EVENEMENTS.SORT_LANCER, { idPersonnage, reference, ...options, ...this.cibleDeLAction(idPersonnage) });
     if (r.ok) this.modifier({ jet: r.jet as Jet });
     return r;
   }
@@ -179,8 +187,20 @@ class Jeu {
   /** MJ : une attaque de monstre du bestiaire (fenetre de resolution). */
   async attaquerMonstre(idPersonnage: string, reference: string) {
     if (this.etat.jet?.statut === "en-attente") return;
-    const r = await this.demander(EVENEMENTS.MONSTRE_ATTAQUER, { idPersonnage, reference });
+    const r = await this.demander(EVENEMENTS.MONSTRE_ATTAQUER, { idPersonnage, reference, ...this.cibleDeLAction(idPersonnage) });
     if (r.ok) this.modifier({ jet: r.jet as Jet });
+  }
+
+  /** La cible de l'action : le personnage cible (cadre de cible), s'il y en a un. Facultative. */
+  cibleDeLAction(_idLanceur: string) {
+    const cible = this.etat.cible;
+    return cible ? { idCible: cible } : {};
+  }
+
+  /** Ouvre la modale d'incantation (sort : niveau ; arme : avantage) avant de lancer les des. */
+  preparerAction(idPersonnage: string, genre: "sort" | "arme", reference: string) {
+    if (this.etat.jet?.statut === "en-attente") return this.journaliser("Valide d'abord le jet en cours.", "erreur");
+    this.modifier({ incantation: { idPersonnage, genre, reference } });
   }
 
   /** Test de caracteristique ou sauvegarde : le serveur lit le bonus dans la fiche. */
@@ -551,6 +571,8 @@ class Jeu {
       this.journaliser(decrireJet(jet), "des");
       if (this.etat.jet?.id !== jet.id) return;
       this.modifier({ jet }); // le MJ voit "Valide" quelques instants
+      // Un jet cible : le MJ garde la fenetre (boutons "Retirer N PV"), il la ferme lui-meme.
+      if (this.estMJ() && jet.cible) return;
       setTimeout(() => this.etat.jet?.id === jet.id && this.modifier({ jet: null }), 2500);
     });
 

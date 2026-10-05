@@ -75,7 +75,7 @@ export function FormulaireMonstre({ modele, surFin }: { modele: Monstre | null; 
         </label>
         <div className="formulaire-monstre__large">
           <span className="formulaire-monstre__libelle">Icone (bestiaire et pion sur la carte)</span>
-          <ChampIcone valeur={m.icone ?? null} defaut={modele?.id ?? "monstre"} surChange={(icone) => changer({ icone: icone ?? undefined })} />
+          <ChampIcone valeur={m.icone ?? null} defaut={modele?.id ?? "monstre"} categorie="inv_misc_head" surChange={(icone) => changer({ icone: icone ?? undefined })} />
         </div>
         <label>
           Type

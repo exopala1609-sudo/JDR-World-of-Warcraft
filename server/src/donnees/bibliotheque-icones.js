@@ -107,7 +107,7 @@ export function creerBibliothequeIcones(dossier) {
      * Les icones dont le nom contient TOUS les mots cherches ("fire ball" ->
      * spell_fire_fireball02). Celles qui COMMENCENT par la recherche d'abord.
      */
-    async chercher(recherche, limite = RESULTATS_MAX) {
+    async chercher(recherche, limite = RESULTATS_MAX, depuis = 0) {
       const { noms, minuscules } = await lire();
       const mots = String(recherche ?? "").toLowerCase().split(/[\s,]+/).filter(Boolean);
       const debut = mots.join("_");
@@ -116,7 +116,9 @@ export function creerBibliothequeIcones(dossier) {
         if (mots.every((m) => minuscules[i].includes(m))) trouves.push(i);
       }
       if (debut) trouves.sort((a, b) => Number(!minuscules[a].startsWith(debut)) - Number(!minuscules[b].startsWith(debut)) || a - b);
-      return { total: noms.length, trouves: trouves.length, icones: trouves.slice(0, limite).map((i) => noms[i]) };
+      // "debut" : la galerie parcourt les resultats page par page.
+      const depart = Math.max(0, Math.min(depuis, Math.max(0, trouves.length - 1)));
+      return { total: noms.length, trouves: trouves.length, debut: depart, icones: trouves.slice(depart, depart + limite).map((i) => noms[i]) };
     },
   };
 }

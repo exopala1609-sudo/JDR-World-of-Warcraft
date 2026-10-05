@@ -26,7 +26,7 @@ const Demandes = {
   retirerObjet: z.strictObject({ idPersonnage, idObjet: schemaId("o"), quantite: z.int().min(1).max(QUANTITE_MAX).optional() }),
   apprendre: z.strictObject({ idPersonnage, idSort: schemaIdCompendium }),
   oublier: z.strictObject({ idPersonnage, idSort: schemaId("s") }),
-  icones: z.strictObject({ recherche: z.string().max(80).default("") }),
+  icones: z.strictObject({ recherche: z.string().max(80).default(""), debut: z.int().min(0).max(1_000_000).default(0) }),
   medias: z.strictObject({ categorie: z.enum(["cartes", "jetons", "portraits", "icones", "sons"]) }),
   // null : revenir a l'icone ecrite dans le fichier de l'objet (ou a son id).
   icone: z.strictObject({ genre: z.enum(["objets", "sorts"]), id: schemaIdCompendium, icone: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/).nullable() }),
@@ -107,10 +107,10 @@ export function brancher(socket, ctx) {
   });
 
   // Selecteur d'icones (MJ : bestiaire, compendium...). Recherche par nom de fichier.
-  ctx.guichet(socket, EVENEMENTS.ICONES_CHERCHER, Demandes.icones, async ({ recherche }) => {
+  ctx.guichet(socket, EVENEMENTS.ICONES_CHERCHER, Demandes.icones, async ({ recherche, debut }) => {
     ctx.exigerMJ(socket, "parcourir les icones");
     if (!ctx.quota(socket, "icones", 10)) throw new ErreurRegle("Doucement : trop de recherches d'un coup.");
-    return ctx.icones.chercher(recherche);
+    return ctx.icones.chercher(recherche, undefined, debut);
   });
   ctx.guichet(socket, EVENEMENTS.ICONES_ACTUALISER, null, async () => {
     ctx.exigerMJ(socket, "parcourir les icones");

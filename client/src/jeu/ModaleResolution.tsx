@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { EVENEMENTS } from "@partage/protocole.js";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone } from "@/core/medias";
 import type { Jet, LigneJet } from "@/core/types";
@@ -65,6 +66,49 @@ function Equation({ ligne }: { ligne: LigneJet }) {
         <span className="equation__operateur">=</span>
         <Puce titre={ligne.critique ? "Critique !" : ligne.echec ? "Echec" : "Total"} valeur={String(ligne.total)} genre="total" />
       </div>
+    </div>
+  );
+}
+
+/** Les boutons du MJ : retirer les degats (ou la moitie : sauvegarde reussie), ou soigner, a la cible. */
+function AppliquerAuMJ({ jet }: { jet: Jet }) {
+  const [fait, setFait] = useState<string | null>(null);
+  const cible = useJeu((e) => (jet.cible ? e.personnages[jet.cible.idPersonnage] : undefined));
+  if (!jet.cible || !cible || jet.cible.touche === false) return null;
+  const degats = jet.lignes.find((l) => l.libelle.startsWith("Degats"));
+  const soins = jet.lignes.find((l) => l.libelle === "Soins");
+  const critique = jet.lignes.some((l) => l.critique);
+  const appliquer = (type: "degats" | "soins", montant: number, libelle: string) => {
+    jeu.demander(EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: cible.id, type, montant, critique: type === "degats" && critique, sansTexte: true });
+    setFait(libelle);
+  };
+  if (!degats && !soins) return null;
+  return (
+    <div className="resolution__mj">
+      <span className="resolution__mj-titre">
+        MJ - {cible.nom} ({cible.pointsDeVie.actuels} / {cible.pointsDeVie.max} PV)
+      </span>
+      {fait ? (
+        <span className="resolution__mj-fait">{fait}</span>
+      ) : (
+        <>
+          {degats && degats.total > 0 && (
+            <>
+              <button type="button" className="bouton bouton--danger" onClick={() => appliquer("degats", degats.total, `-${degats.total} PV applique`)}>
+                Retirer {degats.total} PV
+              </button>
+              <button type="button" className="bouton bouton--discret" onClick={() => appliquer("degats", Math.floor(degats.total / 2), `-${Math.floor(degats.total / 2)} PV applique`)}>
+                Moitie ({Math.floor(degats.total / 2)})
+              </button>
+            </>
+          )}
+          {soins && soins.total > 0 && (
+            <button type="button" className="bouton" onClick={() => appliquer("soins", soins.total, `+${soins.total} PV applique`)}>
+              Soigner {soins.total} PV
+            </button>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -146,9 +190,20 @@ function Resolution({ jet }: { jet: Jet }) {
           {jet.cout && <p className="resolution__cout">Cout : {jet.cout} (deja depense)</p>}
         </div>
 
+        {/* MJ : appliquer le resultat a la cible. Jamais automatique (regle d'or) :
+            le jeu calcule, le MJ decide (resistance, sauvegarde reussie...). */}
+        {estMJ && !roule && <AppliquerAuMJ jet={jet} />}
+
         <footer className="resolution__pied">
           {valide ? (
-            <p className="resolution__annonce">Resultat annonce a la table.</p>
+            <>
+              <p className="resolution__annonce">Resultat annonce a la table.</p>
+              {estMJ && jet.cible && (
+                <button type="button" className="bouton bouton--discret" onClick={() => jeu.modifier({ jet: null })}>
+                  Fermer
+                </button>
+              )}
+            </>
           ) : estLanceur ? (
             <button type="button" className="bouton resolution__valider" disabled={roule} onClick={() => jeu.validerJet()}>
               Valider

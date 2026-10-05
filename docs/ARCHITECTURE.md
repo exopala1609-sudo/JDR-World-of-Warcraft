@@ -619,3 +619,52 @@ carte (`moteur.versCarte`).
   refuse (il partirait sur GitHub) ; `.gitignore` exclut aussi `/ICONS/`,
   `/icones/`, `/interface/`, `/polices/` a la racine, par securite.
 
+
+## Combat, Actions & Sorts, incantation (sprint 11, combat)
+
+### Regle d'or : le serveur ne retire JAMAIS de PV tout seul
+
+Le VTT est une calculatrice visuelle. Un jet cible (`idCible`) produit :
+le resultat detaille dans la discussion (`decrireJet` : « sur Gnoll
+(touche) »), un texte flottant au-dessus du pion cible
+(`publierTexteCombat`, seulement au MJ pour un jet secret)... et c'est tout.
+Les PV changent uniquement quand le MJ clique « Retirer N PV » / « Moitie » /
+« Soigner » dans la fenetre de resolution (ou son menu clic droit) :
+`personnage:modifierPv` avec `sansTexte: true` (le chiffre s'est deja
+affiche). Teste dans `temps-reel.test.js` (PV inchanges apres le jet).
+
+### Cible et effet (`server/src/regles/cible.js`)
+
+- `cibleDuJet` : la cible doit etre a la meme table ; un joueur ne peut viser
+  qu'un PNJ visible (jamais un monstre cache : pas d'information secrete).
+- `effetSurLaCible` : une attaque (premiere ligne = d20) touche si le total
+  >= CA (1 naturel : rate ; 20 naturel : touche + critique). Le texte
+  flottant prend la couleur du type de degats (`shared/types-degats.js`).
+- Critique : les des de degats sont doubles (`resolution.js`).
+
+### Emplacements de sorts (`shared/magie.js`, `regles/emplacements.js`)
+
+- `emplacementsDuPersonnage(fiche, classe)` : table D&D 5e (complet / demi),
+  max = le plus grand de la ressource et de la table ; `"pacte"` (Occultiste) :
+  seulement ses ressources. Meme calcul a l'ecran et au serveur.
+- `sort:lancer { niveau, idCible }` : le serveur verifie le niveau, eteint
+  une gemme (`depenserEmplacement`, la ressource est creee si besoin), applique
+  le renforcement (`formuleAuNiveau` + `parNiveauSuperieur`), pose l'etat
+  `concentration` si le sort l'exige. Le `cout` (mana...) s'y ajoute.
+- Armes et attaques de monstres : `avantage` (`desavantage|normal|avantage`).
+
+### Interface
+
+- `ActionsSorts.tsx` (touche P) : onglets Armes (equipement) / Mineurs /
+  Niv N, lignes en accordeon, gemmes d'emplacements dans le bandeau.
+- `ModaleIncantation.tsx` : confirmation avant les des (niveau d'emplacement
+  ou avantage). Ouverte par la fenetre P et par la barre d'actions
+  (`jeu.preparerAction`).
+- Compendium MJ des sorts : `sort:enregistrer` / `sort:supprimer` (MJ) ecrivent
+  `compendium/mes-sorts.json` (`donnees/compendium.js`, `modifiable`). Le nom
+  d'un sort se glisse (charge `compendium-sort`) vers la fenetre P ou un
+  cadre du groupe -> `grimoire:apprendre`.
+- Galerie d'icones (`SelecteurIcone.tsx`) : categories par prefixe, pages de
+  240 (`icones:chercher { debut }`), deplacable.
+- Texte flottant (`shared/moteur-carte.js`) : couleur du texte, style `rate`,
+  critique plus gros avec secousse.

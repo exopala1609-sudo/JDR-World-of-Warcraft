@@ -4,6 +4,8 @@ import { urlIcone, urlPortrait } from "@/core/medias";
 import { rolePortrait, useTexture, useTextures } from "@/core/textures";
 import type { Personnage, Ressource } from "@/core/types";
 import { Barre } from "@/ui/Barre";
+import { EVENEMENTS } from "@partage/protocole.js";
+import { useCible } from "@/ui/glisser";
 import { avecInfobulle, versScene } from "@/ui/InfoBulle";
 
 // Couleurs de barre prevues par theme.css (fiches d'avant le referentiel).
@@ -54,6 +56,17 @@ function Portrait({ nom, niveau, fichier, repose, parDefaut }: { nom: string; ni
 const SEUIL_RAID = 6;
 const TAILLE_GROUPE_RAID = 5;
 
+/** MJ : lacher un sort du compendium sur le cadre d'un heros le lui apprend. */
+function useDepotSort(p: Personnage) {
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
+  const depot = useCible(`cadre-${p.id}`, {
+    accepte: (c) => estMJ && c.origine === "compendium-sort",
+    deposer: (c) => c.origine === "compendium-sort" && jeu.demander(EVENEMENTS.GRIMOIRE_APPRENDRE, { idPersonnage: p.id, idSort: c.sort.id }),
+  });
+  const classes = `${depot.possible ? " zone--possible" : ""}${depot.survolee ? " zone--survolee" : ""}`;
+  return { proprietes: depot.proprietes, classes };
+}
+
 /** Ce que tous les cadres d'un heros partagent : clic (cibler), clic droit (MJ), infobulle. */
 function proprietesCadre(p: Personnage, enLigne: boolean) {
   const pv = p.pointsDeVie;
@@ -97,9 +110,11 @@ function CadreRaid({ p, enLigne, choisi }: { p: Personnage; enLigne: boolean; ch
   const ressource = ressourcePrincipale(p);
   const aTerre = pv.actuels <= 0;
   const classes = ["cadre-raid", !enLigne && "cadre-raid--hors-ligne", aTerre && "cadre-raid--a-terre", choisi && "cadre-raid--selection"].filter(Boolean);
-  const debuffs = p.etats.filter((e) => e.nature === "debuff").slice(0, 3);
+  // Les petites icones du cadre de raid : la concentration (le lanceur maintient un sort) et les debuffs.
+  const debuffs = p.etats.filter((e) => e.nature === "debuff" || e.cle === "concentration").slice(0, 3);
+  const depot = useDepotSort(p);
   return (
-    <div className={classes.join(" ")} {...proprietesCadre(p, enLigne)}>
+    <div className={classes.join(" ") + depot.classes} {...proprietesCadre(p, enLigne)} {...depot.proprietes}>
       <div
         className="cadre-raid__vie"
         style={{ width: `${Math.max(0, Math.min(100, (pv.actuels / pv.max) * 100))}%`, background: couleurClasse ?? undefined }}
@@ -114,7 +129,7 @@ function CadreRaid({ p, enLigne, choisi }: { p: Personnage; enLigne: boolean; ch
       {debuffs.length > 0 && (
         <span className="cadre-raid__auras">
           {debuffs.map((etat) => (
-            <img key={etat.id} src={urlIcone(etat.icone)} alt={etat.nom} />
+            <img key={etat.id} src={urlIcone(etat.icone)} alt={etat.nom} title={etat.nom} className={etat.cle === "concentration" ? "cadre-raid__concentration" : undefined} />
           ))}
         </span>
       )}
@@ -128,6 +143,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
   // UI-Player-Portrait dans le dossier interface/ : le cadre de WoW remplace le cadre dessine.
   const texture = useTexture("cadre-unite");
   const parDefaut = useTextures()[rolePortrait(p.race, p.sexe) ?? "fond-"] ?? null;
+  const depot = useDepotSort(p);
   const classes = [
     "cadre-unite",
     texture ? "cadre-unite--texture" : "cadre",
@@ -137,7 +153,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
   ].filter(Boolean);
 
   return (
-    <div className={classes.join(" ")} {...proprietesCadre(p, enLigne)}>
+    <div className={classes.join(" ") + depot.classes} {...proprietesCadre(p, enLigne)} {...depot.proprietes}>
       <Portrait nom={p.nom} niveau={p.niveau} fichier={p.portrait} repose={p.repose} parDefaut={parDefaut} />
       <div className="cadre-unite__infos">
         <div className="plaque-nom">

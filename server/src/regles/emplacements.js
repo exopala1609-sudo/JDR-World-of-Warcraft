@@ -15,7 +15,8 @@ export function depenserEmplacement(personnage, niveau, classe = null) {
   if (emplacement.actuel <= 0) throw new ErreurRegle(`${personnage.nom} n'a plus d'emplacement de niveau ${niveau} (repos long pour les recuperer).`);
   const cle = cleEmplacement(niveau);
   const existante = personnage.ressources.find((r) => r.cle === cle);
-  if (existante) return personnage.ressources.map((r) => (r.cle === cle ? { ...r, actuel: r.actuel - 1 } : r));
+  // (le maximum suit la table D&D si le personnage a gagne des emplacements en montant de niveau)
+  if (existante) return personnage.ressources.map((r) => (r.cle === cle ? { ...r, max: emplacement.max, actuel: emplacement.actuel - 1 } : r));
   return [
     ...personnage.ressources,
     {

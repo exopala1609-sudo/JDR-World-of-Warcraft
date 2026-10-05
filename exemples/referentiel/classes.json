@@ -34,6 +34,9 @@
 //    "progressionSorts"
 //                    (facultatif) "complete" (par défaut : sorts de niveau 2 au
 //                    niveau 3...) ou "demi" (Paladin, Chasseur : deux fois plus lent).
+//                    Elle donne aussi les emplacements de sorts (table D&D 5e).
+//                    "pacte" (Occultiste) : pas de table, seulement les
+//                    emplacements écrits dans ses "ressources".
 //    "ressources"    Ressources reçues à la création (voir ressources.json) :
 //                      { "ressource": "mana" }  -> le modèle tel quel ;
 //                      { "ressource": "emplacements-niveau-1", "max": 1 }
@@ -151,6 +154,8 @@
       "caracteristiquesPrincipales": ["charisme"],
       "maitriseSauvegardes": ["sagesse", "charisme"],
       "caracteristiqueIncantation": "charisme",
+      // Magie de pacte : ses emplacements ne suivent pas la table D&D (voir ci-dessous).
+      "progressionSorts": "pacte",
       "ressources": [
         { "ressource": "mana" },
         { "ressource": "eclats-ame" },

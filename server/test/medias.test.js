@@ -76,6 +76,9 @@ test("bibliotheque d'icones : lue une fois, recherche multi-mots, limite, actual
   const tout = await bibliotheque.chercher("misc");
   assert.equal(tout.trouves, 300);
   assert.equal(tout.icones.length, 240); // jamais toute la liste d'un coup
+  // La galerie parcourt les pages : la suite, a partir de la 241e.
+  const suite = await bibliotheque.chercher("misc", undefined, 240);
+  assert.deepEqual([suite.debut, suite.icones.length, suite.icones[0]], [240, 60, "inv_misc_240"]);
   const feu = (await bibliotheque.chercher("fire ball")).icones;
   assert.deepEqual(feu.map((n) => n.toLowerCase()), ["spell_fire_fireball02"]); // une seule fois, quelle que soit la casse
   writeFileSync(join(dossiers.icones, "inv_sword_04.png"), "x");

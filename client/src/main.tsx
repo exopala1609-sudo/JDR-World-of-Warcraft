@@ -13,6 +13,7 @@ import "@/styles/creation.css";
 import "@/styles/livres.css";
 import "@/styles/resolution.css";
 import "@/styles/outils.css";
+import "@/styles/actions.css";
 import "@/styles/textures.css"; // en dernier : les textures de WoW remplacent le dessin CSS
 
 // Les textures de WoW du dossier interface/ (s'il y en a) : branchees des
