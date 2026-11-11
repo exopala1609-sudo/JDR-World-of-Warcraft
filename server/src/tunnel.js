@@ -64,6 +64,46 @@ export async function ouvrirTunnel(port) {
   }
 }
 
+/**
+ * Tunnel PERMANENT (avec ton nom de domaine) : l'adresse ne change jamais.
+ * Le jeton vient du tableau de bord Cloudflare (voir docs/NAS-SYNOLOGY.md).
+ * Si la liaison tombe (coupure Internet, redemarrage de la box), on la
+ * relance toute seule : personne n'a a intervenir sur le NAS.
+ */
+export async function ouvrirTunnelPermanent(jeton) {
+  if (!existsSync(bin)) {
+    console.log("  [tunnel] Premier lancement : telechargement de l'outil Cloudflare...");
+    await install(bin);
+  }
+
+  let tunnel = null;
+  let arret = false;
+  let delaiRelance = 5_000;
+
+  const lancer = () => {
+    tunnel = Tunnel.withToken(jeton);
+    tunnel.on("error", (erreur) => console.warn(`  [tunnel] ${erreur.message}`));
+    tunnel.once("connected", () => {
+      delaiRelance = 5_000;
+      console.log("  [tunnel] Acces distant permanent actif.");
+    });
+    tunnel.once("exit", (code) => {
+      if (arret) return;
+      console.warn(`  [tunnel] Liaison coupee (code ${code}), nouvel essai dans ${delaiRelance / 1000} s.`);
+      setTimeout(lancer, delaiRelance).unref();
+      delaiRelance = Math.min(delaiRelance * 2, 5 * 60_000);
+    });
+  };
+
+  lancer();
+  return {
+    fermer: () => {
+      arret = true;
+      tunnel?.stop();
+    },
+  };
+}
+
 /** Copie un texte dans le presse-papiers (Windows et macOS). */
 export function copierDansPressePapiers(texte) {
   const commande = { win32: "clip", darwin: "pbcopy" }[process.platform];

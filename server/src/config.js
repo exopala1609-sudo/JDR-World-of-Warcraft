@@ -78,6 +78,14 @@ export function chargerConfig() {
     nomDuPoste: process.env.VTT_NOM_POSTE?.trim() || hostname(),
     port: Number(process.env.VTT_PORT ?? process.env.PORT ?? 3000),
     motDePasseMJ: process.env.VTT_MOTDEPASSE_MJ?.trim() || "change-moi",
+    // Code a donner aux joueurs. Vide = un pseudo suffit (usage en local).
+    codeTable: process.env.VTT_CODE_TABLE?.trim() || "",
+    // Adresse d'ecoute. "127.0.0.1" = seul le tunnel installe sur la meme
+    // machine peut joindre le serveur (recommande sur le NAS).
+    hote: process.env.VTT_HOTE?.trim() || "0.0.0.0",
+    // Tunnel Cloudflare PERMANENT (nom de domaine) : jeton fourni par Cloudflare.
+    tunnelJeton: process.env.VTT_TUNNEL_JETON?.trim() || "",
+    adressePublique: process.env.VTT_ADRESSE_PUBLIQUE?.trim() || "",
     racineAssets,
     cloud: detecterCloud(racineAssets),
     dossiers,

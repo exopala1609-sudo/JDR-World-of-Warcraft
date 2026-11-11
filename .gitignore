@@ -16,3 +16,5 @@ donnees-mj/
 
 # Cache de compilation TypeScript
 *.tsbuildinfo
+vtt.log
+vtt.ancien.log

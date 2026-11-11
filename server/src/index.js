@@ -14,7 +14,7 @@ import { creerDepot } from "./donnees/depot.js";
 import { routesMedias } from "./medias.js";
 import { afficherBanniere, afficherLienDistant } from "./reseau.js";
 import { installerTempsReel } from "./temps-reel/index.js";
-import { copierDansPressePapiers, ouvrirTunnel } from "./tunnel.js";
+import { copierDansPressePapiers, ouvrirTunnel, ouvrirTunnelPermanent } from "./tunnel.js";
 import { poserVerrou } from "./verrou.js";
 import { VERSION_PROTOCOLE } from "../../shared/protocole.js";
 
@@ -56,13 +56,19 @@ app.set("trust proxy", "loopback");
 app.use((_requete, reponse, suite) => {
   reponse.set("X-Content-Type-Options", "nosniff");
   reponse.set("Referrer-Policy", "no-referrer");
+  // Interdit d'afficher la table dans le cadre d'un autre site (piege a clics).
+  reponse.set("X-Frame-Options", "DENY");
   suite();
 });
 
 app.use(routesAcces(sessions));
 
 app.get("/api/session", (_requete, reponse) => {
-  reponse.json({ nomDeLaPartie: config.nomDeLaPartie, versionProtocole: VERSION_PROTOCOLE });
+  reponse.json({
+    nomDeLaPartie: config.nomDeLaPartie,
+    versionProtocole: VERSION_PROTOCOLE,
+    codeTableRequis: sessions.codeTableRequis,
+  });
 });
 
 // Revele des chemins de ton disque : reserve au MJ.
@@ -106,7 +112,7 @@ let fermerTunnel = () => {};
 // (Le MJ garde ses outils sur /test/, accessibles depuis le micro-menu.)
 const CHEMIN_JOUEURS = "/";
 
-serveurHttp.listen(config.port, "0.0.0.0", () => {
+serveurHttp.listen(config.port, config.hote, () => {
   afficherBanniere(config, { modeDev });
   if (dossiersCrees.length) console.log(`  Sous-dossiers crees : ${dossiersCrees.join(", ")}`);
   afficherDiagnostic(config, rapportDossiers);
@@ -125,10 +131,22 @@ serveurHttp.listen(config.port, "0.0.0.0", () => {
   if (!sessions.motDePasseUtilisable) {
     console.log("  !! Acces MJ DESACTIVE : definis VTT_MOTDEPASSE_MJ (6 caracteres min.) dans .env.");
   }
+  if ((avecTunnel || config.tunnelJeton) && !sessions.codeTableRequis) {
+    console.log("  !! Serveur expose sur Internet SANS code de table : n'importe qui ayant le lien");
+    console.log("     peut entrer comme joueur. Definis VTT_CODE_TABLE dans .env.");
+  }
   console.log("");
   libererVerrou = poserVerrou(config);
 
-  if (avecTunnel) {
+  if (config.tunnelJeton) {
+    // Adresse fixe (nom de domaine) : le tunnel vit aussi longtemps que le serveur.
+    ouvrirTunnelPermanent(config.tunnelJeton)
+      .then(({ fermer }) => {
+        fermerTunnel = fermer;
+        if (config.adressePublique) console.log(`  Adresse des joueurs : ${config.adressePublique}\n`);
+      })
+      .catch((erreur) => console.warn(`\n  !! Tunnel permanent impossible : ${erreur.message}.\n`));
+  } else if (avecTunnel) {
     ouvrirTunnel(config.port)
       .then(({ adresse, fermer }) => {
         fermerTunnel = fermer;

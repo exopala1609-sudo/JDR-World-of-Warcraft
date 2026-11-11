@@ -39,6 +39,7 @@ Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Ecrire ses objets, sorts et auras : [docs/COMPENDIUM.md](docs/COMPENDIUM.md).
 Polices, portraits, icones : [docs/PERSONNALISER.md](docs/PERSONNALISER.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
+Hebergement permanent sur un NAS Synology avec nom de domaine : [docs/NAS-SYNOLOGY.md](docs/NAS-SYNOLOGY.md).
 
 ## Ou je mets mes fichiers ?
 Dans un dossier unique — y compris un dossier synchronise (Google Drive,
