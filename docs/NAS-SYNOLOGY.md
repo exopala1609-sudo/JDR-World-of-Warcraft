@@ -30,7 +30,11 @@ Dans **Panneau de configuration** :
      applications. C'est lui qui fera tourner la table : si un jour la table
      etait piratee, l'intrus n'aurait que les droits de cet utilisateur.
 3. **Acces externe** :
-   - **QuickConnect** : desactive ;
+   - **QuickConnect** : desactive-le si tu ne t'en sers pas. Si tu l'utilises
+     (Synology Drive a distance, par exemple), garde-le mais limite-le :
+     **Parametres avances > Autorisations**, ne coche que les applications
+     utiles (Drive) et decoche **DSM**. QuickConnect n'ouvre aucun port et ne
+     gene pas le tunnel de la table ;
    - **Configuration du routeur** : ne configure rien (pas de redirection de port).
    - Sur ta box, verifie que l'**UPnP** est desactive et qu'aucun port ne
      pointe vers le NAS.
