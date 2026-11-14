@@ -425,3 +425,89 @@ Les lots 0 à 6 mènent à un VTT hébergé et sûr. Les lots 8 à 11 sont indé
 - Hébergement d'un VTT comparable (Foundry) derrière Tailscale : https://foundryvtt.wiki/en/setup/hosting/tailscale
 
 Les sites synology.com et tailscale.com n'étaient pas consultables directement depuis mon environnement : ces informations viennent de résultats de recherche, pas d'une lecture des pages officielles.
+
+---
+
+# Mise à jour du 14 novembre 2026 — tes réponses et le plan révisé
+
+## Ce que tes captures confirment
+
+| Point | Résultat |
+|---|---|
+| Modèle, processeur, mémoire | DS218play, Realtek RTD1296, 4 cœurs, 1,4 GHz, 1 024 Mo : conforme à ce que j'avais trouvé. |
+| Node.js | **v18, v20 et v22 sont déjà installés.** Le doute principal est levé : on utilisera la v22. |
+| Git Server | Proposé par le Centre de paquets, **pas encore installé**. À installer au moment du lot 5, pas avant. |
+| Connexion | Fibre, ~790 Mbit/s en envoi : aucune limite pour 6 joueurs, même avec de grosses cartes. |
+
+**Reste à contrôler** : la version de DSM (*Panneau de configuration > Centre d'infos > Général*) et la mémoire réellement libre (*Moniteur de ressources > Performances > Mémoire*).
+
+## Décisions prises
+
+| Sujet | Décision |
+|---|---|
+| Version de référence | Sprint 11. Création d'une branche `main` qui réunit tout. |
+| Dépôt | Public : le NAS pourra faire le « pull » sans mot de passe. **Conséquence : aucun secret ni image de WoW ne doit jamais y entrer** (c'est déjà le cas, vérifié). |
+| Accès distant | Tunnel Cloudflare + nom de domaine + filtre par e-mail. |
+| Points de vie | Option réglable par table : « les joueurs gèrent leurs points de vie » ou « le MJ seul ». |
+| Accès joueurs | Mot de passe personnel choisi à la première connexion. |
+| Copie de secours | Google Drive. Elle peut être automatique (outil Synology « Hyper Backup »), pas besoin de le faire à la main. |
+| Données actuelles | Essais uniquement : le lot 1 reste nécessaire mais sans procédure de reprise lourde. |
+| Appareils | Tous sur ordinateur : la vue téléphone/tablette est **retirée du plan**. |
+| Voix | Discord : rien à intégrer. |
+| Première amélioration | Prise en main. |
+
+## Scènes préparées et champ de vision (ta question 8)
+
+**Oui pour les scènes préparées** : plusieurs cartes par table, chacune avec sa grille, ses pions et son brouillard, que tu prépares à l'avance et entre lesquelles tu bascules en partie. Effort moyen. C'est le lot 9.
+
+**Le champ de vision par joueur est possible, en trois niveaux de difficulté :**
+
+| Niveau | Ce que ça fait | Effort |
+|---|---|---|
+| 1. Brouillard par joueur, à la main | Tu révèles une zone pour un joueur précis (l'éclaireur voit la salle, pas les autres). | moyen |
+| 2. Vision automatique simple | Chaque héros a un rayon de vision ; le brouillard s'ouvre autour de lui quand il avance. Pas de murs : on « voit » à travers. | moyen |
+| 3. Vision avec murs | Tu traces les murs et les portes sur la carte ; chaque joueur ne voit que ce que son personnage peut voir. | **gros** |
+
+Le calcul se ferait dans le navigateur de chaque joueur : le NAS n'aurait pas à le supporter.
+
+**Limite à connaître, sans l'adoucir** : dans les trois cas, l'image complète de la carte est toujours envoyée au navigateur, et le masque est dessiné par-dessus. Un joueur qui sait fouiller son navigateur peut la retrouver. Pour l'empêcher vraiment, il faudrait découper la carte en morceaux et n'envoyer que les morceaux visibles : gros chantier, lourd pour ce NAS. Entre amis, je recommande d'accepter cette limite.
+
+**Ma recommandation** : lot 9 (scènes) puis niveau 2. Le niveau 3 seulement si, après quelques parties, il te manque réellement.
+
+## Ce que montrent tes deux captures de l'interface
+
+Jugement sur image réduite, donc à confirmer sur ton écran :
+
+1. **Beaucoup d'espace perdu** : la carte occupe environ la moitié de la largeur, avec de larges bandes sombres à gauche et à droite.
+2. **Cadres du groupe peu lisibles** : des boutons gris avec un texte très petit ; on ne voit ni barre de vie, ni couleur de classe, ni qui est connecté.
+3. **Textes très petits** partout (noms sous les pions, discussion, infobulles).
+4. **Icônes sans légende** en bas à droite et dans la barre d'outils de la carte : un nouveau joueur ne peut pas deviner leur rôle.
+5. **Le journal de quêtes est clair** et bien dans le style ; c'est le bon modèle pour les autres fenêtres.
+
+Ces cinq points entrent dans le lot « prise en main ».
+
+## Le livre sort le 17 novembre
+
+- Dès que tu l'as, dis-moi **sur quel système il repose** (basé sur D&D 5e ou système propre) : cela décide si le module de règles est un travail moyen ou gros.
+- Je ne recopierai pas le contenu du livre dans le dépôt, qui est public. La structure te permettra de saisir toi-même races, classes, sorts et objets dans tes fichiers privés du NAS.
+- D'ici là, on ne touche à aucune règle.
+
+## Plan révisé
+
+| Lot | Contenu | Ce que tu testes |
+|---|---|---|
+| 0 | Branche `main` unique, bibliothèques à jour, tests automatiques sur GitHub | `npm run partie` sur ton PC : tout fonctionne comme avant |
+| 1 | Sauvegardes automatiques, plus d'écrasement silencieux | Un dossier de copies datées apparaît ; une restauration fonctionne |
+| 2 | Mot de passe par joueur + option « points de vie » par table | Impossible d'entrer avec le pseudo d'un autre ; l'option change bien qui peut modifier les points de vie |
+| 3 | Images et sons réservés aux connectés | Une adresse d'image ouverte en navigation privée est refusée |
+| 4 | Serveur longue durée (sessions conservées) | Redémarrage du serveur en pleine partie sans se reconnecter |
+| 5 | Installation sur le NAS + bouton de mise à jour | Tu installes en suivant le guide ; la table s'ouvre sur ton réseau local |
+| 6 | Domaine, tunnel, filtre par e-mail | Depuis ton téléphone en 4G : code par e-mail puis le VTT |
+| 7 | Partie d'essai à 7 | Fluidité, notamment en peignant le brouillard |
+| 8 | **Prise en main et lisibilité** : visite guidée, raccourcis, « c'est ton tour », cadres du groupe, taille des textes, espace de la carte | Un joueur découvre l'outil sans explication |
+| 9 | Scènes préparées avec leur brouillard | Basculer entre deux scènes sans rien perdre |
+| 10 | Vision automatique simple (niveau 2) | Le brouillard s'ouvre autour des héros |
+| 11 | Musique et ambiance | Tous entendent, chacun règle son volume |
+| 12 | Module de règles remplaçable | Rien ne change à l'écran ; un combat complet fonctionne |
+
+Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu préfères voir un changement à l'écran plus tôt. Le lot 12 peut remonter dès que le système du livre est connu.
