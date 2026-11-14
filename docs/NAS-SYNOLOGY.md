@@ -1,5 +1,9 @@
 # Heberger la table sur le NAS Synology (DS218play)
 
+> **Brouillon, pas encore valide sur le NAS.** Ce guide sera reecrit et teste
+> pas a pas (voir le plan dans `AUDIT_VTT.md`, lots 5 et 6). Ne l'applique pas
+> tel quel : la protection des comptes joueurs et des images doit passer avant.
+
 Objectif : la table tourne en permanence sur le NAS, a une **adresse fixe**
 (ex. `https://table.ton-domaine.com`), sans ouvrir aucun port sur la box et
 sans exposer l'interface d'administration du NAS.
@@ -136,14 +140,6 @@ reconnecte seul apres une coupure Internet. Journal : `/volume1/vtt/vtt.log`.
 3. Si des dependances ou l'interface ont change : SSH, `npm install` puis
    `npm run build`.
 4. Executer `Table JDR`.
-
-## Option : double verrou sur les outils du MJ
-
-Les outils du MJ (`/test/`) demandent deja le mot de passe MJ. Pour qu'ils ne
-soient meme pas affiches a un inconnu : **Zero Trust > Access > Applications >
-Add > Self-hosted**, domaine `table.ton-domaine.com`, chemin `test`, regle
-**Emails** = ton adresse. Cloudflare t'enverra un code par e-mail avant de
-laisser passer. (Offre gratuite : jusqu'a 50 utilisateurs.)
 
 ## Ce qui reste a savoir
 

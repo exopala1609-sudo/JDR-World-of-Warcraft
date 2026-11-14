@@ -511,3 +511,24 @@ Ces cinq points entrent dans le lot « prise en main ».
 | 12 | Module de règles remplaçable | Rien ne change à l'écran ; un combat complet fonctionne |
 
 Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu préfères voir un changement à l'écran plus tôt. Le lot 12 peut remonter dès que le système du livre est connu.
+
+---
+
+# Suivi — lot 0 livré (14 novembre 2026)
+
+**Fait, sur la branche `claude/bold-mendel-k31nk5`** (en attente de ta validation avant de devenir `main`) :
+
+- Sprint 11, travail NAS et fichier de consignes réunis en une seule version. Les 4 fichiers en conflit ont été résolus en gardant les deux apports.
+- Les 3 bibliothèques vulnérables sont mises à jour : plus aucune faille connue signalée.
+- Vérification automatique ajoutée sur GitHub (tests + compilation à chaque envoi).
+- Guide NAS marqué « brouillon » ; son paragraphe sur l'ancienne page `/test/`, qui n'existe plus, est retiré.
+- Vérifié : 164 tests réussis, compilation réussie, connexion joueur avec code de table et connexion MJ testées sur le serveur réuni.
+
+**Contrôles NAS complétés**
+
+- DSM 7.4.1 : convient. Cela corrige une information de l'audit : DSM 7.3 n'était donc pas la dernière version installable sur ce modèle.
+- Mémoire : 137 Mo libres + 173 Mo de cache récupérable, soit environ 300 Mo disponibles. Le VTT (~100 Mo) et le tunnel (quelques dizaines de Mo, **à mesurer**) tiennent, mais sans grande marge : à surveiller au lot 5, et éviter d'ajouter d'autres paquets gourmands sur le NAS.
+
+**Corrections à mon jugement sur l'interface** (d'après tes précisions) : la carte se zoome, les cadres étaient en mode raid (le mode groupe existe), et les icônes ont une infobulle au survol. Ces trois remarques sont retirées ; restent la taille des textes et la découverte des raccourcis, à revoir au lot « prise en main ».
+
+**Ordre confirmé** : lots 1 à 7 (sécurité puis NAS), ensuite prise en main, scènes, vision niveau 2 puis niveau 3.

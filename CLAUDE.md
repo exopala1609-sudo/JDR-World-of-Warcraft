@@ -15,7 +15,6 @@ des fichiers modifiés. Avance par petites étapes vérifiables.
 - `npm test` : tests automatiques des règles (`server/test/*.test.js`)
 - `npm run build` : vérifie le TypeScript puis construit l'interface
 - `npm run partie` : construit puis lance le serveur avec un lien pour les joueurs distants
-- Banc de test brut : http://localhost:3000/test/
 
 ## Avant de dire « c'est fini »
 1. `npm test` doit passer.
@@ -38,6 +37,7 @@ des fichiers modifiés. Avance par petites étapes vérifiables.
 
 ## Ce qui n'est pas encore en place
 - Aucun test de l'interface (seulement des règles côté serveur).
-- Pas de linter ni de CI GitHub.
+- Pas de linter. GitHub relance `npm test` et `npm run build` a chaque envoi
+  (`.github/workflows/verification.yml`).
 - Les visuels et noms issus de World of Warcraft appartiennent à Blizzard : OK pour
   jouer entre amis, à remplacer avant toute diffusion publique.

@@ -1,0 +1,25 @@
+# Verification automatique : a chaque envoi sur GitHub, les tests des regles
+# et la compilation de l'interface sont relances. Une croix rouge sur GitHub
+# signifie qu'une modification a casse quelque chose.
+name: Verification
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # --ignore-scripts : pas besoin de creer un fichier .env ici.
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
