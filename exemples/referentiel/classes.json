@@ -1,0 +1,250 @@
+// =============================================================================
+//  CLASSES : le troisième choix de l'écran de création
+// =============================================================================
+//
+//  DONNÉES PROVISOIRES, en attendant le livre « D&D World of Warcraft ».
+//  Les 12 classes du Manuel des joueurs portent leur nom WoW quand il existe
+//  (le Roublard devient Voleur...), et 4 classes propres à WoW s'y ajoutent.
+//  L'ordre de la liste est l'ordre d'affichage.
+//
+//  Les champs d'une classe :
+//
+//    "id"            Nom technique : minuscules, chiffres et tirets.
+//                    !! NE LE CHANGE JAMAIS : les fiches de personnage
+//                    !! enregistrent cet id (ex. "roublard" pour le Voleur).
+//                    Pour renommer une classe, change seulement "nom".
+//    "nom"           Nom affiché.
+//    "equivalentDnd" (facultatif) Nom de la classe D&D d'origine, pour mémoire.
+//    "description"   Texte de présentation.
+//    "icone"         (facultatif) Image du dossier icones/, sans extension.
+//                    Par défaut : "classe-" suivi de l'id (ex. classe-paladin.png).
+//    "couleur"       Couleur de la classe (nom, cadre), au format #RRVVBB.
+//    "deDeVie"       6, 8, 10 ou 12. Sert au calcul des points de vie.
+//    "caracteristiquesPrincipales"
+//                    Caractéristiques conseillées au joueur (affichage seulement).
+//    "defenseSansArmure"
+//                    Caractéristiques AJOUTÉES à la classe d'armure sans armure
+//                    (10 + Dextérité + ...). Ex. le Moine : ["sagesse"].
+//    "maitriseSauvegardes"
+//                    (facultatif) Jets de sauvegarde maîtrisés : on y ajoute le
+//                    bonus de maîtrise. Ex. le Guerrier : ["force", "constitution"].
+//    "caracteristiqueIncantation"
+//                    (facultatif) Caractéristique des sorts : jet d'attaque de
+//                    sort et DD de sauvegarde. Ex. "intelligence" pour le Mage.
+//    "progressionSorts"
+//                    (facultatif) "complete" (par défaut : sorts de niveau 2 au
+//                    niveau 3...) ou "demi" (Paladin, Chasseur : deux fois plus lent).
+//                    Elle donne aussi les emplacements de sorts (table D&D 5e).
+//                    "pacte" (Occultiste) : pas de table, seulement les
+//                    emplacements écrits dans ses "ressources".
+//    "ressources"    Ressources reçues à la création (voir ressources.json) :
+//                      { "ressource": "mana" }  -> le modèle tel quel ;
+//                      { "ressource": "emplacements-niveau-1", "max": 1 }
+//                                                -> avec un autre maximum ;
+//                      "max": { "modificateur": "charisme", "minimum": 1 }
+//                                                -> maximum = modificateur de
+//                                                   Charisme, au moins 1 ;
+//                      "reposCourt" / "reposLong" peuvent aussi être changés.
+//
+//  Caractéristiques : force, dexterite, constitution, intelligence, sagesse,
+//  charisme (sans accent, en minuscules).
+//
+//  Les lignes qui commencent par // sont des commentaires : le jeu les ignore.
+// =============================================================================
+{
+  "classes": [
+    {
+      "id": "guerrier",
+      "nom": "Guerrier",
+      "description": "Maître des armes et de l'armure, le guerrier puise sa rage dans la bataille.",
+      "couleur": "#c69b6d",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": ["force", "constitution"],
+      "maitriseSauvegardes": ["force", "constitution"],
+      "ressources": [{ "ressource": "rage" }, { "ressource": "second-souffle" }]
+    },
+    {
+      "id": "paladin",
+      "nom": "Paladin",
+      "description": "Champion de la Lumière, il protège ses alliés et châtie le mal.",
+      "couleur": "#f48cba",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": ["force", "charisme"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
+      "caracteristiqueIncantation": "charisme",
+      "progressionSorts": "demi",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "puissance-sacree" }]
+    },
+    {
+      "id": "rodeur",
+      "nom": "Chasseur",
+      "equivalentDnd": "Rôdeur",
+      "description": "Pisteur infaillible, il combat à distance aux côtés de son fidèle compagnon animal.",
+      "couleur": "#aad372",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": ["dexterite", "sagesse"],
+      "maitriseSauvegardes": ["force", "dexterite"],
+      "caracteristiqueIncantation": "sagesse",
+      "progressionSorts": "demi",
+      "ressources": [{ "ressource": "focalisation" }]
+    },
+    {
+      "id": "roublard",
+      "nom": "Voleur",
+      "equivalentDnd": "Roublard",
+      "description": "Assassin des ombres, il frappe là où ça fait mal avant de disparaître.",
+      "couleur": "#fff468",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["dexterite"],
+      "maitriseSauvegardes": ["dexterite", "intelligence"],
+      "ressources": [{ "ressource": "energie" }, { "ressource": "points-combo" }]
+    },
+    {
+      "id": "clerc",
+      "nom": "Prêtre",
+      "equivalentDnd": "Clerc",
+      "description": "Serviteur de la Lumière ou de l'Ombre, il soigne ses alliés et tourmente ses ennemis.",
+      "couleur": "#ffffff",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["sagesse"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
+      "caracteristiqueIncantation": "sagesse",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+    },
+    {
+      "id": "chevalier-de-la-mort",
+      "nom": "Chevalier de la mort",
+      "description": "Ancien héros relevé par le roi-liche, il manie la magie des runes et de la glace.",
+      "couleur": "#c41e3a",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": ["force", "constitution"],
+      "maitriseSauvegardes": ["force", "constitution"],
+      "ressources": [{ "ressource": "puissance-runique" }, { "ressource": "runes" }]
+    },
+    {
+      "id": "chaman",
+      "nom": "Chaman",
+      "description": "Intermédiaire entre les mortels et les éléments, il invoque la foudre et les totems.",
+      "couleur": "#0070dd",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["sagesse", "constitution"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
+      "caracteristiqueIncantation": "sagesse",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+    },
+    {
+      "id": "magicien",
+      "nom": "Mage",
+      "equivalentDnd": "Magicien",
+      "description": "Érudit des arcanes, il déchaîne le feu, le givre et la magie pure.",
+      "couleur": "#3fc7eb",
+      "deDeVie": 6,
+      "caracteristiquesPrincipales": ["intelligence"],
+      "maitriseSauvegardes": ["intelligence", "sagesse"],
+      "caracteristiqueIncantation": "intelligence",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+    },
+    {
+      "id": "occultiste",
+      "nom": "Démoniste",
+      "equivalentDnd": "Occultiste",
+      "description": "Il a pactisé avec les démons pour obtenir un pouvoir interdit.",
+      "couleur": "#8788ee",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["charisme"],
+      "maitriseSauvegardes": ["sagesse", "charisme"],
+      "caracteristiqueIncantation": "charisme",
+      // Magie de pacte : ses emplacements ne suivent pas la table D&D (voir ci-dessous).
+      "progressionSorts": "pacte",
+      "ressources": [
+        { "ressource": "mana" },
+        { "ressource": "eclats-ame" },
+        // Particularité de l'Occultiste : 1 seul emplacement, qui revient au repos court.
+        { "ressource": "emplacements-niveau-1", "max": 1, "reposCourt": "remplir" }
+      ]
+    },
+    {
+      "id": "moine",
+      "nom": "Moine",
+      "description": "Maître des arts martiaux pandarens, il canalise son chi pour frapper ou soigner.",
+      "couleur": "#00ff98",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["dexterite", "sagesse"],
+      "maitriseSauvegardes": ["force", "dexterite"],
+      "defenseSansArmure": ["sagesse"],
+      "ressources": [{ "ressource": "energie" }, { "ressource": "chi" }]
+    },
+    {
+      "id": "druide",
+      "nom": "Druide",
+      "description": "Gardien de la nature, il change de forme : ours, félin ou oiseau.",
+      "couleur": "#ff7c0a",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["sagesse"],
+      "maitriseSauvegardes": ["intelligence", "sagesse"],
+      "caracteristiqueIncantation": "sagesse",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+    },
+    {
+      "id": "chasseur-de-demons",
+      "nom": "Chasseur de démons",
+      "description": "Illidari aux yeux bandés, il a sacrifié sa vue pour traquer la Légion ardente.",
+      "couleur": "#a330c9",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": ["dexterite"],
+      "maitriseSauvegardes": ["dexterite", "constitution"],
+      "ressources": [{ "ressource": "fureur" }]
+    },
+    {
+      "id": "evocateur",
+      "nom": "Évocateur",
+      "description": "Dracthyr façonné par les Aspects dragons, il manie la magie des vols draconiques.",
+      "couleur": "#33937f",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["intelligence", "charisme"],
+      "maitriseSauvegardes": ["intelligence", "charisme"],
+      "caracteristiqueIncantation": "intelligence",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "essence" }]
+    },
+
+    // --- Classes de D&D sans équivalent dans World of Warcraft -------------------
+    {
+      "id": "barbare",
+      "nom": "Barbare",
+      "description": "Guerrier sauvage porté par une fureur primitive.",
+      "couleur": "#b35a3a",
+      "deDeVie": 12,
+      "caracteristiquesPrincipales": ["force", "constitution"],
+      "maitriseSauvegardes": ["force", "constitution"],
+      "defenseSansArmure": ["constitution"],
+      "ressources": [{ "ressource": "rage" }, { "ressource": "rage-barbare" }]
+    },
+    {
+      "id": "barde",
+      "nom": "Barde",
+      "description": "Poète et musicien, sa magie naît de ses chants.",
+      "couleur": "#d6a2e8",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": ["charisme"],
+      "maitriseSauvegardes": ["dexterite", "charisme"],
+      "caracteristiqueIncantation": "charisme",
+      "ressources": [
+        { "ressource": "mana" },
+        // Autant d'inspirations que le modificateur de Charisme (au moins 1).
+        { "ressource": "inspiration-bardique", "max": { "modificateur": "charisme", "minimum": 1 } },
+        { "ressource": "emplacements-niveau-1" }
+      ]
+    },
+    {
+      "id": "ensorceleur",
+      "nom": "Ensorceleur",
+      "description": "La magie coule dans ses veines, héritée d'un ancêtre draconique ou d'un don étrange.",
+      "couleur": "#e35d9a",
+      "deDeVie": 6,
+      "caracteristiquesPrincipales": ["charisme"],
+      "maitriseSauvegardes": ["constitution", "charisme"],
+      "caracteristiqueIncantation": "charisme",
+      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+    }
+  ]
+}

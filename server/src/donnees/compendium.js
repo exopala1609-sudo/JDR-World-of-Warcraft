@@ -7,30 +7,19 @@
 // - Apres avoir modifie un fichier, le MJ clique sur "Recharger le compendium" :
 //   pas besoin de redemarrer le serveur. (On ne surveille pas le dossier
 //   automatiquement : sur un disque Google Drive, cette surveillance n'est pas fiable.)
-import { copyFileSync, existsSync, readdirSync } from "node:fs";
+import { copyFileSync, existsSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { ETATS_DE_BASE } from "../../../shared/etats.js";
-import { lireTexteJson } from "../fichiers.js";
-import { SchemaDefinitionEtat, SchemaEntreeObjet, SchemaEntreeSort } from "../modeles/compendium.js";
+import { lireJsonCommente, listerFichiersJson as fichiersJson } from "../fichiers.js";
+import { SchemaDefinitionEtat, SchemaEntreeMonstre, SchemaEntreeObjet, SchemaEntreeSort } from "../modeles/compendium.js";
 import { nouvelId } from "../modeles/identifiants.js";
 
 const SECTIONS = {
   objets: SchemaEntreeObjet,
   sorts: SchemaEntreeSort,
   etats: SchemaDefinitionEtat,
+  monstres: SchemaEntreeMonstre, // le bestiaire du MJ
 };
-
-function fichiersJson(dossier) {
-  if (!existsSync(dossier)) return [];
-  const resultat = [];
-  for (const entree of readdirSync(dossier, { withFileTypes: true })) {
-    if (entree.name.startsWith(".") || entree.name.startsWith("~")) continue;
-    const chemin = join(dossier, entree.name);
-    if (entree.isDirectory()) resultat.push(...fichiersJson(chemin));
-    else if (entree.isFile() && entree.name.toLowerCase().endsWith(".json")) resultat.push(chemin);
-  }
-  return resultat.sort();
-}
 
 /**
  * Premier lancement : si le dossier ne contient aucun fichier JSON, on y copie
@@ -48,27 +37,57 @@ export function installerExemples(dossierCompendium, dossierExemples) {
   return copies;
 }
 
+/**
+ * Un fichier d'exemple ajoute par une mise a jour (ex. le bestiaire) : on le
+ * depose dans un compendium DEJA rempli, s'il n'y est pas encore. Rien n'est
+ * jamais ecrase.
+ */
+export function installerFichierExemple(dossierCompendium, cheminExemple) {
+  const destination = join(dossierCompendium, basename(cheminExemple));
+  if (!existsSync(dossierCompendium) || !existsSync(cheminExemple) || existsSync(destination)) return false;
+  copyFileSync(cheminExemple, destination);
+  return true;
+}
+
+/** Le fichier ou le jeu ecrit les monstres crees depuis le Bestiaire (dans compendium/). */
+export const FICHIER_MONSTRES_MJ = "mes-monstres.json";
+/** Le fichier ou le jeu ecrit les sorts crees ou modifies depuis le Compendium. */
+export const FICHIER_SORTS_MJ = "mes-sorts.json";
+/**
+ * Le fichier ou le jeu ecrit les icones choisies depuis le Compendium :
+ * { "objets": { "epee-longue": "INV_Sword_04" }, "sorts": { ... } }. Il
+ * l'emporte sur le champ "icone" des autres fichiers (jamais reecrits).
+ */
+export const FICHIER_ICONES_MJ = "mes-icones.json";
+const NOM_ICONE = /^[A-Za-z0-9_-]{1,80}$/;
+
 export function creerCompendium(dossier) {
   let objets = new Map();
   let sorts = new Map();
   let etats = new Map();
+  let monstres = new Map();
+  let fichierDuMonstre = new Map(); // id -> fichier (relatif) ou il est ecrit
+  let fichierDuSort = new Map();
 
   function charger() {
-    const nouveaux = { objets: new Map(), sorts: new Map(), etats: new Map() };
+    const origines = new Map();
+    const originesSorts = new Map();
+    const nouveaux = { objets: new Map(), sorts: new Map(), etats: new Map(), monstres: new Map() };
     const erreurs = [];
     const signaler = (fichier, emplacement, message) =>
       erreurs.push({ fichier: relative(dossier, fichier), emplacement, message });
 
     for (const fichier of fichiersJson(dossier)) {
+      if (relative(dossier, fichier) === FICHIER_ICONES_MJ) continue; // lu a part, a la fin
       let contenu;
       try {
-        contenu = lireTexteJson(fichier);
+        contenu = lireJsonCommente(fichier);
       } catch (erreur) {
-        signaler(fichier, "fichier", `JSON illisible : ${erreur.message}`);
+        signaler(fichier, "fichier", erreur.message);
         continue;
       }
       if (!contenu || typeof contenu !== "object" || Array.isArray(contenu)) {
-        signaler(fichier, "fichier", 'Le fichier doit contenir { "objets": [...], "sorts": [...], "etats": [...] }.');
+        signaler(fichier, "fichier", 'Le fichier doit contenir { "objets": [...], "sorts": [...], "etats": [...], "monstres": [...] }.');
         continue;
       }
 
@@ -97,14 +116,48 @@ export function creerCompendium(dossier) {
             signaler(fichier, emplacement, "Cet identifiant est deja un etat officiel de D&D 5e.");
           } else {
             nouveaux[section].set(resultat.data.id, resultat.data);
+            if (section === "monstres") origines.set(resultat.data.id, relative(dossier, fichier));
+            if (section === "sorts") originesSorts.set(resultat.data.id, relative(dossier, fichier));
           }
         });
       }
     }
 
+    // Les icones choisies depuis le jeu (mes-icones.json) remplacent celles des fichiers.
+    const choix = lireChoixIcones(signaler);
+    for (const section of ["objets", "sorts"]) {
+      for (const [id, icone] of Object.entries(choix[section])) {
+        const entree = nouveaux[section].get(id);
+        if (entree) nouveaux[section].set(id, { ...entree, icone });
+      }
+    }
+
     // On ne remplace l'ancien contenu qu'une fois la lecture terminee.
-    ({ objets, sorts, etats } = nouveaux);
-    return { objets: objets.size, sorts: sorts.size, etats: etats.size, erreurs };
+    ({ objets, sorts, etats, monstres } = nouveaux);
+    fichierDuMonstre = origines;
+    fichierDuSort = originesSorts;
+    return { objets: objets.size, sorts: sorts.size, etats: etats.size, monstres: monstres.size, erreurs };
+  }
+
+  /** Les icones choisies depuis le jeu, telles qu'ecrites dans mes-icones.json (valides seulement). */
+  function lireChoixIcones(signaler = () => {}) {
+    const choix = { objets: {}, sorts: {} };
+    const fichier = join(dossier, FICHIER_ICONES_MJ);
+    if (!existsSync(fichier)) return choix;
+    let contenu;
+    try {
+      contenu = lireJsonCommente(fichier);
+    } catch (erreur) {
+      signaler(fichier, "fichier", erreur.message);
+      return choix;
+    }
+    for (const section of ["objets", "sorts"]) {
+      for (const [id, icone] of Object.entries(contenu?.[section] ?? {})) {
+        if (typeof icone === "string" && NOM_ICONE.test(icone)) choix[section][id] = icone;
+        else signaler(fichier, `${section}.${id}`, "Nom d'icone invalide (lettres, chiffres, _ et - seulement).");
+      }
+    }
+    return choix;
   }
 
   /** Etats disponibles : les conditions officielles + les auras du compendium. */
@@ -118,9 +171,17 @@ export function creerCompendium(dossier) {
     charger,
     lister: () => ({
       objets: [...objets.values()],
-      sorts: [...sorts.values()],
+      // "modifiable" : ecrit dans mes-sorts.json (cree depuis le jeu), donc modifiable depuis le jeu.
+      sorts: [...sorts.values()].map((s) => ({ ...s, modifiable: fichierDuSort.get(s.id) === FICHIER_SORTS_MJ })),
       etats: toutesLesDefinitionsEtat(),
+      // "modifiable" : cree depuis le jeu (mes-monstres.json), donc modifiable depuis le jeu.
+      monstres: [...monstres.values()].map((m) => ({ ...m, modifiable: fichierDuMonstre.get(m.id) === FICHIER_MONSTRES_MJ })),
     }),
+    fichierDuMonstre: (id) => fichierDuMonstre.get(id) ?? null,
+    fichierDuSort: (id) => fichierDuSort.get(id) ?? null,
+    dossier,
+    obtenirMonstre: (id) => monstres.get(id) ?? null,
+    lireChoixIcones,
     obtenirObjet: (id) => objets.get(id) ?? null,
     obtenirSort: (id) => sorts.get(id) ?? null,
     obtenirDefinitionEtat: (cle) => toutesLesDefinitionsEtat().find((d) => d.cle === cle) ?? null,

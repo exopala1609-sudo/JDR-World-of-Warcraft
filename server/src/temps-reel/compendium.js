@@ -5,25 +5,40 @@
 // Parce qu'un objet vit sa vie : si tu corriges demain la description de
 // l'epee dans le compendium, l'epee deja ramassee ne change pas en douce dans
 // le sac d'un joueur. Chaque exemplaire garde "source" pour savoir d'ou il vient.
+// Seule exception : l'ICONE choisie depuis le Compendium (simple apparence)
+// est reportee sur les exemplaires deja en jeu a la table.
+import { renameSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { EVENEMENTS } from "../../../shared/protocole.js";
-import { instancierObjet, instancierSort } from "../donnees/compendium.js";
+import { FICHIER_ICONES_MJ, instancierObjet, instancierSort } from "../donnees/compendium.js";
 import { listerImages } from "../medias.js";
 import { schemaIdCompendium } from "../modeles/compendium.js";
 import { schemaId } from "../modeles/identifiants.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
+import { ajouterAuSac, QUANTITE_MAX } from "../regles/inventaire.js";
 import { SALLE_MJ } from "./index.js";
 
 const idPersonnage = schemaId("p");
-const QUANTITE_MAX = 9999;
 
 const Demandes = {
   ajouterObjet: z.strictObject({ idPersonnage, idObjet: schemaIdCompendium, quantite: z.int().min(1).max(999).default(1) }),
   retirerObjet: z.strictObject({ idPersonnage, idObjet: schemaId("o"), quantite: z.int().min(1).max(QUANTITE_MAX).optional() }),
   apprendre: z.strictObject({ idPersonnage, idSort: schemaIdCompendium }),
   oublier: z.strictObject({ idPersonnage, idSort: schemaId("s") }),
-  medias: z.strictObject({ categorie: z.enum(["cartes", "jetons", "portraits", "icones"]) }),
+  icones: z.strictObject({ recherche: z.string().max(80).default(""), debut: z.int().min(0).max(1_000_000).default(0) }),
+  medias: z.strictObject({ categorie: z.enum(["cartes", "jetons", "portraits", "icones", "sons"]) }),
+  // null : revenir a l'icone ecrite dans le fichier de l'objet (ou a son id).
+  icone: z.strictObject({ genre: z.enum(["objets", "sorts"]), id: schemaIdCompendium, icone: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/).nullable() }),
 };
+
+const EN_TETE_ICONES = `// =============================================================================
+//  MES ICONES : choisies depuis le Compendium du jeu (clic sur l'icone d'un
+//  objet ou d'un sort). Elles remplacent le champ "icone" de tes autres
+//  fichiers, qui ne sont jamais reecrits. Format :
+//    { "objets": { "epee-longue": "INV_Sword_04" }, "sorts": { ... } }
+// =============================================================================
+`;
 
 export function brancher(socket, ctx) {
   const pseudo = socket.data.profil.pseudo;
@@ -43,6 +58,66 @@ export function brancher(socket, ctx) {
     return { rapport };
   });
 
+  // Choisir l'icone d'un objet ou d'un sort du compendium. Les exemplaires deja
+  // donnes a cette table (sacs, equipement, coffres, grimoires) prennent aussi
+  // la nouvelle icone : c'est une question d'apparence, pas de regles.
+  ctx.guichet(socket, EVENEMENTS.COMPENDIUM_ICONE, Demandes.icone, ({ genre, id, icone }) => {
+    ctx.exigerMJ(socket, "changer une icone du compendium");
+    const obtenir = (cle) => (genre === "objets" ? ctx.compendium.obtenirObjet(cle) : ctx.compendium.obtenirSort(cle));
+    if (!obtenir(id)) throw new ErreurRegle("Absent du compendium (recharge-le apres une modification).");
+
+    const choix = ctx.compendium.lireChoixIcones();
+    if (icone) choix[genre][id] = icone;
+    else delete choix[genre][id];
+    const fichier = join(ctx.compendium.dossier, FICHIER_ICONES_MJ);
+    const provisoire = `${fichier}.tmp-${process.pid}`;
+    writeFileSync(provisoire, `${EN_TETE_ICONES}${JSON.stringify(choix, null, 2)}\n`, "utf8");
+    renameSync(provisoire, fichier);
+    const rapport = ctx.compendium.charger();
+    ctx.io.to(SALLE_MJ).emit(EVENEMENTS.COMPENDIUM_MAJ, { rapport });
+
+    // Les exemplaires deja en jeu a cette table.
+    const nouvelle = obtenir(id)?.icone;
+    const idTable = socket.data.idTable;
+    if (!idTable) return { icone: nouvelle ?? null, exemplaires: 0 };
+    let exemplaires = 0;
+    const retoucher = (o) => {
+      if (!o || o.source !== id || o.icone === nouvelle) return o;
+      exemplaires++;
+      return { ...o, icone: nouvelle };
+    };
+    for (const p of ctx.depot.personnagesDeLaTable(idTable)) {
+      const avant = exemplaires;
+      const suite =
+        genre === "objets"
+          ? { ...p, inventaire: p.inventaire.map(retoucher), equipement: Object.fromEntries(Object.entries(p.equipement).map(([e, o]) => [e, retoucher(o)])) }
+          : { ...p, grimoire: p.grimoire.map(retoucher) };
+      if (exemplaires > avant) ctx.publierPersonnage(suite, { action: "icone-changee", par: pseudo });
+    }
+    if (genre === "objets") {
+      const scene = ctx.depot.obtenirScene(idTable);
+      const avant = exemplaires;
+      const butins = scene.butins.map((b) => ({ ...b, objets: b.objets.map(retoucher) }));
+      if (exemplaires > avant) {
+        ctx.depot.enregistrerScene({ ...scene, butins });
+        ctx.publierScene(idTable, { action: "icone-changee", par: pseudo });
+      }
+    }
+    return { icone: nouvelle ?? null, exemplaires };
+  });
+
+  // Selecteur d'icones (MJ : bestiaire, compendium...). Recherche par nom de fichier.
+  ctx.guichet(socket, EVENEMENTS.ICONES_CHERCHER, Demandes.icones, async ({ recherche, debut }) => {
+    ctx.exigerMJ(socket, "parcourir les icones");
+    if (!ctx.quota(socket, "icones", 10)) throw new ErreurRegle("Doucement : trop de recherches d'un coup.");
+    return ctx.icones.chercher(recherche, undefined, debut);
+  });
+  ctx.guichet(socket, EVENEMENTS.ICONES_ACTUALISER, null, async () => {
+    ctx.exigerMJ(socket, "parcourir les icones");
+    await ctx.icones.actualiser();
+    return ctx.icones.chercher("");
+  });
+
   ctx.guichet(socket, EVENEMENTS.MEDIAS_LISTER, Demandes.medias, ({ categorie }) => {
     ctx.exigerMJ(socket, "parcourir les images");
     return { fichiers: listerImages(ctx.config, categorie) };
@@ -57,10 +132,7 @@ export function brancher(socket, ctx) {
     if (!entree) throw new ErreurRegle("Objet absent du compendium (recharge-le apres une modification).");
 
     // Les objets empilables (potions, fleches...) rejoignent la pile existante.
-    const pile = entree.empilable && personnage.inventaire.find((o) => o.source === entree.id);
-    const inventaire = pile
-      ? personnage.inventaire.map((o) => (o === pile ? { ...o, quantite: Math.min(QUANTITE_MAX, o.quantite + quantite) } : o))
-      : [...personnage.inventaire, instancierObjet(entree, quantite)];
+    const inventaire = ajouterAuSac(personnage.inventaire, instancierObjet(entree, quantite));
 
     return {
       personnage: ctx.publierPersonnage(

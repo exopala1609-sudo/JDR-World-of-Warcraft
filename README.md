@@ -17,26 +17,26 @@ entre ton PC fixe et ton portable : voir [docs/CONFIGURATION.md](docs/CONFIGURAT
 
 ## Lancer une partie
 ```bash
-npm run dev      # developpement : interface WoW sur http://localhost:5173
+npm run partie   # prepare l'interface, demarre, affiche (et copie) le lien pour les joueurs
 ```
-```bash
-npm run partie   # joueurs a distance : affiche (et copie) le lien a leur envoyer
-```
-Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
+Puis ouvre **http://localhost:3000/** : l'ecran de connexion World of Warcraft.
+C'est la porte UNIQUE, pour les joueurs comme pour toi : en bas de l'ecran, le
+lien discret **« Connexion Maitre du Jeu »** demande ton mot de passe. Tu arrives
+alors sur la meme interface que les joueurs, avec tes outils en plus (sur ta
+barre d'actions en bas, touches 1 a 9 ; clic droit sur un pion ou un cadre ;
+bouton carte sur la minicarte).
 
-## Banc de test
-Une page brute (sans mise en forme) permet de tout verifier : connexion MJ /
-joueur, tables, personnages, points de vie, ressources, repos, compendium,
-inventaire, etats, combat, et la carte (grille, pions, brouillard), en temps reel.
-```
-http://localhost:3000/test/
-```
+Details et solutions de secours : [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
+Pour developper : `npm run dev` (interface sur http://localhost:5173 ; le port
+3000 y renvoie tout seul).
+
 Les tests automatiques des regles se lancent avec :
 ```bash
 npm test
 ```
 Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Ecrire ses objets, sorts et auras : [docs/COMPENDIUM.md](docs/COMPENDIUM.md).
+Modifier les races, classes et regles de creation : [docs/REFERENTIEL.md](docs/REFERENTIEL.md).
 Polices, portraits, icones : [docs/PERSONNALISER.md](docs/PERSONNALISER.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 
@@ -59,6 +59,6 @@ chaque dossier et signale tout chemin errone.
 | `server/` | Serveur local : acces, donnees JSON, regles D&D, temps reel |
 | `client/` | Interface World of Warcraft (React + TypeScript) |
 | `shared/` | Vocabulaire temps reel et regles D&D 5e communs aux deux cotes |
-| `exemples/` | Donnees de test (compendium), copiees au premier lancement |
-| `donnees-mj/` | Dossier de secours quand `VTT_ASSETS` n'est pas configure |
+| `exemples/` | Donnees de test (compendium, referentiel), copiees au premier lancement |
+| `donnees-mj/` | Ancien dossier de secours (n'est plus utilise : `VTT_ASSETS` est obligatoire) |
 | `docs/` | Notes d'utilisation |

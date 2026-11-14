@@ -1,0 +1,26 @@
+==============================================================================
+  DOSSIER interface/ : les textures de l'interface (facon World of Warcraft)
+==============================================================================
+
+Copie ici les textures d'interface en GARDANT LEURS NOMS d'origine (ceux du
+depot github.com/Gethe/wow-ui-textures). A plat ou avec leurs sous-dossiers,
+majuscules ou minuscules : les deux marchent. Par exemple :
+
+  interface\
+  |-- Buttons\UI-Quickslot2.png
+  |-- Buttons\UI-Panel-Button-Up.png
+  |-- DialogFrame\UI-DialogBox-Border.png
+  |-- Cursor\Point.png
+  `-- ...
+
+Ne renomme rien : c'est le jeu (le code) qui fait la correspondance entre ses
+elements (case de la barre d'actions, cadre de fenetre...) et ces fichiers.
+Une image absente ne casse rien : l'interface garde son dessin actuel.
+Apres avoir ajoute des fichiers, recharge la page (F5).
+La liste des fichiers reconnus : docs/PERSONNALISER.md, "Textures d'interface".
+
+Copie seulement les dossiers utiles (pas tout le depot : il est enorme).
+Le grand dossier des ICONES (des milliers de fichiers) ne va pas ici, mais
+dans icones/ : voir docs/PERSONNALISER.md, "Bibliotheque d'icones".
+
+Ces fichiers restent dans TON cloud et ne sont jamais publies sur GitHub.

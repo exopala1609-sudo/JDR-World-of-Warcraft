@@ -11,6 +11,7 @@ import { z } from "../modeles/zod.js";
 import {
   ajouterParticipant,
   creerCombat,
+  deplacerParticipant,
   fixerInitiative,
   lancerInitiative,
   retirerParticipant,
@@ -19,6 +20,7 @@ import {
 } from "../regles/combat.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { ecoulerUnRound } from "../regles/etats.js";
+import { jouerSon } from "./sons.js";
 
 const Demandes = {
   demarrer: z.strictObject({ idsPersonnages: z.array(schemaId("p")).min(1).max(60).optional() }),
@@ -26,6 +28,7 @@ const Demandes = {
   ajouter: z.strictObject({ idPersonnage: schemaId("p") }),
   retirer: z.strictObject({ idParticipant: schemaId("c") }),
   fixer: z.strictObject({ idParticipant: schemaId("c"), valeur: z.int().min(-20).max(60) }),
+  deplacer: z.strictObject({ idParticipant: schemaId("c"), sens: z.literal([-1, 1]) }),
 };
 
 const resumeJet = (p) => ({ nom: p.nom, jet: p.jet, bonus: p.bonus, initiative: p.initiative });
@@ -59,6 +62,9 @@ export function brancher(socket, ctx) {
     if (combattants.length === 0) throw new ErreurRegle("Aucun personnage a faire combattre.");
 
     const combat = creerCombat(idTable, combattants.map((p) => lancerInitiative(p)));
+    // Au combat, plus personne n'est "repose".
+    for (const p of combattants) if (p.repose) ctx.publierPersonnage({ ...p, repose: false }, { action: "combat", par: pseudo });
+    jouerSon(ctx, idTable, "combat"); // tambours de guerre : le jet d'initiative est tombe
     return enregistrerEtPublier(combat, { action: "debut", par: pseudo, jets: combat.participants.map(resumeJet) });
   });
 
@@ -125,6 +131,13 @@ export function brancher(socket, ctx) {
       return { combat: null };
     }
     return enregistrerEtPublier(suite, { action: "retrait", par: pseudo, nom });
+  });
+
+  ctx.guichet(socket, EVENEMENTS.COMBAT_DEPLACER, Demandes.deplacer, ({ idParticipant, sens }) => {
+    ctx.exigerMJ(socket, "changer l'ordre des tours");
+    const combat = exigerCombat();
+    const nom = combat.participants.find((p) => p.id === idParticipant)?.nom;
+    return enregistrerEtPublier(deplacerParticipant(combat, idParticipant, sens), { action: "ordre", par: pseudo, nom });
   });
 
   ctx.guichet(socket, EVENEMENTS.COMBAT_FIXER_INITIATIVE, Demandes.fixer, ({ idParticipant, valeur }) => {

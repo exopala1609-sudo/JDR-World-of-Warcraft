@@ -110,6 +110,7 @@
 
 /* Volet des statistiques : parchemin, defile verticalement si besoin. */
 .statistiques {
+  font-family: var(--police-ui); /* des chiffres, pas un recit : pas de Morpheus */
   overflow-y: auto;
   padding: 14px 16px;
   border-radius: 4px;
@@ -140,4 +141,168 @@
 }
 .stat__valeur--malus {
   color: #9b1b0b;
+}
+
+/* =============================================================================
+   Glisser-deposer (sprint 7)
+   ============================================================================= */
+
+/* L'icone qui suit la souris : au-dessus de tout, jamais sous le curseur. */
+.fantome {
+  position: absolute;
+  z-index: calc(var(--z-infobulle) + 1);
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(1.08);
+  opacity: 0.92;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.8));
+}
+.fantome--refuse {
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.8)) grayscale(1) sepia(1) hue-rotate(-50deg) saturate(4);
+}
+.glisser-en-cours,
+.glisser-en-cours * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+.case--deplacable {
+  cursor: grab;
+}
+/* Pendant un glisser : ou l'objet PEUT aller (vert), ou il VA aller (or). */
+.case--possible {
+  box-shadow:
+    inset 0 0 0 2px var(--texte-vert),
+    0 0 10px 2px color-mix(in srgb, var(--texte-vert) 55%, transparent) !important;
+}
+.case--survolee {
+  box-shadow:
+    inset 0 0 0 2px var(--or),
+    0 0 16px 5px rgba(255, 209, 0, 0.7) !important;
+  filter: brightness(1.3);
+}
+.zone--possible {
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--texte-vert) 60%, transparent);
+}
+.zone--survolee {
+  box-shadow: 0 0 0 2px var(--or), 0 0 18px rgba(255, 209, 0, 0.5);
+}
+/* Raccourci dont il ne reste plus aucun exemplaire. */
+.case--epuisee img {
+  filter: grayscale(1) brightness(0.5);
+}
+
+/* =============================================================================
+   Fenetre de butin (clic sur un coffre ou un cadavre)
+   ============================================================================= */
+.butin {
+  position: absolute;
+  z-index: 100000; /* toujours devant les autres fenetres (dans la couche .fenetres) */
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 10px 12px;
+}
+.butin__entete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 209, 0, 0.25);
+}
+.butin__embleme {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #5a4a2a, #1a1206);
+  box-shadow: 0 0 0 2px var(--or-bordure), 0 0 0 3px #000;
+  color: var(--or);
+  font-size: 22px;
+}
+.butin__embleme--cadavre {
+  background: radial-gradient(circle at 40% 35%, #555, #111);
+  color: #e8e8e8;
+}
+.butin__titre {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.butin__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.butin__ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 8px 3px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.15));
+  font-family: var(--police-ui);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+/* Survol : la ligne s'illumine, comme dans WoW. */
+.butin__ligne:hover {
+  border-color: color-mix(in srgb, var(--couleur-rarete, var(--or)) 70%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--couleur-rarete, var(--or)) 35%, transparent), rgba(0, 0, 0, 0.1));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--couleur-rarete, var(--or)) 40%, transparent);
+}
+.butin__icone {
+  --taille-case: 44px;
+  flex: none;
+}
+.butin__nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: var(--ombre-texte);
+}
+.butin__vide {
+  margin: 6px 0;
+  color: var(--texte-gris);
+  font-size: 14px;
+  text-align: center;
+}
+.butin__tout {
+  align-self: center;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+/* --- Fiche : repos court (le joueur choisit ses des de vie) ---------------------------- */
+.repos-court {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--metal-sombre);
+}
+.repos-court__titre {
+  flex: 1;
+  color: #5a1d0a; /* a l'encre, comme les titres du parchemin */
+}
+.repos-court__nombre {
+  min-width: 46px;
+  color: #2e1f0e;
+  font-family: var(--police-chiffres);
+  text-align: center;
+}
+.repos-court .bouton-page {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+.repos-court__bouton {
+  padding: 4px 12px;
 }

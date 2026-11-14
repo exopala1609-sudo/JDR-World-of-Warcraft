@@ -1,0 +1,929 @@
+/* =============================================================================
+   TEXTURES DE WORLD OF WARCRAFT (dossier interface/ de ton cloud)
+
+   Chaque regle ci-dessous ne s'applique que si la page porte la classe
+   tex-<role>, c'est-a-dire si le fichier correspondant a ete trouve dans le
+   dossier interface/ (la correspondance role -> fichier est dans
+   src/core/textures.ts). Sans le fichier : le dessin CSS d'origine reste.
+   ============================================================================= */
+
+/* --- Cadres : UI-DialogBox-Border (bordure) et -Background (fond) -------------
+   La bordure, recomposee en 3 x 3 carres (voir textures.ts), est posee sur le
+   pseudo-element qui dessinait les rivets : elle deborde un peu du cadre,
+   comme dans WoW, sans rien changer a la place qu'il occupe. */
+.tex-bordure-dialogue .cadre::before {
+  inset: calc(var(--bordure-cadre, 30px) * -0.3);
+  border: var(--bordure-cadre, 30px) solid transparent;
+  border-radius: 0;
+  border-image: var(--tex-bordure-dialogue) 33.3333% / var(--bordure-cadre, 30px) round;
+  background: none;
+}
+.tex-bordure-dialogue .cadre {
+  border-radius: 2px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+/* Les petits cadres (barres, cadres d'unite, micro-menu) : une bordure plus fine. */
+.tex-bordure-dialogue :is(.cadre-unite, .menu, .bandeau, .minicarte__zone, .outils-carte, .actions__barre) {
+  --bordure-cadre: 20px;
+}
+.tex-fond-dialogue .cadre:not(.cadre--parchemin) {
+  /* Le fond de WoW est un noir a 60 % : on le pose sur un gris tres sombre
+     pour que le texte reste lisible au-dessus de la carte. */
+  background: var(--tex-fond-dialogue), rgba(18, 18, 22, 0.88);
+}
+
+/* --- Bouton de fermeture : UI-Panel-MinimizeButton-Up / -Down -----------------
+   Dans la texture (32 x 32), le bouton n'occupe que le centre (19 px) : on
+   l'agrandit pour qu'il remplisse la place du bouton actuel. */
+.tex-fermer .bouton-fermer {
+  border-radius: 0;
+  background: var(--tex-fermer) 50% 48% / 168% no-repeat;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+}
+.tex-fermer-appui .bouton-fermer:active {
+  background-image: var(--tex-fermer-appui);
+  transform: none;
+}
+
+/* --- Micro-menu : UI-MicroButton-*-Up / -Down et Button-Backpack-Up -----------
+   Une texture de micro-bouton fait 32 x 64 ; le bouton dessine en occupe le
+   bas (de 24 a 62 px). */
+.menu__bouton--texture,
+.menu__bouton--sac {
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--micro) no-repeat;
+}
+.menu__bouton--texture {
+  width: 37px;
+  background-size: 37px 74px; /* x 1,15 : le bouton dessine remplit la hauteur */
+  background-position: 50% -27px;
+}
+.menu__bouton--sac {
+  background-size: cover;
+}
+.menu__bouton--texture:active,
+.menu__bouton--texture.menu__bouton--actif,
+.menu__bouton--sac:active {
+  background-image: var(--micro-appui);
+}
+.menu__bouton--texture.menu__bouton--actif,
+.menu__bouton--sac.menu__bouton--actif {
+  filter: brightness(1.15) drop-shadow(0 0 5px rgba(255, 209, 0, 0.7));
+}
+
+/* --- Barre d'actions : les griffons (UI-MainMenuBar-EndCap-Dwarf) ------------ */
+.tex-griffon .actions__embleme--gauche,
+.tex-griffon .actions__embleme--droite {
+  background-image: var(--tex-griffon);
+}
+
+/* --- Barre de sorts : UI-MainMenuBar-Dwarf ------------------------------------
+   La barre recomposee mesure 512 x 54 "pixels de texture" (--u) ; une case
+   en fait 36, le premier emplacement est a 8 du bord, puis un tous les 42.
+   --u se deduit de la taille des cases : la barre garde les proportions de
+   WoW quelle que soit la taille de l'ecran. */
+.tex-barre-actions .actions {
+  --u: calc(var(--case-action) / 36);
+  padding: 0 calc(var(--u) * 96); /* le griffon (128) deborde de 32 sur la barre */
+}
+.tex-barre-actions .actions--pages {
+  padding-right: calc(var(--u) * 136); /* + la colonne "page" (40) */
+}
+.tex-barre-actions .actions__barre.cadre {
+  width: calc(var(--u) * 512);
+  height: calc(var(--u) * 54);
+  padding: calc(var(--u) * 13) 0 0 calc(var(--u) * 8);
+  gap: calc(var(--u) * 6);
+  align-items: flex-start;
+  border-radius: 0;
+  background: var(--tex-barre-actions) 0 0 / 100% 100% no-repeat;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+}
+.tex-barre-actions .actions__barre.cadre::before {
+  display: none;
+}
+/* Les cases laissent voir les emplacements de la texture (et leur griffon
+   grave quand elles sont vides) : l'icone du sort s'y pose directement. */
+.tex-barre-actions .actions__barre .case:not(.case-outil-mj, .case--possible, .case--survolee) {
+  background: transparent;
+  box-shadow: none;
+}
+.tex-barre-actions .actions__embleme {
+  z-index: 1; /* devant la barre, comme dans WoW */
+  bottom: 0;
+  width: calc(var(--u) * 128);
+  height: calc(var(--u) * 128);
+  background-size: 100% 100%;
+}
+.tex-barre-actions .actions__embleme--gauche {
+  left: 0;
+}
+.tex-barre-actions .actions__embleme--droite {
+  right: 0;
+}
+/* La colonne "page" (fleches et numero), prise dans la meme planche. */
+.tex-barre-page.tex-barre-actions .actions__page {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  display: grid;
+  grid-template-columns: calc(var(--u) * 19) 1fr;
+  grid-template-rows: calc(var(--u) * 14) calc(var(--u) * 18) calc(var(--u) * 18) 1fr;
+  width: calc(var(--u) * 40);
+  height: calc(var(--u) * 54);
+  margin: 0;
+  background: var(--tex-barre-page) 0 0 / 100% 100% no-repeat;
+}
+.tex-barre-page.tex-barre-actions .actions__page > :nth-child(1) {
+  grid-area: 2 / 1;
+}
+.tex-barre-page.tex-barre-actions .actions__page > :nth-child(2) {
+  grid-area: 2 / 2 / 4 / 3;
+  align-self: center;
+  justify-self: center;
+}
+.tex-barre-page.tex-barre-actions .actions__page > :nth-child(3) {
+  grid-area: 3 / 1;
+}
+/* Ecran de 1920 : des cases un peu plus petites pour garder la place des griffons. */
+@container hud (width < 2150px) {
+  .tex-barre-actions .actions {
+    --case-action: 48px;
+  }
+}
+
+/* --- Cadres des joueurs : UI-Player-Portrait ------------------------------------
+   Le grand cadre de la planche (193 x 76 pixels de texture) : l'anneau du
+   portrait (centre 39 ; 37), le cartouche du nom et deux barres. La texture
+   est posee PAR-DESSUS (::after) ; le portrait, le nom et les barres sont
+   places dessous, dans ses trous. --u = taille d'un pixel de texture. */
+.cadre-unite--texture {
+  --u: 1.7px;
+  position: relative;
+  display: block;
+  width: calc(var(--u) * 193);
+  height: calc(var(--u) * 76);
+  padding: 0;
+}
+.cadre-unite--texture.cadre-unite--joueur {
+  --u: 2.2px;
+}
+.cadre-unite--texture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--tex-cadre-unite) 0 0 / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.cadre-unite--texture .portrait {
+  position: absolute;
+  left: calc(var(--u) * 11.5);
+  top: calc(var(--u) * 9.5);
+  --taille-portrait: calc(var(--u) * 55);
+  box-shadow: none;
+}
+.cadre-unite--texture .portrait__niveau {
+  z-index: 3; /* devant l'anneau */
+  left: calc(var(--u) * -8);
+  bottom: calc(var(--u) * -6);
+}
+.cadre-unite--texture .cadre-unite__infos {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.cadre-unite--texture .plaque-nom {
+  position: absolute;
+  left: calc(var(--u) * 73);
+  top: calc(var(--u) * 18);
+  width: calc(var(--u) * 113);
+  height: calc(var(--u) * 15);
+  align-items: center;
+  padding: 0 calc(var(--u) * 4);
+  background: rgba(0, 0, 0, 0.75);
+}
+.cadre-unite--texture .plaque-nom__nom {
+  font-size: calc(var(--u) * 8);
+}
+.cadre-unite--texture .plaque-nom__detail {
+  font-size: calc(var(--u) * 5.5);
+}
+.cadre-unite--texture .barre {
+  position: absolute;
+  left: calc(var(--u) * 73);
+  width: calc(var(--u) * 113);
+  border: 0;
+  box-shadow: none;
+}
+.cadre-unite--texture .barre--vie {
+  top: calc(var(--u) * 37);
+  height: calc(var(--u) * 7);
+}
+.cadre-unite--texture .barre--ressource {
+  top: calc(var(--u) * 48);
+  height: calc(var(--u) * 8);
+}
+.cadre-unite--texture .barre__texte {
+  font-size: calc(var(--u) * 5.2);
+  line-height: 1;
+}
+.cadre-unite--texture .auras {
+  position: absolute;
+  left: calc(var(--u) * 76);
+  top: calc(var(--u) * 61);
+  margin: 0;
+}
+.cadre-unite--texture.cadre-unite--selection {
+  box-shadow: none;
+  filter: drop-shadow(0 0 6px rgba(255, 209, 0, 0.85));
+}
+
+/* --- Minicarte : l'anneau et le cartouche du nom (UI-Minimap-Border) ---------
+   L'anneau recompose fait 160/140e de la minicarte : il deborde de 10/140e. */
+.tex-minicarte-bordure .minicarte__rond {
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.8);
+}
+.tex-minicarte-bordure .minicarte__rond::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: calc(var(--minicarte) * -10 / 140);
+  background: var(--tex-minicarte-bordure) center / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.tex-minicarte-bandeau .minicarte__zone {
+  border: 0 solid transparent;
+  border-image: var(--tex-minicarte-bandeau) 10 14 fill / 13px 18px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 5px 24px;
+}
+.tex-minicarte-bandeau .minicarte__zone::before {
+  display: none;
+}
+
+/* --- Cases vides : sac (UI-Backpack-EmptySlot) et mannequin (UI-PaperDoll-Slot-*) */
+.tex-case-sac .case--vide-sac {
+  background: var(--tex-case-sac) center / 100% 100%;
+}
+.case img.case__silhouette {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+}
+
+/* --- Icone de classe (ClassIcon_*) a cote du nom de la classe ------------------ */
+.icone-classe {
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  vertical-align: -5px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #000;
+}
+
+/* --- Portraits ronds des fenetres (UI-QuestLog-BookIcon, Spellbook-Icon...) ---
+   Comme dans WoW : un medaillon a cheval sur le coin haut-gauche. */
+.tex-portrait-quetes .fenetre.quetes {
+  --portrait: var(--tex-portrait-quetes);
+}
+.tex-portrait-grimoire .fenetre.grimoire {
+  --portrait: var(--tex-portrait-grimoire);
+}
+:is(.tex-portrait-quetes .fenetre.quetes, .tex-portrait-grimoire .fenetre.grimoire) > .fenetre__entete {
+  padding-left: 72px;
+}
+:is(.tex-portrait-quetes .fenetre.quetes, .tex-portrait-grimoire .fenetre.grimoire) > .fenetre__entete::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -16px;
+  left: -16px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: var(--portrait) center / cover;
+  box-shadow:
+    0 0 0 3px var(--metal),
+    0 0 0 4px var(--metal-reflet),
+    0 0 0 6px #000,
+    0 4px 10px rgba(0, 0, 0, 0.8);
+}
+.tex-portrait-butin .butin__embleme {
+  background: var(--tex-portrait-butin) center / cover;
+  color: transparent;
+}
+
+/* --- Journal de quetes : surbrillance (UI-QuestTitleHighlight) et parchemin --- */
+/* Le bas de la texture (5 dernieres lignes) contient des residus : on ne montre que le haut. */
+.tex-quete-surbrillance :is(.quetes__entree:hover, .quetes__entree--choisie) {
+  background: var(--tex-quete-surbrillance) top / 100% 150% no-repeat;
+}
+.tex-quete-parchemin .quetes__parchemin {
+  /* QuestBackgroundClassic, debarrasse de ses marges transparentes. */
+  background: var(--tex-quete-parchemin) center / 100% 100%;
+}
+/* Le cadre du dialogue de quete (UI-QuestGreeting-TopRight / -BotRight-blank,
+   recompose avec un cote gauche en miroir) autour du parchemin du journal. */
+.tex-quete-cadre.tex-quete-cadre-fond .quetes__parchemin {
+  --k: 0.8;
+  border: 0 solid transparent;
+  border-image: var(--tex-quete-cadre) 72 37 41 37 / calc(72px * var(--k)) calc(37px * var(--k)) calc(41px * var(--k)) calc(37px * var(--k)) round;
+  border-radius: 0;
+  /* Le parchemin du cadre, etire (sans raccord visible), sous la bordure. */
+  background: var(--tex-quete-cadre-fond) center / calc(100% - 50px) calc(100% - 70px) no-repeat;
+  box-shadow: none;
+  padding: calc(72px * var(--k) + 4px) calc(37px * var(--k) + 14px) calc(41px * var(--k) + 8px);
+}
+
+/* Avec un parchemin de quete (QuestBackgroundClassic2...) : c'est lui, rogne, au centre du cadre. */
+.tex-quete-cadre.tex-quete-cadre-fond.tex-quete-parchemin .quetes__parchemin {
+  background-image: var(--tex-quete-parchemin);
+}
+
+/* --- Grimoire et carnet : le livre des sorts de WoW (Spellbook-Page-1 + -2) ------
+   Une seule grande page avec son signet a gauche, sur toute la largeur du
+   livre ; nos deux "pages" deviennent deux colonnes de cette page. */
+.tex-livre .livre {
+  background: var(--tex-livre) center / 100% 100% no-repeat;
+  box-shadow: 0 0 0 1px #000, 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+.tex-livre .livre__page {
+  background: none;
+  box-shadow: none;
+}
+.tex-livre .livre__page--gauche {
+  padding-left: 23%; /* la tranche du livre et le signet bleu */
+}
+.tex-livre .livre__page--droite {
+  padding-right: 8%;
+}
+
+/* --- Fenetre de resolution des des : bordure doree et dragon ------------------- */
+.tex-bordure-or .resolution.cadre::before {
+  border-image-source: var(--tex-bordure-or);
+}
+.tex-dragon .resolution::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -34px;
+  left: -50px;
+  width: 100px;
+  height: 100px;
+  background: var(--tex-dragon) 0 0 / contain no-repeat;
+  pointer-events: none;
+}
+
+/* --- Ecrans hors jeu : fond de l'accueil, logo, roche --------------------------- */
+.tex-accueil-fond .ecran-accueil {
+  background:
+    radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.75) 100%),
+    var(--tex-accueil-fond) center / cover no-repeat,
+    #000;
+}
+.ecran-accueil {
+  align-content: center; /* le logo (s'il existe) au-dessus du formulaire */
+}
+.accueil__logo {
+  display: none;
+}
+.tex-accueil-logo .accueil__logo {
+  display: block;
+  width: 440px;
+  height: 200px;
+  margin-bottom: -10px;
+  background: var(--tex-accueil-logo) center / contain no-repeat;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
+}
+:root.tex-roche {
+  --texture-pierre: linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)), var(--tex-roche) 0 0 / 512px repeat;
+}
+
+/* --- Micro-menu : bouton a icone (UI-Battlefield-Icon pour l'initiative) ------ */
+.menu__bouton--icone {
+  background:
+    var(--micro) center / 78% no-repeat,
+    linear-gradient(180deg, #4a4a55, #1a1a20);
+}
+
+/* --- Son (VOICECHAT-SPEAKER) et lanceur de des (UI-GroupLoot-Dice) ------------- */
+.reglage-son__image {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+.reglage-son__image--muet {
+  filter: grayscale(1) brightness(0.6);
+}
+.bouton-des__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* --- Barre d'actions du MJ : les icones de WoW a la place des symboles ---------- */
+.case-outil-mj > img {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+/* --- Discussion : icone du joueur / du MJ, cadre de la saisie ---------------------- */
+.discussion__icone {
+  width: 1.1em;
+  height: 1.1em;
+  margin-right: 3px;
+  vertical-align: -0.2em;
+}
+/* UI-ChatInputBorder-Left2 / -Mid2 / -Right2, recomposes en une barre de 96 x 32. */
+.tex-chat-saisie .discussion__saisie .champ {
+  border: 0 solid transparent;
+  border-image: var(--tex-chat-saisie) 9 9 9 10 fill / 9px 9px 9px 10px stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 8px 14px;
+}
+
+/* --- Sac : l'argent (UI-GoldIcon, -SilverIcon, -CopperIcon) ---------------------- */
+.argent {
+  display: inline-flex;
+  gap: 8px;
+  font-family: var(--police-chiffres);
+}
+.argent__piece {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.argent__piece img {
+  width: 14px;
+  height: 14px;
+}
+
+/* --- Curseur : le gantelet de WoW (Point), pointe en haut a gauche ---------------- */
+.tex-curseur,
+.tex-curseur * {
+  cursor: var(--tex-curseur) 1 1, auto;
+}
+.tex-curseur :is(input:not([type="range"], [type="checkbox"]), textarea, [contenteditable]) {
+  cursor: text;
+}
+
+/* --- Creation de personnage : capitale de la faction, sexe, portrait provisoire --- */
+.creation--fond {
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.85) 100%),
+    linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25)),
+    var(--fond-faction) center / cover no-repeat,
+    #000;
+}
+.creation__portrait-wow {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px var(--metal),
+    0 0 0 6px #000,
+    0 8px 24px rgba(0, 0, 0, 0.8);
+}
+.mannequin__portrait-wow {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* --- Cadre de cible : TargetFrame, -Elite, -Rare (256 x 128) et UnitFrameBoss --------
+   La texture entiere est posee PAR-DESSUS (::after) ; le nom, les barres, le
+   portrait et le niveau sont places dessous, dans ses trous. --u = un pixel de
+   texture. Reperes : cartouche x 32-144 / y 26-50, barre fine y 57-62,
+   anneau du portrait centre (179,5 ; 44,5), pastille du niveau (203 ; 66). */
+.cadre-cible--texture {
+  --u: 1.8px;
+  top: calc(var(--marge-hud) - var(--u) * 8);
+  left: calc(var(--marge-hud) + 455px - var(--u) * 26);
+  display: block;
+  width: calc(var(--u) * 256);
+  height: calc(var(--u) * 100);
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  pointer-events: none; /* les marges transparentes de la texture laissent passer les clics */
+}
+.cadre-cible--texture > * {
+  pointer-events: auto;
+}
+.cadre-cible--texture::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(var(--u) * 128);
+  z-index: 2;
+  background: var(--fond-cible) 0 0 / 100% 100% no-repeat;
+  pointer-events: none;
+}
+.cadre-cible--texture .cadre-cible__nom {
+  position: absolute;
+  left: calc(var(--u) * 32);
+  top: calc(var(--u) * 26);
+  width: calc(var(--u) * 112);
+  height: calc(var(--u) * 12.5);
+  padding: 0 calc(var(--u) * 3);
+  border-radius: 0;
+  font-size: calc(var(--u) * 7.5);
+  line-height: calc(var(--u) * 12.5);
+}
+.cadre-cible--texture .barre {
+  border: 0;
+  box-shadow: none;
+}
+.cadre-cible--texture .cadre-cible__vie {
+  position: absolute;
+  left: calc(var(--u) * 32);
+  top: calc(var(--u) * 38.5);
+  width: calc(var(--u) * 112);
+  height: calc(var(--u) * 12);
+}
+.cadre-cible--texture .barre__texte {
+  font-size: calc(var(--u) * 6);
+}
+.cadre-cible--texture .cadre-cible__ressource {
+  position: absolute;
+  left: calc(var(--u) * 32);
+  top: calc(var(--u) * 56.5);
+  width: calc(var(--u) * 112);
+  height: calc(var(--u) * 6.5);
+  background: rgba(0, 0, 0, 0.8);
+}
+.cadre-cible--texture .cadre-cible__ressource .barre {
+  height: 100%;
+}
+.cadre-cible--texture .cadre-cible__portrait {
+  position: absolute;
+  left: calc(var(--u) * 154);
+  top: calc(var(--u) * 19);
+  width: calc(var(--u) * 51);
+  height: calc(var(--u) * 51);
+  box-shadow: none;
+}
+.cadre-cible--texture .cadre-cible__niveau {
+  z-index: 3;
+  left: calc(var(--u) * 193);
+  top: calc(var(--u) * 56);
+  right: auto;
+  bottom: auto;
+  width: calc(var(--u) * 20);
+  height: calc(var(--u) * 20);
+  background: none;
+  box-shadow: none;
+  font-size: calc(var(--u) * 8);
+}
+/* Boss : pas de portrait ; cartouche un peu decale, pastille du niveau sous le dragon. */
+.cadre-cible--texture.cadre-cible--boss :is(.cadre-cible__nom, .cadre-cible__vie, .cadre-cible__ressource) {
+  left: calc(var(--u) * 35);
+  width: calc(var(--u) * 110);
+}
+.cadre-cible--texture.cadre-cible--boss .cadre-cible__niveau {
+  left: calc(var(--u) * 140.5);
+  top: calc(var(--u) * 55);
+}
+
+/* --- Fenetre de butin : UI-LootPanel (188 x 252 pixels de texture) -------------------
+   Largeur fixe (celle de la fenetre, 300 px) ; seul le corps s'allonge avec la
+   liste. Reperes : anneau du medaillon centre (34 ; 33), titre x 72-166 /
+   y 14-32, case du bouton de fermeture x 169-186 / y 14-34, corps des y 78. */
+.tex-butin-cadre .butin.cadre {
+  --u: calc(300px / 188);
+  min-height: calc(var(--u) * 140);
+  padding: calc(var(--u) * 80) calc(var(--u) * 14) calc(var(--u) * 12) calc(var(--u) * 20);
+  border: 0 solid transparent;
+  border-image: var(--tex-butin-cadre) 80 0 12 0 fill / calc(var(--u) * 80) 0 calc(var(--u) * 12) 0 stretch;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.tex-butin-cadre .butin.cadre::before {
+  display: none;
+}
+.tex-butin-cadre .butin__entete {
+  position: static;
+  border: 0;
+  padding: 0;
+}
+.tex-butin-cadre .butin__embleme {
+  position: absolute;
+  left: calc(var(--u) * 8);
+  top: calc(var(--u) * 7);
+  width: calc(var(--u) * 52);
+  height: calc(var(--u) * 52);
+  box-shadow: none;
+  font-size: calc(var(--u) * 20);
+}
+.tex-butin-cadre .butin__titre {
+  position: absolute;
+  left: calc(var(--u) * 74);
+  top: calc(var(--u) * 15);
+  width: calc(var(--u) * 92);
+  height: calc(var(--u) * 16);
+  overflow: hidden;
+  font-size: calc(var(--u) * 9);
+  line-height: calc(var(--u) * 16);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tex-butin-cadre .butin .bouton-fermer {
+  position: absolute;
+  left: calc(var(--u) * 169);
+  top: calc(var(--u) * 15);
+  width: calc(var(--u) * 17);
+  height: calc(var(--u) * 17);
+}
+.tex-butin-cadre .butin__supprimer {
+  position: absolute;
+  right: calc(var(--u) * 14);
+  top: calc(var(--u) * 42);
+}
+
+/* --- Parchemins : UI-Achievement-Parchment-Horizontal ----------------------------
+   Remplace le parchemin dessine en CSS partout ou il sert (compendium, bestiaire,
+   descriptions de la creation, carnet...). */
+:root.tex-parchemin {
+  --texture-parchemin: var(--tex-parchemin) center / 100% 100% no-repeat, var(--parchemin);
+}
+
+/* --- Fiche de personnage (C) : le parchemin au dragon (UI-Achievement-StatsBackground) */
+.tex-fiche-fond .statistiques {
+  /* un voile clair : le texte reste lisible par-dessus le dragon */
+  background: linear-gradient(rgba(255, 240, 205, 0.42), rgba(255, 240, 205, 0.42)), var(--tex-fiche-fond) 30% top / cover no-repeat, var(--parchemin);
+}
+
+/* --- Fenetre des des : le ciel etoile (MOTHERtalenttree) ---------------------- */
+.tex-des-fond .resolution.cadre {
+  background: linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.45)), var(--tex-des-fond) center / cover no-repeat, #05070c;
+}
+
+/* --- Bestiaire (MJ) : le livre des metiers (Professions-Book-Left) --------------
+   Le fond de la liste est le livre (signet vert a gauche) ; chaque monstre est
+   une rangee de parchemin avec une creature dessinee a l'encre (trois modeles,
+   en alternance). Texte a l'encre brune, comme dans le journal des mascottes. */
+.tex-bestiaire-livre .bestiaire__liste {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 12px 10px 12px 15%;
+  background: var(--tex-bestiaire-livre) left top / 100% 100% no-repeat, #1a120a;
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre {
+  min-height: 64px;
+  padding: 6px 12px;
+  border-color: rgba(60, 35, 10, 0.7);
+  background: var(--tex-bestiaire-rangee-1) center / 100% 100% no-repeat;
+  box-shadow: inset 0 0 10px rgba(60, 35, 10, 0.45);
+}
+.tex-bestiaire-rangee-2 .bestiaire__liste .carte-monstre:nth-child(3n + 2) {
+  background-image: var(--tex-bestiaire-rangee-2);
+}
+.tex-bestiaire-rangee-3 .bestiaire__liste .carte-monstre:nth-child(3n) {
+  background-image: var(--tex-bestiaire-rangee-3);
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre:hover,
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre--choisie {
+  border-color: var(--or-bordure);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 0, 0.5), 0 0 8px rgba(255, 209, 0, 0.45);
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre__nom {
+  color: #4a1606;
+  font-weight: bold;
+}
+.tex-bestiaire-rangee-1 .bestiaire__liste .carte-monstre__detail {
+  color: #3a2a14;
+}
+
+/* --- Sac (B) : UI-BackpackBackground ---------------------------------------------
+   Une planche de 186 x 256 "pixels de texture" (--u) : la barre de titre, une
+   zone vide, 4 x 4 cases dessinees, la bourse en bas. Les objets tombent dans
+   les cases dessinees (colonnes tous les 42 px, rangees tous les 41 px). Si le
+   sac deborde, la rangee du milieu de la planche se repete (border-image). */
+.tex-sac-cadre .sacs.cadre {
+  --u: 1.5px;
+  width: calc(var(--u) * 186);
+  min-height: calc(var(--u) * 256);
+  padding: calc(var(--u) * 63) 0 calc(var(--u) * 33) calc(var(--u) * 16);
+  border: 0 solid transparent;
+  /* (des bords gauche et droit non nuls : sinon le navigateur ne met pas la
+     rangee du milieu a l'echelle --u, et elle se repete en deux demi-rangees) */
+  border-image: var(--tex-sac-cadre) 145 8 70 8 fill / calc(var(--u) * 145) calc(var(--u) * 8) calc(var(--u) * 70) calc(var(--u) * 8) round;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.tex-sac-cadre .sacs.cadre::before {
+  display: none;
+}
+.tex-sac-cadre .sacs .fenetre__entete {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: calc(var(--u) * 30);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.tex-sac-cadre .sacs .fenetre__titre {
+  position: absolute;
+  left: calc(var(--u) * 41);
+  top: calc(var(--u) * 9);
+  width: calc(var(--u) * 116);
+  height: calc(var(--u) * 16);
+  overflow: hidden;
+  font-size: calc(var(--u) * 9.5);
+  line-height: calc(var(--u) * 16);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tex-sac-cadre .sacs .bouton-fermer {
+  position: absolute;
+  left: calc(var(--u) * 162);
+  top: calc(var(--u) * 8);
+  width: calc(var(--u) * 19);
+  height: calc(var(--u) * 19);
+}
+.tex-sac-cadre .sacs__grille {
+  grid-template-columns: repeat(4, calc(var(--u) * 35));
+  grid-auto-rows: calc(var(--u) * 37);
+  column-gap: calc(var(--u) * 7);
+  row-gap: calc(var(--u) * 4);
+}
+.tex-sac-cadre .sacs__grille .case {
+  width: calc(var(--u) * 35);
+  height: calc(var(--u) * 37);
+}
+/* Les cases vides sont deja dessinees sur la planche. */
+.tex-sac-cadre .sacs__grille .case--vide-sac {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+/* Le compte des objets et l'argent : dans la bourse, en bas. */
+.tex-sac-cadre .sacs__pied {
+  position: absolute;
+  left: calc(var(--u) * 14);
+  right: calc(var(--u) * 15);
+  bottom: calc(var(--u) * 12);
+  height: calc(var(--u) * 16);
+  align-items: center;
+  margin: 0;
+  padding: 0 calc(var(--u) * 4);
+  font-size: calc(var(--u) * 7.5);
+}
+
+/* --- Annonce "Nouvelle quete" : le halo et la bande noire de QuestAlert ---------- */
+.tex-annonce-fond .annonce {
+  display: grid;
+  grid-template-rows: 1fr 38%;
+  width: max-content;
+  min-width: 560px;
+  height: 230px;
+  padding: 0 130px;
+  background: var(--tex-annonce-fond) center / 100% 100% no-repeat;
+}
+.tex-annonce-fond .annonce__titre {
+  align-self: end;
+  padding-bottom: 8px;
+}
+.tex-annonce-fond .annonce__texte {
+  align-self: center;
+  line-height: 1;
+}
+
+/* --- Creation : les symboles masculin / feminin (UI-CharacterCreate-Gender) ----- */
+.creation__sexe-icone {
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+  filter: grayscale(0.7) brightness(0.75);
+}
+.creation__sexe-bouton--actif .creation__sexe-icone,
+.creation__sexe-bouton:hover .creation__sexe-icone {
+  filter: none;
+}
+.tex-sac-cadre .sacs .fenetre__corps {
+  padding: 0;
+}
+
+/* --- Attaques d'un monstre (MJ) : UI-AbilityPanel ---------------------------------
+   Le panneau recompose fait 280 x 405 "pixels de texture" (--u). Le medaillon
+   est troue : le portrait du monstre passe dessous. Les cases noires font
+   32 px, en 2 colonnes (x = 16 et 139) de 7 rangees (y = 88, puis tous les 40). */
+.tex-panneau-attaques .attaques.cadre {
+  --u: 1.5px;
+  width: calc(var(--u) * 280);
+  height: calc(var(--u) * 405);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--tex-panneau-attaques) 0 0 / 100% 100% no-repeat;
+  box-shadow: none;
+}
+.tex-panneau-attaques .attaques.cadre::before {
+  display: none;
+}
+.tex-panneau-attaques .attaques .fenetre__entete {
+  position: absolute;
+  left: calc(var(--u) * 64);
+  top: calc(var(--u) * 42);
+  width: calc(var(--u) * 205);
+  height: calc(var(--u) * 20);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.tex-panneau-attaques .attaques .fenetre__titre {
+  overflow: hidden;
+  font-size: calc(var(--u) * 11);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tex-panneau-attaques .attaques .bouton-fermer {
+  flex: none;
+  width: calc(var(--u) * 16);
+  height: calc(var(--u) * 16);
+}
+.tex-panneau-attaques .attaques .fenetre__corps {
+  display: block;
+  padding: 0;
+}
+.tex-panneau-attaques .attaques__portrait {
+  position: absolute;
+  left: calc(var(--u) * 4.5);
+  top: calc(var(--u) * 26.5);
+  width: calc(var(--u) * 53);
+  height: calc(var(--u) * 53);
+  box-shadow: none;
+  font-size: calc(var(--u) * 16);
+}
+.tex-panneau-attaques .attaques__sous-titre {
+  position: absolute;
+  left: calc(var(--u) * 66);
+  top: calc(var(--u) * 63);
+  color: #f3e3c3;
+  font-size: calc(var(--u) * 8.5);
+  text-shadow: var(--ombre-texte);
+}
+.tex-panneau-attaques .attaques__case {
+  position: absolute;
+  left: calc(var(--u) * (16 + var(--col) * 123));
+  top: calc(var(--u) * (88 + var(--rang) * 40));
+  grid-template-columns: calc(var(--u) * 32) 1fr;
+  gap: calc(var(--u) * 6);
+  width: calc(var(--u) * (117 + var(--col) * 12));
+  height: calc(var(--u) * 32);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.tex-panneau-attaques .attaques__case:hover {
+  box-shadow: none;
+}
+.tex-panneau-attaques .attaques__icone {
+  --taille-case: calc(var(--u) * 32);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.tex-panneau-attaques .attaques__icone img {
+  inset: 0; /* l'icone remplit exactement la case noire du panneau */
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+.tex-panneau-attaques .attaques__case:hover .attaques__icone {
+  box-shadow: 0 0 calc(var(--u) * 6) rgba(255, 209, 0, 0.8);
+}
+.tex-panneau-attaques .attaques__nom {
+  font-size: calc(var(--u) * 9.5);
+  text-shadow: var(--ombre-texte);
+}
+.tex-panneau-attaques .attaques__detail {
+  color: #f3e3c3;
+  font-size: calc(var(--u) * 8);
+  text-shadow: var(--ombre-texte);
+}
+.tex-panneau-attaques .attaques__aide {
+  position: absolute;
+  left: calc(var(--u) * 20);
+  right: calc(var(--u) * 20);
+  bottom: calc(var(--u) * 16);
+  color: #f3e3c3;
+  font-size: calc(var(--u) * 8);
+  text-align: center;
+  text-shadow: var(--ombre-texte);
+}

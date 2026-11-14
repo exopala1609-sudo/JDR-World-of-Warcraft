@@ -1,0 +1,1121 @@
+/* =============================================================================
+   OUTILS : menu contextuel du MJ (clic droit) et reglage du son.
+   ============================================================================= */
+
+/* --- Menu contextuel du MJ : un menu deroulant facon WoW --------------------------- */
+.menu-mj {
+  position: absolute;
+  pointer-events: auto; /* la couche modale est transparente aux clics, pas le menu */
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 12px;
+  font-size: 14px;
+  animation: apparaitre 0.12s ease-out;
+}
+.menu-mj__entete {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--metal-sombre);
+}
+.menu-mj__nom {
+  color: var(--or);
+  font-size: 18px;
+  text-shadow: var(--ombre-texte);
+}
+.menu-mj__detail {
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.menu-mj__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--metal-sombre);
+}
+.menu-mj__section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.menu-mj__titre {
+  margin: 0;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 13px;
+  font-weight: normal;
+}
+.menu-mj__ligne {
+  display: flex;
+  gap: 6px;
+}
+.menu-mj__nombre {
+  width: 70px;
+  padding: 4px 6px;
+  font-family: var(--police-chiffres);
+  font-size: 16px;
+}
+.menu-mj__choix {
+  flex: 1;
+  padding: 4px 6px;
+}
+.menu-mj__bouton {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte);
+  font-family: var(--police-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+.menu-mj__bouton:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.menu-mj__bouton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.menu-mj__bouton--degats {
+  color: #ff6a6a;
+}
+.menu-mj__bouton--soins {
+  color: var(--texte-vert);
+}
+.menu-mj__vide {
+  margin: 0;
+  color: var(--texte-gris);
+}
+.menu-mj__etat {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.menu-mj__etat .aura {
+  width: 22px;
+  height: 22px;
+}
+.menu-mj__buff {
+  color: var(--texte-vert);
+}
+.menu-mj__debuff {
+  color: #ff6a6a;
+}
+.menu-mj__retirer {
+  padding: 2px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: none;
+  color: var(--texte-doux);
+  font-size: 12px;
+  cursor: pointer;
+}
+.menu-mj__retirer:hover {
+  border-color: #c41f1f;
+  color: #ff6a6a;
+}
+/* Les actions : des lignes de menu, comme le menu clic droit de WoW */
+.menu-mj__action {
+  padding: 5px 6px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--texte);
+  font-family: var(--police-ui);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-mj__action:hover {
+  background: linear-gradient(90deg, rgba(255, 209, 0, 0.25), transparent);
+  color: var(--or);
+}
+.menu-mj__action--danger {
+  color: #ff6a6a;
+}
+.menu-mj__action--confirmer {
+  background: rgba(196, 31, 31, 0.35);
+  color: #fff;
+}
+
+/* --- Reglage du son (micro-menu) -------------------------------------------------- */
+.reglage-son {
+  position: relative;
+}
+.reglage-son__icone {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  fill: currentColor;
+}
+.reglage-son__trait {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+/* Son bloque par le navigateur (aucun clic depuis le chargement) : il clignote */
+.reglage-son__bouton--bloque {
+  animation: clignoter 1.2s ease-in-out infinite;
+}
+@keyframes clignoter {
+  50% {
+    box-shadow: 0 0 10px 2px rgba(255, 209, 0, 0.8);
+  }
+}
+.reglage-son__panneau {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 16px);
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+}
+.reglage-son__titre {
+  font-size: 15px;
+}
+.reglage-son__ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--texte-doux);
+}
+.reglage-son__ligne input[type="range"] {
+  flex: 1;
+  accent-color: var(--or);
+}
+.reglage-son__sons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.reglage-son__son {
+  padding: 4px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte);
+  font-family: var(--police-chiffres);
+  font-size: 13px;
+  cursor: pointer;
+}
+.reglage-son__son:hover {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.reglage-son__astuce {
+  margin: 0;
+  color: var(--texte-gris);
+  font-size: 12px;
+}
+
+/* =============================================================================
+   SPRINT 10 : outils du MJ dans l'interface de jeu ("God mode")
+   ============================================================================= */
+
+/* --- Bouton MJ sur le bord de la minicarte --------------------------------------------- */
+.minicarte__bouton-mj {
+  position: absolute;
+  left: -6px;
+  bottom: 10px;
+  z-index: 1;
+  width: 40px;
+  height: 40px;
+  padding: 7px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a3a44, #0c0c10);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  cursor: pointer;
+}
+.minicarte__bouton-mj svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.minicarte__bouton-mj:hover,
+.minicarte__bouton-mj--actif {
+  filter: brightness(1.4);
+  box-shadow: var(--bordure-or), 0 0 12px rgba(255, 209, 0, 0.6);
+}
+.outils-carte__rayon {
+  align-items: center;
+  gap: 8px;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.outils-carte__rayon input {
+  flex: 1;
+  accent-color: var(--or);
+}
+
+/* La carte, survolee par un monstre en cours de glisser : liseré dore */
+.monde__depot {
+  outline: 3px solid rgba(255, 209, 0, 0.6);
+  outline-offset: -3px;
+}
+
+/* --- Bestiaire (facon "Collections" de WoW) ---------------------------------------------- */
+.bestiaire {
+  width: 900px;
+}
+.bestiaire__barre {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.bestiaire__barre .champ {
+  flex: 1;
+}
+.bestiaire__option {
+  flex: none;
+  color: var(--texte-doux);
+}
+.bestiaire__corps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  height: 500px;
+}
+.bestiaire__liste {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 8px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: var(--relief-creux);
+}
+.carte-monstre {
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(40, 40, 48, 0.9), rgba(16, 16, 20, 0.9));
+  cursor: grab;
+  user-select: none;
+}
+.carte-monstre:hover,
+.carte-monstre--choisie {
+  border-color: var(--or-bordure);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.3);
+}
+.carte-monstre__icone {
+  --taille-case: 50px;
+}
+.carte-monstre__texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.carte-monstre__nom {
+  overflow: hidden;
+  color: var(--or);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.carte-monstre__detail {
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.bestiaire__detail {
+  overflow-y: auto;
+  border-radius: 4px;
+  background: var(--texture-parchemin);
+  box-shadow: inset 0 0 26px rgba(95, 62, 20, 0.6);
+  color: #000;
+}
+.bestiaire__fiche {
+  padding: 16px 20px;
+  font-family: var(--police-ui);
+}
+.bestiaire__nom {
+  margin: 0;
+  color: #6b1b0d;
+  font-family: var(--police-ui);
+  font-size: 22px;
+  font-weight: normal;
+}
+.bestiaire__type {
+  margin: 0 0 10px;
+  font-style: italic;
+}
+.bestiaire__chiffres {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-top: 2px solid #8a2a12;
+  border-bottom: 2px solid #8a2a12;
+}
+.bestiaire__chiffres strong,
+.bestiaire__caracs strong {
+  color: #6b1b0d;
+}
+.bestiaire__caracs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 2px solid #8a2a12;
+  text-align: center;
+  font-size: 14px;
+}
+.bestiaire__caracs div {
+  display: flex;
+  flex-direction: column;
+}
+.bestiaire__rubrique {
+  margin: 12px 0 4px;
+  color: #6b1b0d;
+  font-family: var(--police-ui);
+  font-size: 16px;
+  font-weight: normal;
+  border-bottom: 1px solid #8a2a12;
+}
+.bestiaire__texte {
+  margin: 4px 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.bestiaire__description {
+  margin-top: 12px;
+  font-family: var(--police-texte); /* le texte d'ambiance : Morpheus */
+  font-style: italic;
+}
+.bestiaire__vide {
+  grid-column: 1 / -1;
+  margin: 12px;
+  color: var(--texte-doux);
+}
+.bestiaire__pied {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+.carte-monstre--coffre {
+  width: 300px;
+}
+.bestiaire__astuce,
+.compendium-mj__astuce,
+.carte-mj__astuce {
+  margin: 0;
+  color: var(--texte-gris);
+  font-size: 13px;
+}
+
+/* --- Initiative, facon cadres de raid ------------------------------------------------------ */
+.raid {
+  width: 420px;
+}
+.raid__statut {
+  margin: 0 0 8px;
+  color: var(--or);
+  font-size: 16px;
+  text-shadow: var(--ombre-texte);
+}
+.raid__aide {
+  margin: 4px 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.raid__liste,
+.raid__grille {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 520px;
+  overflow-y: auto;
+}
+.raid__grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.raid__rang {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.raid__numero {
+  color: var(--texte-gris);
+  font-family: var(--police-chiffres);
+  text-align: right;
+}
+/* Une case de raid : fond sombre, nom en haut, barre de vie, initiative a droite */
+.raid__case {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(30, 30, 36, 0.95), rgba(8, 8, 10, 0.95));
+  box-shadow: inset 0 0 0 1px var(--metal-sombre);
+  cursor: pointer;
+}
+.raid__case--actif {
+  box-shadow:
+    inset 0 0 0 2px var(--or),
+    0 0 10px rgba(255, 209, 0, 0.6);
+}
+.raid__case--masque .raid__nom {
+  color: var(--texte-gris);
+  font-style: italic;
+}
+.raid__case--terre {
+  filter: grayscale(1) brightness(0.7);
+}
+.raid__case--choix {
+  grid-template-columns: auto 1fr;
+}
+.raid__case--exclu {
+  opacity: 0.45;
+}
+.raid__infos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.raid__nom {
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.raid__vie {
+  height: 12px;
+}
+.raid__vie .barre__texte {
+  font-size: 10px;
+}
+.raid__vie--inconnue {
+  border-radius: 2px;
+  background: repeating-linear-gradient(45deg, #222 0 6px, #2c2c33 6px 12px);
+}
+.raid__init {
+  min-width: 32px;
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 18px;
+  text-align: center;
+}
+.raid__init--modifiable {
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  cursor: text;
+}
+.raid__init--modifiable:hover {
+  background: rgba(255, 209, 0, 0.15);
+}
+.raid__init-champ {
+  width: 56px;
+  padding: 2px 4px;
+}
+.raid__outils {
+  display: flex;
+  gap: 2px;
+}
+.raid__outil {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte-doux);
+  font-size: 11px;
+  cursor: pointer;
+}
+.raid__outil:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.raid__outil:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.raid__outil--retirer:hover:not(:disabled) {
+  border-color: #c41f1f;
+  color: #ff6a6a;
+}
+.raid__actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.raid__lancer {
+  display: block;
+  margin: 12px auto 0;
+}
+.raid__suivant {
+  min-width: 150px;
+}
+.raid__ajout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.raid__puce {
+  padding: 2px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte);
+  font-size: 12px;
+  cursor: pointer;
+}
+.raid__puce:hover {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+
+/* --- Fenetre "Carte" du MJ ------------------------------------------------------------- */
+.carte-mj {
+  width: 640px;
+}
+.carte-mj__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--metal-sombre);
+}
+.carte-mj__section:last-child {
+  border-bottom: 0;
+}
+.carte-mj__titre {
+  margin: 0;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  font-weight: normal;
+}
+.carte-mj__vignettes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.carte-mj__vignette {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte-doux);
+  font-size: 11px;
+  cursor: pointer;
+}
+.carte-mj__vignette img {
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.carte-mj__vignette span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.carte-mj__vide {
+  display: grid;
+  place-items: center;
+  height: 80px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(0deg, #555 0 1px, #777 1px 20px), #777;
+  color: #fff;
+}
+.carte-mj__vignette--choisie {
+  border-color: var(--or);
+  box-shadow: 0 0 10px rgba(255, 209, 0, 0.5);
+  color: var(--or);
+}
+.carte-mj__ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.carte-mj__reglage {
+  display: grid;
+  grid-template-columns: 150px 1fr 80px;
+  align-items: center;
+  gap: 10px;
+  color: var(--texte-doux);
+  font-size: 14px;
+}
+.carte-mj__reglage input[type="range"] {
+  accent-color: var(--or);
+}
+.carte-mj__nombre {
+  padding: 3px 6px;
+}
+.carte-mj__case {
+  color: var(--texte-doux);
+}
+
+/* --- Compendium du MJ --------------------------------------------------------------- */
+.compendium-mj {
+  width: 640px;
+}
+.compendium-mj__barre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.compendium-mj__barre .champ {
+  flex: 1;
+}
+.compendium-mj__onglets {
+  display: flex;
+  gap: 4px;
+}
+.compendium-mj__cible {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin: 10px 0;
+  color: var(--texte-doux);
+}
+.compendium-mj__cible label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.compendium-mj__cible select {
+  width: auto;
+}
+.compendium-mj__quantite {
+  width: 70px;
+}
+.compendium-mj__coffre {
+  color: var(--or);
+}
+.compendium-mj__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 440px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: var(--relief-creux);
+}
+.compendium-mj__ligne {
+  display: grid;
+  grid-template-columns: 40px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.compendium-mj__ligne:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.compendium-mj__icone {
+  --taille-case: 40px;
+}
+/* L'icone est un bouton : clic = en choisir une autre (selecteur d'icones). */
+.compendium-mj__icone--choix {
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+.compendium-mj__icone--choix:hover {
+  outline: 2px solid var(--or);
+  outline-offset: 1px;
+}
+.compendium-mj__icone--choix:hover::after {
+  content: "✎";
+  position: absolute;
+  right: 1px;
+  bottom: -1px;
+  color: var(--or);
+  font-size: 13px;
+  text-shadow: var(--ombre-texte);
+}
+.compendium-mj__aura {
+  width: 32px;
+  height: 32px;
+  margin: 4px;
+}
+.compendium-mj__nom {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.compendium-mj__nom small {
+  color: var(--texte-gris);
+  font-size: 12px;
+}
+.compendium-mj__action {
+  padding: 3px 8px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--texte);
+  font-family: var(--police-ui);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.compendium-mj__action:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.compendium-mj__vide {
+  color: var(--texte-doux);
+}
+
+/* --- Menu MJ : ressources ; fenetre de butin : supprimer ------------------------------- */
+.menu-mj__ressource {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, auto);
+  align-items: center;
+  gap: 4px;
+  color: var(--texte-doux);
+}
+.butin__supprimer {
+  padding: 2px 6px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: none;
+  color: #ff6a6a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* --- Bestiaire : actions et formulaire "Nouveau monstre" ------------------------------ */
+.bestiaire__actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 16px;
+}
+.bouton--danger {
+  background: linear-gradient(180deg, #b0271a 0%, #7d1409 48%, #5c0c04 52%, #7a1509 100%);
+}
+.formulaire-monstre {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  font-family: var(--police-ui);
+  font-size: 13px;
+}
+.formulaire-monstre label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #6b1b0d;
+}
+.formulaire-monstre .champ-parchemin {
+  min-width: 0;
+  padding: 3px 6px;
+  font-size: 14px;
+}
+.formulaire-monstre__grille {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+.formulaire-monstre__large {
+  grid-column: 1 / -1;
+}
+.formulaire-monstre__caracs {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.formulaire-monstre__attaque {
+  display: grid;
+  grid-template-columns: 2fr 48px 1fr 1fr auto;
+  gap: 4px;
+}
+.formulaire-monstre__description textarea {
+  resize: vertical;
+}
+.bestiaire__pied .bouton {
+  flex: none;
+}
+
+/* --- Nom de la zone (table) au-dessus de la minicarte : renommable par le MJ ---------- */
+.minicarte__zone--modifiable {
+  border: 0;
+  cursor: text;
+}
+.minicarte__zone--modifiable:hover {
+  filter: brightness(1.3);
+}
+.minicarte__saisie {
+  width: 240px;
+  color: var(--or);
+  text-align: center;
+}
+/* Sur le parchemin : boutons secondaires a l'encre */
+.formulaire-monstre .menu-mj__retirer {
+  border-color: var(--parchemin-sombre);
+  background: rgba(255, 250, 235, 0.4);
+  color: #6b1b0d;
+}
+.formulaire-monstre .menu-mj__retirer:hover {
+  border-color: #6b1b0d;
+  background: rgba(255, 250, 235, 0.8);
+}
+.menu-mj__tailles {
+  align-items: center;
+  color: var(--texte-doux);
+}
+.menu-mj__retirer--actif {
+  border-color: var(--or-bordure);
+  color: var(--or);
+}
+.menu-mj__action small {
+  font-size: 11px;
+}
+
+/* --- Selecteur d'icones (MJ) ----------------------------------------------------------- */
+.selecteur-icone {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 820px;
+  max-height: 86%;
+  padding: 14px 18px 18px;
+}
+.selecteur-icone__entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: grab; /* on deplace la galerie en tirant sa barre de titre */
+  touch-action: none;
+}
+.selecteur-icone__entete:active {
+  cursor: grabbing;
+}
+.selecteur-icone__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.selecteur-icone__pages {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  color: var(--texte-doux);
+}
+.selecteur-icone__recherche {
+  display: flex;
+  gap: 8px;
+}
+.selecteur-icone__recherche .champ {
+  flex: 1;
+}
+.selecteur-icone__prefixes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.selecteur-icone__prefixes small {
+  color: var(--texte-gris);
+}
+.selecteur-icone__compte {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.selecteur-icone__grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 60px);
+  gap: 6px;
+  min-height: 140px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: var(--relief-creux);
+}
+.selecteur-icone__case {
+  width: 60px;
+  height: 60px;
+  padding: 2px;
+  border: 1px solid #000;
+  border-radius: 4px;
+  background: var(--anthracite-950);
+  box-shadow: 0 0 0 1px var(--metal-sombre);
+  cursor: pointer;
+}
+.selecteur-icone__case img {
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: cover;
+}
+.selecteur-icone__case:hover {
+  box-shadow: 0 0 0 2px var(--or-bordure), 0 0 10px rgba(255, 209, 0, 0.5);
+}
+.selecteur-icone__case--choisie {
+  box-shadow: 0 0 0 2px var(--or), 0 0 12px rgba(255, 209, 0, 0.8);
+}
+.selecteur-icone__case--aucune {
+  color: var(--texte-doux);
+  font-family: var(--police-ui);
+  font-size: 12px;
+}
+
+/* Champ "Icone" des formulaires : vignette + boutons */
+.champ-icone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.champ-icone__apercu {
+  --taille-case: 52px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+.champ-icone__texte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.champ-icone__nom {
+  overflow: hidden;
+  color: #000;
+  font-family: var(--police-chiffres);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.champ-icone__actions {
+  display: flex;
+  gap: 6px;
+}
+.formulaire-monstre__libelle {
+  color: #6b1b0d;
+}
+.formulaire-monstre .champ-icone .menu-mj__retirer {
+  border-color: var(--parchemin-sombre);
+  background: rgba(255, 250, 235, 0.4);
+  color: #6b1b0d;
+}
+
+/* --- Attaques d'un monstre (MJ) : portrait, puis les attaques sur 2 colonnes ------ */
+.attaques {
+  width: 470px;
+}
+.attaques .fenetre__corps {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 10px 12px;
+}
+.attaques__portrait {
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #5a2a1a, #120806);
+  box-shadow: 0 0 0 2px var(--or-bordure), 0 0 0 3px #000;
+  color: var(--or);
+  font-size: 20px;
+}
+.attaques__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.attaques__sous-titre {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+}
+.attaques__liste {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.attaques__case {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.attaques__case:hover {
+  border-color: var(--or-bordure);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.35);
+}
+.attaques__icone {
+  --taille-case: 40px;
+}
+.attaques__texte {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.attaques__nom {
+  overflow: hidden;
+  color: var(--or);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attaques__detail {
+  color: var(--texte-doux);
+  font-size: 12px;
+}
+.attaques__aide {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--texte-gris);
+  font-size: 12px;
+}

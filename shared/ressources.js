@@ -18,53 +18,5 @@
 export const MODES_REPOS = /** @type {const} */ (["aucun", "remplir", "vider", "moitie"]);
 export const TYPES_RESSOURCE = /** @type {const} */ (["jauge", "compteur"]);
 
-/**
- * Modeles de ressources facon World of Warcraft, que le MJ peut ajouter a un
- * personnage. Valeurs provisoires en attendant le module officiel : le MJ
- * ajuste le maximum a l'ajout, et peut tout redefinir dans la fiche.
- */
-export const MODELES_RESSOURCES = /** @type {const} */ ({
-  mana: { nom: "Mana", type: "jauge", max: 100, reposCourt: "moitie", reposLong: "remplir", apparence: "mana" },
-  rage: { nom: "Rage", type: "jauge", max: 100, reposCourt: "vider", reposLong: "vider", apparence: "rage" },
-  energie: { nom: "Energie", type: "jauge", max: 100, reposCourt: "remplir", reposLong: "remplir", apparence: "energie" },
-  focalisation: {
-    nom: "Focalisation",
-    type: "jauge",
-    max: 100,
-    reposCourt: "remplir",
-    reposLong: "remplir",
-    apparence: "focalisation",
-  },
-  "puissance-runique": {
-    nom: "Puissance runique",
-    type: "jauge",
-    max: 100,
-    reposCourt: "vider",
-    reposLong: "vider",
-    apparence: "puissance-runique",
-  },
-  "eclats-ame": {
-    nom: "Eclats d'ame",
-    type: "compteur",
-    max: 5,
-    reposCourt: "aucun",
-    reposLong: "remplir",
-    apparence: "eclats-ame",
-  },
-  "points-combo": {
-    nom: "Points de combo",
-    type: "compteur",
-    max: 5,
-    reposCourt: "vider",
-    reposLong: "vider",
-    apparence: "points-combo",
-  },
-  "puissance-sacree": {
-    nom: "Puissance sacree",
-    type: "compteur",
-    max: 5,
-    reposCourt: "vider",
-    reposLong: "vider",
-    apparence: "puissance-sacree",
-  },
-});
+// Les MODELES de ressources (Mana, Rage, Energie...) vivent dans le referentiel :
+// fichier ressources.json du dossier referentiel/ (modifiable au Bloc-notes).

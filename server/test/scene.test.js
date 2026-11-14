@@ -66,7 +66,8 @@ test("deplacer : la position officielle reste dans la carte et s'aimante", () =>
 
 test("visibilite joueurs : compagnons toujours visibles, monstres seulement hors du brouillard", () => {
   let scene = placerPion(sceneVide("t-0123456789"), joueur).scene;
-  const place = placerPion(scene, monstre);
+  assert.equal(placerPion(scene, monstre).pion.cache, true); // un monstre arrive cache par defaut
+  const place = placerPion(scene, monstre, null, { cache: false });
   scene = place.scene;
   const pionMonstre = place.pion;
   const [pionJoueur] = scene.pions;

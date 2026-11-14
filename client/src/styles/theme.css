@@ -9,21 +9,15 @@
    ne sont donc jamais publies sur GitHub. Le navigateur essaie chaque adresse
    dans l'ordre ; si aucune n'existe, il passe a la police de substitution
    indiquee dans les variables --police-* plus bas.
-   Noms acceptes : ceux du dossier Fonts de World of Warcraft (FRIZQT__.TTF,
-   MORPHEUS.TTF, ARIALN.TTF) ou des noms lisibles (FrizQuadrata.ttf...). */
-@font-face {
-  font-family: "Friz Quadrata WoW";
-  src:
-    url("/medias/polices/FRIZQT__.TTF") format("truetype"),
-    url("/medias/polices/FrizQuadrata.woff2") format("woff2"),
-    url("/medias/polices/FrizQuadrata.ttf") format("truetype");
-  font-display: swap;
-}
+   Noms acceptes : LifeCraft_Font.ttf (toute l'interface), MORPHEUS.TTF (textes
+   narratifs), skurri.ttf (degats et soins), ARIALN.TTF (facultatif : chiffres
+   des barres), ou les variantes lisibles listees ci-dessous. */
 @font-face {
   font-family: "Morpheus WoW";
   src:
     url("/medias/polices/MORPHEUS.TTF") format("truetype"),
     url("/medias/polices/Morpheus.woff2") format("woff2"),
+    url("/medias/polices/Morpheus.otf") format("opentype"),
     url("/medias/polices/Morpheus.ttf") format("truetype");
   font-display: swap;
 }
@@ -35,11 +29,31 @@
   font-display: swap;
 }
 
+/* L'interface (titres, noms, boutons) et les chiffres des degats et des soins. */
+@font-face {
+  font-family: "LifeCraft WoW";
+  src:
+    url("/medias/polices/LifeCraft_Font.ttf") format("truetype"),
+    url("/medias/polices/LifeCraft.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Skurri WoW";
+  src:
+    url("/medias/polices/skurri.ttf") format("truetype"),
+    url("/medias/polices/SKURRI.TTF") format("truetype");
+  font-display: swap;
+}
+
 :root {
-  /* Polices : la vraie d'abord, puis les substituts installes sur Windows. */
-  --police-ui: "Friz Quadrata WoW", "Friz Quadrata TT", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  /* Le choix du MJ : LifeCraft pour toute l'interface (a la place de Friz
+     Quadrata), Morpheus pour les textes narratifs, Skurri pour les degats et
+     les soins. Sans le fichier : une police serif du systeme. */
+  --police-ui: "LifeCraft WoW", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --police-texte: "Morpheus WoW", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
   --police-chiffres: "Arial Narrow WoW", "Arial Narrow", Arial, sans-serif;
+  --police-titre: var(--police-ui);
+  --police-combat: "Skurri WoW", var(--police-ui);
 
   /* Textes */
   --or: #ffd100; /* le jaune-or des titres de WoW */
@@ -49,6 +63,12 @@
   --texte-gris: #808080;
   --texte-vert: #1eff00; /* effets "Utiliser :" des infobulles */
   --texte-rouge: #ff2020;
+
+  /* Canaux de discussion : les couleurs de WoW */
+  --chat-dire: #ffffff; /* Dire (Say) */
+  --chat-groupe: #aaaaff; /* Groupe (Party) */
+  --chat-murmure: #ff80ff; /* Murmure (Whisper) */
+  --chat-systeme: #ffff00; /* des, annonces du systeme */
   --ombre-texte: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
 
   /* Anthracite (fonds des cadres) */
@@ -129,7 +149,8 @@
   /* Couches (z-index) : du monde (la carte) vers l'avant */
   --z-monde: 0; /* le Canvas de la carte */
   --z-hud: 10; /* cadres fixes : groupe, minicarte, barres, discussion */
-  --z-fenetres: 20; /* sacs, fiche de personnage */
+  --z-fenetres: 20; /* sacs, fiche, grimoire, quetes (ordre interne : le dernier clique devant) */
+  --z-modale: 25; /* fenetre de resolution des des, annonce "Nouvelle quete" */
   --z-infobulle: 30; /* toujours au-dessus de tout */
 
   color-scheme: dark;

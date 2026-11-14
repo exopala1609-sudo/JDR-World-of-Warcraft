@@ -37,3 +37,19 @@ export function appliquerPointsDeVie(pv, type, montant) {
   detail.aTerre = nouveau.actuels === 0;
   return { pointsDeVie: nouveau, detail };
 }
+
+/**
+ * Texte de combat flottant a afficher au-dessus du pion, d'apres le detail
+ * d'un changement de PV (degats, soins, repos). null = rien a afficher.
+ *   { genre: "degats" | "soins", montant, critique, absorbe }
+ * Seul un MONTANT part vers les joueurs : jamais les PV restants d'un monstre.
+ */
+export function texteDeCombat(detail, { critique = false } = {}) {
+  if (detail.type === TYPES_PV.DEGATS && detail.montant > 0) {
+    return { genre: "degats", montant: detail.montant, critique, absorbe: detail.absorbesParTemporaires ?? 0 };
+  }
+  // Soins : ce qui a VRAIMENT ete rendu (un soin sur un personnage deja au maximum n'affiche rien).
+  const soigne = detail.type === TYPES_PV.SOINS ? detail.variation : (detail.pvRecuperes ?? 0);
+  if (soigne > 0) return { genre: "soins", montant: soigne, critique: false, absorbe: 0 };
+  return null;
+}

@@ -1,0 +1,121 @@
+// =============================================================================
+//  BESTIAIRE : les monstres que le MJ fait apparaitre sur la carte
+// =============================================================================
+//
+//  DONNEES DE TEST, a remplacer par celles du livre officiel. Dans le jeu, le
+//  MJ ouvre le Bestiaire et GLISSE un monstre sur la carte : une fiche de PNJ
+//  est fabriquee a partir du modele ci-dessous, et son pion est pose la ou on
+//  l'a lache (cache aux joueurs : clic droit > "Reveler aux joueurs").
+//
+//  Les champs d'un monstre :
+//
+//    "id"            Nom technique : minuscules, chiffres et tirets.
+//    "nom"           Nom affiche. Plusieurs invocations : "Gnoll", "Gnoll 2"...
+//    "type"          (facultatif) ex. "Humanoide (gnoll)", "Bete", "Mort-vivant".
+//    "puissance"     (facultatif) ex. "FP 1/2" : affichage seulement.
+//    "niveau"        (facultatif, 1 par defaut) : sert au bonus de maitrise.
+//    "rang"          (facultatif) "normal" (par defaut), "elite", "rare" ou "boss" :
+//                    change le cadre de cible (dragon dore, dragon d'argent, boss).
+//    "pv"            Points de vie : un nombre (22) ou une formule ("5d8+5"),
+//                    tiree a chaque invocation : deux gnolls n'ont pas les memes PV.
+//    "classeArmure"  Classe d'armure.
+//    "vitesse"       (facultatif) texte libre, ex. "9 m".
+//    "caracteristiques"
+//                    force, dexterite, constitution, intelligence, sagesse,
+//                    charisme (10 si absent).
+//    "attaques"      (facultatif) affichees dans le bestiaire :
+//                    { "nom": "Lance", "toucher": 4, "degats": "1d8+2", "type": "perforant" }
+//    "butin"         (facultatif) objets du compendium portes par le monstre :
+//                    on les trouve en fouillant son cadavre.
+//                    { "id": "potion-de-soins", "quantite": 1 }
+//    "taille"        (facultatif, 1 par defaut) taille du pion en cases :
+//                    1 = petite ou moyenne, 2 = grande (ogre), 3 = tres grande,
+//                    4 = gigantesque (dragon).
+//    "jeton"         (facultatif) image du pion, dossier jetons/ (par defaut :
+//                    l'id, ex. jetons/gnoll.png). Sans image : ses initiales.
+//    "icone"         (facultatif) image du dossier icones/ (par defaut : l'id).
+//    "description"   (facultatif) texte libre.
+//
+//  Les lignes qui commencent par // sont des commentaires : le jeu les ignore.
+// =============================================================================
+{
+  "monstres": [
+    {
+      "id": "kobold-des-tunnels",
+      "nom": "Kobold des tunnels",
+      "type": "Humanoide (kobold)",
+      "puissance": "FP 1/8",
+      "pv": "2d6-2",
+      "classeArmure": 12,
+      "vitesse": "9 m",
+      "caracteristiques": { "force": 7, "dexterite": 15, "constitution": 9, "intelligence": 8, "sagesse": 7, "charisme": 8 },
+      "attaques": [{ "nom": "Dague", "toucher": 4, "degats": "1d4+2", "type": "perforant" }],
+      "butin": [{ "id": "chope-ebrechee" }],
+      "description": "Donnee de test. \"Pas prendre bougie !\""
+    },
+    {
+      "id": "gnoll",
+      "nom": "Gnoll",
+      "type": "Humanoide (gnoll)",
+      "puissance": "FP 1/2",
+      "pv": "5d8",
+      "classeArmure": 15,
+      "caracteristiques": { "force": 14, "dexterite": 12, "constitution": 11, "intelligence": 6, "sagesse": 10, "charisme": 7 },
+      "attaques": [
+        { "nom": "Lance", "toucher": 4, "degats": "1d6+2", "type": "perforant" },
+        { "nom": "Arc long", "toucher": 3, "degats": "1d8+1", "type": "perforant" }
+      ],
+      "butin": [{ "id": "potion-de-soins" }],
+      "description": "Donnee de test. Charognard hyene qui hante la Foret d'Elwynn."
+    },
+    {
+      "id": "loup-des-bois",
+      "nom": "Loup des bois",
+      "type": "Bete",
+      "puissance": "FP 1/4",
+      "pv": "2d8+2",
+      "classeArmure": 13,
+      "vitesse": "12 m",
+      "caracteristiques": { "force": 12, "dexterite": 15, "constitution": 12, "intelligence": 3, "sagesse": 12, "charisme": 6 },
+      "attaques": [{ "nom": "Morsure", "toucher": 4, "degats": "2d4+2", "type": "perforant" }],
+      "description": "Donnee de test. Chasse en meute : avantage si un allie est a cote de la cible."
+    },
+    {
+      "id": "bandit-defias",
+      "nom": "Bandit Defias",
+      "type": "Humanoide (humain)",
+      "puissance": "FP 1/8",
+      "pv": 11,
+      "classeArmure": 12,
+      "caracteristiques": { "force": 11, "dexterite": 12, "constitution": 12, "intelligence": 10, "sagesse": 10, "charisme": 10 },
+      "attaques": [{ "nom": "Cimeterre", "toucher": 3, "degats": "1d6+1", "type": "tranchant" }],
+      "butin": [{ "id": "epee-longue" }],
+      "description": "Donnee de test. Foulard rouge et mauvaises intentions."
+    },
+    {
+      "id": "squelette-du-fleau",
+      "nom": "Squelette du Fleau",
+      "type": "Mort-vivant",
+      "puissance": "FP 1/4",
+      "pv": "2d8+4",
+      "classeArmure": 13,
+      "caracteristiques": { "force": 10, "dexterite": 14, "constitution": 15, "intelligence": 6, "sagesse": 8, "charisme": 5 },
+      "attaques": [{ "nom": "Epee courte", "toucher": 4, "degats": "1d6+2", "type": "perforant" }],
+      "description": "Donnee de test. Vulnerable aux degats contondants."
+    },
+    {
+      "id": "ogre-mage",
+      "nom": "Ogre-mage",
+      "type": "Geant",
+      "puissance": "FP 2",
+      "niveau": 4,
+      "taille": 2,
+      "pv": "7d10+21",
+      "classeArmure": 11,
+      "caracteristiques": { "force": 19, "dexterite": 8, "constitution": 16, "intelligence": 9, "sagesse": 7, "charisme": 7 },
+      "attaques": [{ "nom": "Massue", "toucher": 6, "degats": "2d8+4", "type": "contondant" }],
+      "butin": [{ "id": "baton-du-givre-ancien" }, { "id": "potion-de-soins", "quantite": 2 }],
+      "description": "Donnee de test. Deux tetes, et aucune ne s'entend avec l'autre."
+    }
+  ]
+}

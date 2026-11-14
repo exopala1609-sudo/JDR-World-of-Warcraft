@@ -54,6 +54,30 @@ const ETAPES = {
     grimoire: [],
     etats: [],
   }),
+
+  // Version 2 (sprints 2 a 5) -> version 3 (sprint 6 : ecran de creation).
+  // Les fiches existantes n'ont ni race, ni faction, ni portrait choisi :
+  // on les laisse vides (null), le MJ pourra les completer plus tard.
+  2: (fiche) => ({
+    ...fiche,
+    versionSchema: 3,
+    race: fiche.race ?? null,
+    faction: fiche.faction ?? null,
+    portrait: fiche.portrait ?? null,
+  }),
+
+  // Version 3 (sprint 6) -> version 4 (sprint 7 : equipement et barre d'actions).
+  3: (fiche) => ({
+    ...fiche,
+    versionSchema: 4,
+    equipement: fiche.equipement ?? {},
+    barreActions: fiche.barreActions ?? Array(12).fill(null),
+  }),
+
+  // Version 4 (sprint 7) -> version 5 (sprint 8 : etat "repose").
+  4: (fiche) => ({ ...fiche, versionSchema: 5, repose: fiche.repose ?? false }),
+  // Sprint 11 : attaques des monstres, image du pion.
+  5: (fiche) => ({ ...fiche, versionSchema: 6, attaquesMonstre: fiche.attaquesMonstre ?? [], jeton: fiche.jeton ?? null }),
 };
 
 /**

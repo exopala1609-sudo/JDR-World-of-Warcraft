@@ -1,13 +1,19 @@
 import { useState, type FormEvent } from "react";
-import { jeu } from "@/core/jeu";
+import { jeu, useJeu } from "@/core/jeu";
 
-/** Ecran d'accueil : joueur (pseudo) ou Maitre du Jeu (mot de passe). */
+/**
+ * Ecran d'accueil : la porte UNIQUE du jeu (http://localhost:3000/).
+ * Par defaut on entre en joueur (un pseudo). Le Maitre du Jeu passe par un
+ * lien discret en bas, qui remplace le pseudo par un mot de passe. Ensuite,
+ * tout le monde arrive sur la meme interface : seul le ROLE change.
+ */
 export function EcranConnexion() {
   const [role, setRole] = useState<"joueur" | "mj">("joueur");
   const [pseudo, setPseudo] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
+  const avis = useJeu((e) => e.avis); // ex. "Le Maitre du Jeu t'a expulse de la table."
 
   const entrer = async (e: FormEvent) => {
     e.preventDefault();
@@ -18,21 +24,11 @@ export function EcranConnexion() {
 
   return (
     <div className="ecran-accueil">
+      {/* Le logo de WoW, si Glues-WoW-ClassicLogo est dans le dossier interface/ */}
+      <div className="accueil__logo" aria-hidden="true" />
       <form className="accueil cadre" onSubmit={entrer}>
         <h1 className="titre-or accueil__titre">Donjons &amp; Dragons</h1>
         <p className="accueil__sous-titre">Table virtuelle</p>
-        <div className="accueil__roles">
-          {(["joueur", "mj"] as const).map((r) => (
-            <button
-              key={r}
-              type="button"
-              className={`accueil__role${role === r ? " accueil__role--actif" : ""}`}
-              onClick={() => setRole(r)}
-            >
-              {r === "joueur" ? "Joueur" : "Maitre du Jeu"}
-            </button>
-          ))}
-        </div>
         {role === "joueur" ? (
           <label>
             Pseudo
@@ -40,13 +36,30 @@ export function EcranConnexion() {
           </label>
         ) : (
           <label>
-            Mot de passe
-            <input className="champ" type="password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} autoFocus />
+            Mot de passe du Maitre du Jeu
+            <input
+              className="champ"
+              type="password"
+              value={motDePasse}
+              onChange={(e) => setMotDePasse(e.target.value)}
+              autoComplete="current-password"
+              autoFocus
+            />
           </label>
         )}
-        <div className="accueil__erreur">{erreur}</div>
+        <div className="accueil__erreur">{erreur || avis}</div>
         <button className="bouton" type="submit" disabled={envoi}>
           Entrer dans le monde
+        </button>
+        <button
+          type="button"
+          className="accueil__lien-mj"
+          onClick={() => {
+            setRole(role === "joueur" ? "mj" : "joueur");
+            setErreur("");
+          }}
+        >
+          {role === "joueur" ? "Connexion Maitre du Jeu" : "Retour a la connexion joueur"}
         </button>
       </form>
     </div>

@@ -4,8 +4,14 @@
    Empilement (du fond vers l'avant) :
      .monde      z-index --z-monde     le Canvas de la carte, plein ecran
      .hud        z-index --z-hud       cadres fixes (groupe, minicarte, barres...)
-     .fenetres   z-index --z-fenetres  sacs, fiche de personnage
+     .fenetres   z-index --z-fenetres  sacs, fiche, grimoire, journal de quetes
+     .modale     z-index --z-modale    resolution des des (BG3), annonce de quete
      .infobulle  z-index --z-infobulle
+     .fantome    z-index --z-infobulle + 1  l'icone qui suit la souris (glisser)
+
+   Chaque couche est un "contexte d'empilement" : les z-index poses A
+   L'INTERIEUR (ex. la fenetre cliquee qui passe devant les autres) ne
+   peuvent jamais faire sortir un element de sa couche.
 
    L'astuce qui protege la carte : .hud et .fenetres couvrent tout l'ecran
    mais sont "transparents aux clics" (pointer-events: none). Seuls leurs
@@ -31,13 +37,21 @@
   inset: 0;
   z-index: var(--z-hud);
   pointer-events: none;
+  /* Les cadres s'adaptent a la largeur du HUD (voir le mode compact plus bas). */
+  container: hud / inline-size;
   display: grid;
-  /* Colonnes laterales de meme largeur : la barre d'actions tombe pile au centre. */
-  grid-template-columns: 520px 1fr 520px;
-  grid-template-rows: auto 1fr auto;
+  /* La colonne du milieu prend la largeur de la barre d'actions ; les colonnes
+     laterales se partagent le reste a parts egales (la barre tombe pile au
+     centre). minmax(0, ...) : elles peuvent retrecir sous leur contenu, la
+     grille ne deborde donc jamais de l'ecran. */
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Deux rangees : le haut prend la place qui reste, le bas (discussion, barre
+     d'actions, micro-menu) garde toujours la sienne. minmax(0, 1fr) : meme une
+     longue liste de cadres du groupe ne pousse jamais le bas hors de l'ecran
+     (les cadres rapetissent, voir .groupe). */
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     "groupe      bandeau   minicarte"
-    ".           .         ."
     "discussion  actions   menu";
   gap: 16px;
   padding: var(--marge-hud);
@@ -54,14 +68,117 @@
 }
 
 /* --- Haut gauche : cadres du groupe ----------------------------------------------- */
-.groupe {
+/* La colonne occupe toute la hauteur libre du haut ; si les cadres n'y
+   tiennent pas (6 heros sur un ecran de portable), ils rapetissent tous
+   ensemble (--echelle-groupe, calculee dans CadresGroupe.tsx). */
+.hud > .groupe {
   grid-area: groupe;
-  align-self: start;
+  align-self: stretch;
   justify-self: start;
+  min-height: 0;
+  pointer-events: none; /* la place vide laisse passer les clics vers la carte */
+}
+.groupe__liste {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 14px;
+  transform: scale(var(--echelle-groupe, 1));
+  transform-origin: top left;
 }
+.groupe__liste > * {
+  pointer-events: auto;
+}
+/* --- Cadres de raid (6 heros et plus) : des rectangles compacts, en colonnes de 5 --- */
+.raid-groupes {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.raid-groupes__colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.raid-groupes__titre {
+  color: var(--or);
+  font-size: 13px;
+  text-shadow: var(--ombre-texte);
+  padding-left: 2px;
+}
+.cadre-raid {
+  position: relative;
+  overflow: hidden;
+  width: 168px;
+  height: 52px;
+  border: 1px solid #000;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #2a2a2e, #141416);
+  box-shadow: 0 0 0 1px var(--metal-sombre), 0 2px 4px rgba(0, 0, 0, 0.6);
+  cursor: pointer;
+}
+/* La vie : remplit le cadre a la couleur de la classe (vert a defaut), comme dans WoW. */
+.cadre-raid__vie {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #1fbf3a;
+  box-shadow: inset 0 -14px 18px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: width 0.3s ease-out;
+}
+.cadre-raid__ressource {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  border-top: 1px solid #000;
+}
+.cadre-raid__ressource > div {
+  height: 100%;
+}
+.cadre-raid__nom,
+.cadre-raid__etat {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  overflow: hidden;
+  color: #fff;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 0 2px #000, 1px 1px 1px #000, -1px -1px 1px #000;
+}
+.cadre-raid__nom {
+  top: 7px;
+  font-size: 15px;
+}
+.cadre-raid__etat {
+  top: 26px;
+  font-family: var(--police-chiffres);
+  font-size: 12px;
+}
+.cadre-raid__auras {
+  position: absolute;
+  right: 2px;
+  bottom: 8px;
+  display: flex;
+  gap: 1px;
+}
+.cadre-raid__auras img {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #b00;
+}
+.cadre-raid--selection {
+  box-shadow: 0 0 0 2px var(--or), 0 0 8px rgba(255, 209, 0, 0.6);
+}
+.cadre-raid--hors-ligne,
+.cadre-raid--a-terre {
+  filter: grayscale(1) brightness(0.65);
+}
+.cadre-raid--a-terre .cadre-raid__etat {
+  color: #ff5050;
+}
+
 .cadre-unite {
   display: grid;
   grid-template-columns: var(--taille-portrait) 1fr;
@@ -107,6 +224,34 @@
   color: var(--or);
   font-size: calc(var(--taille-portrait) * 0.38);
   text-shadow: var(--ombre-texte);
+}
+/* Etat "Repose" (apres un repos long) : halo bleu-dore qui respire autour du
+   portrait, et "Zzz" a la place du niveau. Disparait au premier combat. */
+.portrait--repose {
+  box-shadow:
+    var(--bordure-or),
+    0 0 14px 3px rgba(120, 190, 255, 0.65);
+  animation: respirer 3s ease-in-out infinite;
+}
+@keyframes respirer {
+  50% {
+    box-shadow:
+      var(--bordure-or),
+      0 0 22px 7px rgba(150, 210, 255, 0.85);
+  }
+}
+.portrait--repose .portrait__niveau {
+  color: #8fd0ff;
+}
+.portrait__zzz {
+  font-size: 12px;
+  font-style: italic;
+  letter-spacing: -0.5px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .portrait--repose {
+    animation: none;
+  }
 }
 .portrait__niveau {
   position: absolute;
@@ -161,21 +306,47 @@
 .barre--ressource .barre__texte {
   font-size: 11px;
 }
-.cadre-unite__etats {
+/* Auras (buffs / debuffs) : petites icones carrees sous les barres. */
+.auras {
   display: flex;
-  gap: 3px;
-  min-height: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
 }
-.cadre-unite__etats img {
-  width: 20px;
-  height: 20px;
+.aura {
+  position: relative;
+  width: 24px;
+  height: 24px;
   border-radius: 2px;
+  background: #000;
 }
-.etat--debuff {
-  box-shadow: 0 0 0 1px var(--texte-rouge);
+.aura img {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  object-fit: cover;
 }
-.etat--buff {
-  box-shadow: 0 0 0 1px #000;
+.aura--buff {
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--metal);
+}
+/* Debuff : liseré rouge, comme dans WoW */
+.aura--debuff {
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px #c41f1f;
+}
+/* Rounds restants, en bas de l'icone */
+.aura__duree {
+  position: absolute;
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 12px;
+  line-height: 1;
+  text-shadow: var(--ombre-texte);
+}
+.auras:has(.aura__duree) {
+  margin-bottom: 7px; /* place pour les chiffres sous les icones */
 }
 
 /* --- Haut centre : bandeau de zone / combat -------------------------------------------- */
@@ -237,7 +408,9 @@
   align-self: end;
   justify-self: center;
   position: relative;
-  padding: 0 120px; /* place pour les griffons */
+  /* Taille des griffons (1 = dessin d'origine) : toutes leurs cotes en decoulent. */
+  --echelle-griffon: 1;
+  padding: 0 calc(120px * var(--echelle-griffon)); /* place pour les griffons */
 }
 .actions__barre {
   display: flex;
@@ -257,9 +430,9 @@
 /* Griffons : ton image si elle existe dans icones/, sinon le dessin fourni. */
 .actions__embleme {
   position: absolute;
-  bottom: -10px;
-  width: 170px;
-  height: 128px;
+  bottom: calc(-10px * var(--echelle-griffon));
+  width: calc(170px * var(--echelle-griffon));
+  height: calc(128px * var(--echelle-griffon));
   background-repeat: no-repeat;
   background-position: bottom center;
   background-size: contain;
@@ -267,17 +440,18 @@
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.8));
 }
 .actions__embleme--gauche {
-  left: -40px;
+  left: calc(-40px * var(--echelle-griffon));
   background-image: url("/medias/icones/ui-griffon-gauche?remplacement=non"), url("/interface/aile.svg");
 }
 .actions__embleme--droite {
-  right: -40px;
+  right: calc(-40px * var(--echelle-griffon));
   transform: scaleX(-1); /* le meme dessin, en miroir */
   background-image: url("/medias/icones/ui-griffon-droite?remplacement=non"), url("/interface/aile.svg");
 }
 
 /* --- Bas gauche : fenetre de discussion --------------------------------------------------- */
 .discussion {
+  position: relative; /* le lanceur de des s'ouvre juste au-dessus */
   grid-area: discussion;
   align-self: end;
   width: 500px;
@@ -297,11 +471,57 @@
   text-shadow: 1px 1px 0 #000;
   user-select: text;
 }
-.discussion__ligne--systeme {
-  color: #ffff00;
-}
+.discussion__ligne--systeme,
 .discussion__ligne--des {
-  color: #ffffff;
+  color: var(--chat-systeme);
+}
+.discussion__ligne--dire {
+  color: var(--chat-dire);
+}
+.discussion__ligne--groupe {
+  color: var(--chat-groupe);
+}
+.discussion__ligne--murmure {
+  color: var(--chat-murmure);
+}
+/* [Nom] : se clique pour lui murmurer (meme couleur que la ligne) */
+.discussion__nom {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+.discussion__nom:hover {
+  text-decoration: underline;
+}
+/* La saisie prend la couleur du canal en cours, comme dans WoW */
+.discussion__saisie {
+  align-items: center;
+}
+.discussion__canal {
+  flex: none;
+  max-width: 140px;
+  overflow: hidden;
+  font-family: var(--police-chiffres);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 1px 1px 0 #000;
+}
+.discussion__saisie--dire .discussion__canal,
+.discussion__saisie--dire .champ {
+  color: var(--chat-dire);
+}
+.discussion__saisie--groupe .discussion__canal,
+.discussion__saisie--groupe .champ {
+  color: var(--chat-groupe);
+}
+.discussion__saisie--murmure .discussion__canal,
+.discussion__saisie--murmure .champ {
+  color: var(--chat-murmure);
 }
 .discussion__ligne--combat {
   color: #ff7f3f;
@@ -337,4 +557,216 @@
 .menu__bouton:hover,
 .menu__bouton--actif {
   filter: brightness(1.4);
+}
+
+/* --- Sous la minicarte : outils de la carte (deplacer, tracer, ping) ---------------------- */
+.outils-carte {
+  margin-top: 14px; /* laisse respirer l'anneau metallique de la minicarte */
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.outils-carte__rangee {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+.outils-carte__bouton {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #4a4a55, #1a1a20);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  text-shadow: var(--ombre-texte);
+}
+.outils-carte__bouton:hover {
+  filter: brightness(1.4);
+}
+.outils-carte__bouton--actif {
+  background: linear-gradient(180deg, #8a6a1c, #3a2a08);
+  color: #fff;
+  box-shadow: var(--bordure-or), 0 0 12px rgba(255, 209, 0, 0.6);
+}
+.outils-carte__palette {
+  flex-wrap: wrap;
+  max-width: 250px;
+}
+.outils-carte__couleur {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #000, 0 0 0 3px var(--metal);
+  cursor: pointer;
+}
+.outils-carte__couleur--moi {
+  border-radius: 4px; /* "ma couleur" se distingue des autres pastilles */
+}
+.outils-carte__couleur--active {
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--or);
+}
+
+/* --- Mode compact : ecrans de 1920 a ~2200 pixels de large ----------------------------------
+   Sur la rangee du bas, discussion (500px) + barre d'actions et griffons
+   (~1110px) + micro-menu demandent environ 2190px d'ecran. En dessous, la
+   discussion, les cases d'action et les griffons retrecissent un peu pour que
+   rien ne se chevauche, jusqu'au minimum garanti de 1920x1080.
+   La largeur interrogee est celle du HUD, marges (--marge-hud) deduites,
+   dans les pixels de l'interface (donc apres la mise a l'echelle). */
+@container hud (width < 2150px) {
+  .discussion {
+    width: 420px; /* aligne sur le cadre du joueur, juste au-dessus */
+  }
+  .actions {
+    --case-action: 54px;
+    --echelle-griffon: 0.8;
+  }
+}
+
+
+/* --- Barre d'actions du MJ : page 1 = ses outils ; selecteur de page facon WoW --------- */
+.case-outil-mj {
+  padding: 0;
+  border: 0;
+  background: radial-gradient(circle at 50% 40%, #4a4a55, #121216);
+  box-shadow: var(--bordure-or);
+  cursor: pointer;
+}
+.case-outil-mj__symbole {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--or);
+  font-size: 26px;
+  text-shadow: var(--ombre-texte);
+}
+.case-outil-mj--actif {
+  box-shadow:
+    var(--bordure-or),
+    0 0 12px rgba(255, 209, 0, 0.7);
+  filter: brightness(1.3);
+}
+.case--vide-mj {
+  opacity: 0.5;
+}
+.actions__page {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  margin-left: 2px;
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 15px;
+  text-shadow: var(--ombre-texte);
+}
+.actions__page button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--or-pale);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+.actions__page button:hover {
+  color: var(--or);
+}
+
+/* --- Haut : cadre de cible (a droite des cadres du groupe) ----------------------------
+   Dessin par defaut (sans textures) : un cartouche et un portrait rond a droite,
+   comme le cadre de cible de WoW. Habillage de WoW : voir textures.css. */
+.cadre-cible {
+  position: absolute;
+  top: var(--marge-hud);
+  left: calc(var(--marge-hud) + 455px);
+  display: grid;
+  grid-template-columns: 220px 78px;
+  grid-template-rows: auto auto auto;
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: center;
+  padding: 8px 8px 8px 12px;
+  cursor: pointer;
+}
+.cadre-cible__nom {
+  grid-column: 1;
+  padding: 2px 8px;
+  overflow: hidden;
+  border-radius: 2px;
+  color: #fff;
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: var(--ombre-texte);
+}
+/* Couleur de "reaction" facon WoW : rouge pour un monstre, bleu pour un heros. */
+.cadre-cible--hostile .cadre-cible__nom {
+  background: linear-gradient(90deg, rgba(150, 18, 8, 0.85), rgba(110, 12, 4, 0.55));
+}
+.cadre-cible--amical .cadre-cible__nom {
+  background: linear-gradient(90deg, rgba(20, 60, 150, 0.85), rgba(12, 40, 110, 0.55));
+}
+.cadre-cible__vie,
+.cadre-cible__ressource {
+  grid-column: 1;
+}
+.cadre-cible__ressource .barre {
+  height: 10px;
+}
+.cadre-cible__portrait {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  position: relative;
+  width: 78px;
+  height: 78px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #000;
+  box-shadow: var(--bordure-or);
+}
+.cadre-cible__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cadre-cible__initiales {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--or);
+  font-size: 28px;
+  text-shadow: var(--ombre-texte);
+}
+.cadre-cible__niveau {
+  position: absolute;
+  right: 0;
+  bottom: -6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a3a44, #0c0c10);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 14px;
+}
+.cadre-cible__rang {
+  position: absolute;
+  top: -10px;
+  right: 18px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: #000;
+  color: var(--or);
+  font-size: 12px;
+  box-shadow: var(--bordure-or);
 }

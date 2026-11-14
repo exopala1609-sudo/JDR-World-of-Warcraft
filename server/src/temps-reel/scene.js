@@ -22,6 +22,7 @@
 // disparaissent chez les joueurs : le serveur ne leur envoie jamais un pion
 // qu'ils ne doivent pas voir.
 import { existsSync } from "node:fs";
+import { traitCouvre } from "../../../shared/geometrie.js";
 import { basename, join } from "node:path";
 import { imageSizeFromFile } from "image-size/fromFile";
 import { EVENEMENTS } from "../../../shared/protocole.js";
@@ -32,6 +33,7 @@ import { ErreurRegle } from "../regles/erreurs.js";
 import {
   ajouterTrait,
   changerCarte,
+  changerTaillePion,
   deplacerPion,
   pionVisibleParLesJoueurs,
   placerPion,
@@ -41,17 +43,24 @@ import {
   toutReveler,
   traitTouchePnj,
 } from "../regles/scene.js";
-import { salleJoueurs, salleMJ } from "./index.js";
+import { salleJoueurs, salleMJ, salleTable } from "./index.js";
 
 const DUREE_VERROU_MS = 5000; // un verrou abandonne (navigateur ferme) expire seul
+const RELAIS_PAR_SECONDE = 40; // le navigateur en envoie 20 : au-dela, c'est de l'inondation
 const coordonnee = z.number().min(-100_000).max(100_000);
 
 const Demandes = {
   carte: z.strictObject({ fichier: z.string().min(1).max(255).nullable() }),
   grille: SchemaGrille,
-  placer: z.strictObject({ idPersonnage: schemaId("p"), x: coordonnee.optional(), y: coordonnee.optional() }),
+  placer: z.strictObject({
+    idPersonnage: schemaId("p"),
+    x: coordonnee.optional(),
+    y: coordonnee.optional(),
+    cache: z.boolean().optional(), // par defaut : un monstre arrive cache, un heros visible
+  }),
   pion: z.strictObject({ idPion: schemaId("j") }),
   cacher: z.strictObject({ idPion: schemaId("j"), cache: z.boolean() }),
+  taille: z.strictObject({ idPion: schemaId("j"), taille: z.int().min(1).max(4) }),
   deplacer: z.strictObject({
     idPion: schemaId("j"),
     x: coordonnee,
@@ -138,6 +147,9 @@ export function brancher(socket, ctx) {
 
     enregistrer(changerCarte(scene, carte));
     ctx.publierScene(scene.idTable, { action: "carte", par: pseudo, fichier });
+    // Nouvelle carte : les traces tactiques de l'ancienne n'ont plus de sens.
+    ctx.traces.delete(scene.idTable);
+    io.to(salleTable(scene.idTable)).emit(EVENEMENTS.DESSINS_ETAT, { traces: [] });
     return {};
   });
 
@@ -153,10 +165,10 @@ export function brancher(socket, ctx) {
 
   // --- Pions : placer, retirer, cacher (MJ) ------------------------------------------
 
-  ctx.guichet(socket, EVENEMENTS.PION_PLACER, Demandes.placer, ({ idPersonnage, x, y }) => {
+  ctx.guichet(socket, EVENEMENTS.PION_PLACER, Demandes.placer, ({ idPersonnage, x, y, cache }) => {
     ctx.exigerMJ(socket, "placer des pions");
     const personnage = ctx.exigerPersonnageVisible(socket, idPersonnage);
-    const { scene } = placerPion(sceneCourante(), personnage, x !== undefined && y !== undefined ? { x, y } : null);
+    const { scene } = placerPion(sceneCourante(), personnage, x !== undefined && y !== undefined ? { x, y } : null, cache === undefined ? {} : { cache });
     enregistrer(scene);
     ctx.publierScene(scene.idTable, { action: "pion-place", par: pseudo, nom: personnage.nom });
     return {};
@@ -181,6 +193,14 @@ export function brancher(socket, ctx) {
     const scene = enregistrer(retirerPion(sceneCourante(), idPion));
     verrous.delete(idPion);
     ctx.publierScene(scene.idTable, { action: "pion-retire", par: pseudo });
+    return {};
+  });
+
+  ctx.guichet(socket, EVENEMENTS.PION_TAILLE, Demandes.taille, ({ idPion, taille }) => {
+    ctx.exigerMJ(socket, "changer la taille d'un pion");
+    const scene = sceneCourante();
+    enregistrer(changerTaillePion(scene, idPion, taille));
+    ctx.publierScene(scene.idTable, { action: "pion-taille", par: pseudo });
     return {};
   });
 
@@ -214,6 +234,8 @@ export function brancher(socket, ctx) {
       // 2. GLISSER : on relaie sans rien enregistrer.
       verrous.set(idPion, { idSocket: socket.id, pseudo, expire: Date.now() + DUREE_VERROU_MS });
       const position = positionValide(scene, x, y, { aimanter: false });
+      // Trop rapproche du precedent : ignore (sans erreur, le suivant arrivera).
+      if (!ctx.quota(socket, "glisser", RELAIS_PAR_SECONDE)) return { position };
       const message = { idPion, ...position, final: false, par: pseudo };
       socket.volatile.to(salleMJ(scene.idTable)).emit(EVENEMENTS.PION_POSITION, message);
       // Les joueurs ne voient passer un monstre que s'il est dans une zone revelee.
@@ -235,10 +257,7 @@ export function brancher(socket, ctx) {
     if (visibleAvant !== visibleApres) {
       // Le pion entre ou sort du brouillard : les joueurs recoivent la nouvelle
       // liste de ce qu'ils voient (il apparait ou disparait).
-      io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.SCENE_ETAT, {
-        scene: ctx.vueDeLaScene(resultat.scene, false),
-        cause: { action: "visibilite" },
-      });
+      ctx.envoyerSceneAuxJoueurs(scene.idTable, resultat.scene, { action: "visibilite" });
     } else if (visibleApres) {
       io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.PION_POSITION, message);
     }
@@ -259,11 +278,10 @@ export function brancher(socket, ctx) {
     socket.to(salleMJ(scene.idTable)).to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.BROUILLARD_TRAIT_AJOUTE, { trait: propre });
 
     // Si le trait passe sur un monstre, celui-ci apparait / disparait chez les joueurs.
-    if (traitTouchePnj(suite, propre, (id) => depot.obtenirPersonnage(id))) {
-      io.to(salleJoueurs(scene.idTable)).emit(EVENEMENTS.SCENE_ETAT, {
-        scene: ctx.vueDeLaScene(suite, false),
-        cause: { action: "visibilite" },
-      });
+    // (ou sur un coffre : il apparait / disparait lui aussi)
+    const surUnButin = suite.butins.some((b) => propre.mode === "tout-reveler" || traitCouvre(propre, b.x, b.y));
+    if (surUnButin || traitTouchePnj(suite, propre, (id) => depot.obtenirPersonnage(id))) {
+      ctx.envoyerSceneAuxJoueurs(scene.idTable, suite, { action: "visibilite" });
     }
     return {};
   });

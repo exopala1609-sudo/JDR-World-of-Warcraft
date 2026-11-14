@@ -1,26 +1,43 @@
-import { useEffect } from "react";
-import { jeu, useJeu } from "@/core/jeu";
+import { lazy, Suspense, useEffect } from "react";
+import { FENETRES_FERMEES, jeu, useJeu, type EtatJeu } from "@/core/jeu";
 import { useEchelleInterface } from "@/core/useEchelleInterface";
-import { BarreActions } from "@/jeu/BarreActions";
+import { BarreActions, RACCOURCIS, utiliserRaccourci } from "@/jeu/BarreActions";
 import { Bandeau } from "@/jeu/Bandeau";
 import { CadresGroupe } from "@/jeu/CadresGroupe";
+import { CadreCible } from "@/jeu/CadreCible";
+import { FenetreButin } from "@/jeu/FenetreButin";
 import { CarteMonde } from "@/jeu/CarteMonde";
 import { Discussion } from "@/jeu/Discussion";
 import { FichePersonnage } from "@/jeu/FichePersonnage";
+import { ActionsSorts } from "@/jeu/ActionsSorts";
+import { JournalQuetes } from "@/jeu/JournalQuetes";
 import { MicroMenu } from "@/jeu/MicroMenu";
+import { Carnet } from "@/jeu/Carnet";
+import { FenetreInitiative } from "@/jeu/FenetreInitiative";
 import { Minicarte } from "@/jeu/Minicarte";
+import { ModaleIncantation } from "@/jeu/ModaleIncantation";
+import { Annonce, ModaleResolution } from "@/jeu/ModaleResolution";
 import { Sacs } from "@/jeu/Sacs";
+import { CoucheGlisser } from "@/ui/glisser";
 import { CoucheInfobulle } from "@/ui/InfoBulle";
 
 /**
  * L'ecran de jeu, en couches superposees :
  *   1. le monde (Canvas de la carte)      - recoit les clics "dans le vide"
  *   2. le HUD (cadres fixes)              - transparent aux clics, sauf ses cadres
- *   3. les fenetres (sacs, personnage)    - idem
- *   4. l'infobulle                        - ne capte jamais la souris
+ *   3. les fenetres (sacs, fiche, grimoire, quetes) - idem ; la derniere cliquee passe devant
+ *   4. la modale (resolution des des)     - au-dessus des fenetres
+ *   5. l'infobulle, puis l'icone glissee  - ne captent jamais la souris
  */
+// Les outils du MJ sont dans un fichier a part, charge SEULEMENT quand le
+// serveur a dit "tu es MJ" : le navigateur d'un joueur ne les telecharge pas.
+// (Ce n'est PAS ce qui protege le jeu : c'est le serveur qui refuse toute
+// demande MJ venant d'un joueur. Voir docs/ARCHITECTURE.md, "Roles".)
+const OutilsMJ = lazy(() => import("@/jeu/mj/OutilsMJ"));
+
 export function EcranJeu() {
   const fenetres = useJeu((e) => e.fenetres);
+  const estMJ = useJeu((e) => e.profil?.role === "mj");
   const { largeur, hauteur } = useEchelleInterface();
 
   // Raccourcis clavier facon WoW. Ignores pendant qu'on ecrit dans un champ.
@@ -29,11 +46,21 @@ export function EcranJeu() {
       const cible = e.target as HTMLElement;
       if (cible.closest("input, textarea, select") || e.ctrlKey || e.altKey || e.metaKey) return;
       const touche = e.key.toLowerCase();
-      const basculer = (nom: "sacs" | "personnage") =>
+      const basculer = (nom: keyof EtatJeu["fenetres"]) =>
         jeu.modifier((etat) => ({ fenetres: { ...etat.fenetres, [nom]: !etat.fenetres[nom] } }));
       if (touche === "b") basculer("sacs");
       else if (touche === "c") basculer("personnage");
-      else if (touche === "escape") jeu.modifier({ fenetres: { sacs: false, personnage: false } });
+      else if (touche === "p") basculer("grimoire");
+      else if (touche === "l") basculer("quetes");
+      else if (touche === "i") basculer("initiative");
+      else if (touche === "n") basculer("carnet");
+      else if (touche === "escape") {
+        // Comme dans WoW : Echap ferme d'abord les fenetres ; s'il n'y en a plus, il efface la cible.
+        const etat = jeu.lire();
+        const rienDOuvert = !Object.values(etat.fenetres).some(Boolean) && !etat.butin;
+        jeu.fermerButin();
+        jeu.modifier(rienDOuvert ? { cible: null } : { fenetres: FENETRES_FERMEES });
+      } else if (RACCOURCIS.includes(e.key)) utiliserRaccourci(RACCOURCIS.indexOf(e.key)); // touches 1 a =
       else if (touche === "enter") document.getElementById("saisie-discussion")?.focus();
       else return;
       e.preventDefault();
@@ -47,6 +74,7 @@ export function EcranJeu() {
       <CarteMonde />
       <div className="hud">
         <CadresGroupe />
+        <CadreCible />
         <Bandeau />
         <Minicarte />
         <Discussion />
@@ -56,8 +84,24 @@ export function EcranJeu() {
       <div className="fenetres">
         {fenetres.personnage && <FichePersonnage position={{ x: 560, y: 150 }} />}
         {fenetres.sacs && <Sacs position={{ x: largeur - 420, y: hauteur - 560 }} />}
+        {fenetres.grimoire && <ActionsSorts position={{ x: Math.max(20, largeur / 2 - 560), y: 120 }} />}
+        {fenetres.quetes && <JournalQuetes position={{ x: Math.max(20, largeur / 2 - 80), y: 140 }} />}
+        {fenetres.carnet && <Carnet position={{ x: Math.max(20, largeur / 2 - 450), y: 150 }} />}
+        {fenetres.initiative && <FenetreInitiative position={{ x: largeur - 680, y: 430 }} />}
+        <FenetreButin />
       </div>
+      <div className="couche-modale">
+        <Annonce />
+        <ModaleIncantation />
+        <ModaleResolution />
+      </div>
+      {estMJ && (
+        <Suspense fallback={null}>
+          <OutilsMJ />
+        </Suspense>
+      )}
       <CoucheInfobulle />
+      <CoucheGlisser />
     </>
   );
 }

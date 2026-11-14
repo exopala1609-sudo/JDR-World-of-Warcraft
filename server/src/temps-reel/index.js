@@ -10,33 +10,72 @@
 //   table:<id>      tous les participants d'une table (MJ + joueurs)
 //   table:<id>:mj   le MJ de cette table (PNJ caches, lancers secrets)
 //   table:<id>:joueurs  les joueurs seuls (ce qu'ils voient de la carte)
+//   table:<id>:joueur:<pseudo>  les ecrans d'UN joueur (son sac, prive)
 //   mj              tous les ecrans MJ, quelle que soit la table (compendium)
 //
 // Ce fichier prepare les outils communs ; chaque domaine du jeu a son fichier :
-//   tables.js, personnages.js, repos.js, compendium.js, combat.js, des.js
+//   tables.js, personnages.js, repos.js, referentiel.js, compendium.js,
+//   combat.js, scene.js, tactique.js (traces et pings), des.js
 import { Server } from "socket.io";
 import { z } from "zod";
 import { EVENEMENTS, ROLES } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
-import { presenterPersonnage } from "../modeles/personnage.js";
+import { bibliothequeIcones } from "../donnees/bibliotheque-icones.js";
+import { presenterPersonnage, santeVisible } from "../modeles/personnage.js";
+import { butinVisibleParLesJoueurs } from "../regles/butins.js";
 import { pionVisibleParLesJoueurs } from "../regles/scene.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import * as combat from "./combat.js";
 import * as compendium from "./compendium.js";
+import * as bestiaire from "./bestiaire.js";
+import * as butins from "./butins.js";
+import * as chat from "./chat.js";
 import * as des from "./des.js";
+import * as equipement from "./equipement.js";
+import * as joueurs from "./joueurs.js";
+import * as notes from "./notes.js";
 import * as personnages from "./personnages.js";
+import * as quetes from "./quetes.js";
+import * as referentiel from "./referentiel.js";
 import * as repos from "./repos.js";
+import * as resolution from "./resolution.js";
 import * as scene from "./scene.js";
+import * as sons from "./sons.js";
+import * as sorts from "./sorts.js";
 import * as tables from "./tables.js";
+import * as tactique from "./tactique.js";
 
-const DOMAINES = [tables, personnages, repos, compendium, combat, scene, des];
+const DOMAINES = [tables, personnages, repos, referentiel, compendium, equipement, butins, resolution, quetes, combat, scene, tactique, des, chat, sons, joueurs, bestiaire, notes, sorts];
 
 export const SALLE_MJ = "mj";
 export const salleTable = (idTable) => `table:${idTable}`;
 export const salleMJ = (idTable) => `table:${idTable}:mj`;
 export const salleJoueurs = (idTable) => `table:${idTable}:joueurs`;
+export const salleDuJoueur = (idTable, pseudo) => `table:${idTable}:joueur:${normaliserPseudo(pseudo)}`;
 
-export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, config }) {
+/**
+ * Ce que les AUTRES joueurs voient d'un heros : tout (caracteristiques, PV,
+ * etats...), sauf le contenu de son sac, comme l'"Inspecter" de WoW. Le sac
+ * n'est envoye qu'a son proprietaire et au MJ.
+ */
+const vuePublique = (fiche) => ({ ...fiche, inventaire: [], sacPrive: true });
+
+/**
+ * L'image dessinee dans le pion (adresse sous /medias/, sans le prefixe) :
+ * son jeton (dossier jetons/), sinon son portrait, sinon portraits/<nom>.
+ * Absente du dossier : le pion garde ses initiales.
+ */
+export function imageDuPion(personnage) {
+  if (!personnage) return null;
+  // "icones/xxx" : une icone choisie dans le selecteur sert d'image au pion.
+  if (personnage.jeton) return personnage.jeton.startsWith("icones/") ? personnage.jeton : `jetons/${personnage.jeton}`;
+  if (personnage.portrait) return `portraits/${personnage.portrait}`;
+  if (!personnage.proprietaire) return null;
+  const nom = personnage.nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return nom ? `portraits/${nom}` : null;
+}
+
+export function installerTempsReel(serveurHttp, { depot, sessions, compendium: bibliotheque, referentiel: regles, config }) {
   const io = new Server(serveurHttp, {
     // Aucun message legitime ne depasse quelques Ko : on refuse les colis geants.
     maxHttpBufferSize: 100_000,
@@ -55,12 +94,86 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     io,
     depot,
     compendium: bibliotheque,
+    referentiel: regles,
     config,
+
+    // Traces tactiques de chaque table (idTable -> liste). Gardees en MEMOIRE
+    // seulement : ce sont des annotations ephemeres, pas une sauvegarde.
+    traces: new Map(),
+
+    // Jets de la fenetre de resolution, en attente de "Valider" (idJet -> jet).
+    jets: new Map(),
+
+    sessions,
+    // Les noms des icones du dossier icones/ (selecteur d'icones), lus a la demande.
+    icones: bibliothequeIcones(config?.dossiers?.icones),
+    // Joueurs expulses par le MJ, par table (pseudos normalises). En memoire.
+    expulsesParTable: new Map(),
+    expulses(idTable) {
+      if (!ctx.expulsesParTable.has(idTable)) ctx.expulsesParTable.set(idTable, new Set());
+      return ctx.expulsesParTable.get(idTable);
+    },
+
+    /**
+     * Anti-inondation : true tant que ce navigateur n'a pas fait cette action
+     * plus de "maxParSeconde" fois dans la seconde en cours. Protege la table
+     * d'un joueur qui enverrait 1000 pings par seconde avec un script, sans
+     * gener un usage normal (qui reste loin en dessous).
+     */
+    quota(socket, action, maxParSeconde) {
+      const compteurs = (socket.data.quotas ??= {});
+      const seconde = Math.floor(Date.now() / 1000);
+      const compteur = compteurs[action]?.seconde === seconde ? compteurs[action] : { seconde, nombre: 0 };
+      compteur.nombre += 1;
+      compteurs[action] = compteur;
+      return compteur.nombre <= maxParSeconde;
+    },
 
     estMJ: (socket) => socket.data.profil.role === ROLES.MJ,
 
     exigerMJ(socket, action) {
       if (!ctx.estMJ(socket)) throw new ErreurRegle(`Seul le MJ peut ${action}.`);
+    },
+
+    /** Le personnage de ce joueur a cette table (un seul par joueur et par table). */
+    personnageDuJoueur(socket, idTable) {
+      return depot.personnagesDeLaTable(idTable).find((p) => ctx.estProprietaire(socket, p)) ?? null;
+    },
+
+    /** Quitte les salons de la table courante (ou la porte de l'ecran de creation). */
+    async quitterTable(socket) {
+      const ancienne = socket.data.idTable;
+      socket.data.idTable = null;
+      socket.data.idTableCreation = null;
+      if (!ancienne) return;
+      socket.leave(salleTable(ancienne));
+      socket.leave(salleMJ(ancienne));
+      socket.leave(salleJoueurs(ancienne));
+      socket.leave(salleDuJoueur(ancienne, socket.data.profil.pseudo));
+      await ctx.diffuserPresence(ancienne);
+    },
+
+    /**
+     * Fait entrer ce navigateur dans une table : il rejoint ses salons (il
+     * recevra desormais tout ce qui s'y passe) et recoit une photo complete
+     * de ce qu'il a le droit de voir.
+     */
+    async entrerDansLaTable(socket, idTable) {
+      socket.data.idTable = idTable;
+      socket.data.idTableCreation = null;
+      socket.join(salleTable(idTable));
+      if (ctx.estMJ(socket)) socket.join(salleMJ(idTable));
+      else socket.join([salleJoueurs(idTable), salleDuJoueur(idTable, socket.data.profil.pseudo)]);
+      await ctx.diffuserPresence(idTable);
+      return {
+        table: depot.obtenirTable(idTable),
+        creationRequise: false,
+        personnages: ctx.personnagesVisibles(socket, idTable),
+        combat: ctx.estMJ(socket) ? depot.obtenirCombat(idTable) : ctx.combatPourJoueurs(depot.obtenirCombat(idTable)),
+        scene: ctx.vueDeLaScene(depot.obtenirScene(idTable), ctx.estMJ(socket)),
+        traces: ctx.traces.get(idTable) ?? [],
+        quetes: depot.obtenirQuetes(idTable),
+      };
     },
 
     exigerTable(socket) {
@@ -101,25 +214,131 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       return depot
         .personnagesDeLaTable(idTable)
         .filter((p) => ctx.estMJ(socket) || p.proprietaire !== null)
-        .map(presenterPersonnage);
+        .map((p) => {
+          const presente = presenterPersonnage(p);
+          return ctx.estMJ(socket) || ctx.estProprietaire(socket, p) ? presente : vuePublique(presente);
+        });
     },
 
-    /** Enregistre une fiche modifiee et l'annonce a qui de droit. */
+    /**
+     * Enregistre une fiche modifiee et l'annonce a qui de droit :
+     *  - un PNJ : au MJ seul ;
+     *  - un heros : la fiche complete au MJ et a son proprietaire, la
+     *    fiche sans le contenu du sac aux autres joueurs.
+     */
     publierPersonnage(personnage, cause) {
+      const avant = depot.obtenirPersonnage(personnage.id);
       const enregistre = depot.enregistrerPersonnage(personnage);
       const presente = presenterPersonnage(enregistre);
-      io.to(ctx.salleDuPersonnage(enregistre)).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+      const { idTable, proprietaire } = enregistre;
+      if (proprietaire === null) {
+        io.to(salleMJ(idTable)).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+        // Un monstre visible a change de nom, de niveau, de rang ou de sante
+        // (a 10 % pres) : les joueurs recoivent la scene a jour (cadre de cible).
+        const apparence = (p) => p && `${p.nom}|${p.niveau}|${p.rang}|${santeVisible(p)}`;
+        if (apparence(avant) !== apparence(enregistre) && ctx.pnjVisible(enregistre)) {
+          ctx.envoyerSceneAuxJoueurs(idTable, depot.obtenirScene(idTable));
+        }
+        return presente;
+      }
+      const sallePrivee = salleDuJoueur(idTable, proprietaire);
+      io.to(salleMJ(idTable)).to(sallePrivee).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: presente, cause });
+      io.to(salleJoueurs(idTable)).except(sallePrivee).emit(EVENEMENTS.PERSONNAGE_MAJ, { personnage: vuePublique(presente), cause });
       return presente;
     },
 
-    publierCombat(idTable, cause) {
-      io.to(salleTable(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: depot.obtenirCombat(idTable), cause });
+    /**
+     * Texte de combat flottant (degats, soins) au-dessus du pion.
+     * Le MJ le voit toujours. Les joueurs le voient pour un personnage-joueur,
+     * et pour un monstre SEULEMENT si son pion leur est visible : un monstre
+     * tapi dans le brouillard ne se trahit pas par ses chiffres de degats.
+     */
+    publierTexteCombat(personnage, texte, { seulementMJ = false } = {}) {
+      if (!texte) return;
+      const message = { idPersonnage: personnage.id, ...texte };
+      io.to(salleMJ(personnage.idTable)).emit(EVENEMENTS.COMBAT_TEXTE, message);
+      if (seulementMJ) return; // jet secret (monstre cache) : les joueurs ne voient rien
+      const scene = depot.obtenirScene(personnage.idTable);
+      const pion = scene.pions.find((p) => p.idPersonnage === personnage.id);
+      if (personnage.proprietaire !== null || (pion && pionVisibleParLesJoueurs(scene, pion, personnage))) {
+        io.to(salleJoueurs(personnage.idTable)).emit(EVENEMENTS.COMBAT_TEXTE, message);
+      }
     },
 
-    /** Un pion, complete du nom et du proprietaire de son personnage. */
+    /**
+     * Un PNJ / monstre est-il connu des joueurs ? Seulement si son pion est sur
+     * la carte ET visible (ni cache par le MJ, ni dans le brouillard).
+     */
+    pnjVisible(personnage) {
+      if (!personnage) return false;
+      if (personnage.proprietaire !== null) return true;
+      const scene = depot.obtenirScene(personnage.idTable);
+      const pion = scene.pions.find((p) => p.idPersonnage === personnage.id);
+      return Boolean(pion && pionVisibleParLesJoueurs(scene, pion, personnage));
+    },
+
+    /**
+     * Le combat tel que les joueurs ont le droit de le voir : un monstre cache
+     * garde sa place dans l'ordre (sinon les tours seraient decales), mais
+     * devient anonyme : ni nom, ni identifiant, ni jet. "Au tour de ???".
+     */
+    combatPourJoueurs(combat) {
+      if (!combat) return combat;
+      return {
+        ...combat,
+        participants: combat.participants.map((p) =>
+          ctx.pnjVisible(depot.obtenirPersonnage(p.idPersonnage))
+            ? p
+            : { id: p.id, idPersonnage: null, nom: "???", masque: true, jet: null, bonus: null, initiative: null },
+        ),
+      };
+    },
+
+    publierCombat(idTable, cause) {
+      const combat = depot.obtenirCombat(idTable);
+      io.to(salleMJ(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat, cause });
+      if (!cause) return io.to(salleJoueurs(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: ctx.combatPourJoueurs(combat), cause: null });
+      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.COMBAT_ETAT, { combat: ctx.combatPourJoueurs(combat), cause: ctx.causePourJoueurs(idTable, cause) });
+    },
+
+    /**
+     * La "cause" d'un message, filtree pour les joueurs : les noms des monstres
+     * qu'ils ne voient pas deviennent "???" et leurs jets d'initiative
+     * disparaissent. (Tous les PNJ invisibles de la table, meme ceux qui ne
+     * sont plus au combat : un monstre retire ne doit pas se trahir non plus.)
+     */
+    causePourJoueurs(idTable, cause) {
+      if (!cause) return cause;
+      const caches = new Set(depot.personnagesDeLaTable(idTable).filter((p) => !ctx.pnjVisible(p)).map((p) => p.nom));
+      const anonyme = (nom) => (caches.has(nom) ? "???" : nom);
+      return {
+        ...cause,
+        ...(cause.jets && { jets: cause.jets.filter((j) => !caches.has(j.nom)) }),
+        ...(cause.actif && { actif: anonyme(cause.actif) }),
+        ...(cause.finDeTour && { finDeTour: anonyme(cause.finDeTour) }),
+        ...(cause.nom && { nom: anonyme(cause.nom) }),
+      };
+    },
+
+    /**
+     * Envoie aux joueurs la scene qu'ils ont le droit de voir. Un monstre a pu
+     * apparaitre ou disparaitre : l'ordre du combat (anonymise) suit.
+     */
+    envoyerSceneAuxJoueurs(idTable, scene, cause) {
+      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, false), cause: ctx.causePourJoueurs(idTable, cause) });
+      if (depot.obtenirCombat(idTable)) ctx.publierCombat(idTable, null);
+    },
+
+    /**
+     * Un pion, complete du nom et du proprietaire de son personnage. Pour un
+     * monstre, aussi ce qu'en montre le cadre de cible des joueurs (qui n'ont
+     * pas sa fiche) : niveau, rang et sante arrondie a 10 %.
+     */
     presenterPion(pion) {
       const personnage = depot.obtenirPersonnage(pion.idPersonnage);
-      return { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null };
+      const pion2 = { ...pion, nom: personnage?.nom ?? "?", proprietaire: personnage?.proprietaire ?? null, image: imageDuPion(personnage) };
+      if (!personnage || personnage.proprietaire !== null) return pion2;
+      return { ...pion2, niveau: personnage.niveau, rang: personnage.rang ?? "normal", sante: santeVisible(personnage) };
     },
 
     /**
@@ -131,13 +350,20 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       const pions = pourMJ
         ? scene.pions
         : scene.pions.filter((p) => pionVisibleParLesJoueurs(scene, p, depot.obtenirPersonnage(p.idPersonnage)));
-      return { ...scene, pions: pions.map((p) => ctx.presenterPion(p)) };
+      // Butins : le MJ voit tout ; un joueur ne voit que ceux hors du brouillard,
+      // et jamais leur contenu (seulement s'ils sont vides) : il faut ouvrir.
+      const butins = pourMJ
+        ? scene.butins
+        : scene.butins
+            .filter((b) => butinVisibleParLesJoueurs(scene, b))
+            .map(({ objets, cache: _cache, ...b }) => ({ ...b, vide: objets.length === 0 }));
+      return { ...scene, pions: pions.map((p) => ctx.presenterPion(p)), butins };
     },
 
     publierScene(idTable, cause) {
       const scene = depot.obtenirScene(idTable);
       io.to(salleMJ(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, true), cause });
-      io.to(salleJoueurs(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, false), cause });
+      ctx.envoyerSceneAuxJoueurs(idTable, scene, cause);
     },
 
     async diffuserPresence(idTable) {

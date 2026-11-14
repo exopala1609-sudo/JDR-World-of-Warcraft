@@ -21,8 +21,44 @@ VTT_ASSETS=G:\Mon Drive\JDR
 VTT_ASSETS=C:\Users\Moi\Mon Drive\JDR
 ```
 
-Au demarrage, le serveur affiche l'etat de chaque dossier. Si un chemin est
-faux, tu le vois immediatement, avec le nom de la variable a corriger.
+**`VTT_ASSETS` est obligatoire, et doit etre un chemin complet** (qui commence
+par une lettre de lecteur comme `G:\` ou `C:\`). Tant qu'il est vide, relatif
+ou qu'il pointe dans le dossier du projet, le serveur **refuse de demarrer** et
+explique quoi corriger. C'est voulu : une partie sauvegardee dans le dossier du
+projet resterait sur ce seul PC, invisible depuis l'autre.
+
+Au demarrage, le serveur affiche ou il lit et ecrit les sauvegardes :
+
+```
+  Sauvegardes      : G:\Mon Drive\JDR\parties  (Google Drive)
+  Donnees chargees : 2 table(s), 5 personnage(s).
+```
+
+Si cette ligne n'affiche pas ton dossier cloud, ou si les tables manquent,
+arrete tout (`Ctrl + C`) et corrige le `.env` avant de jouer.
+
+## Jouer sur deux PC (fixe et portable)
+
+Les deux PC lisent et ecrivent **le meme dossier cloud**. Seul le chemin qui y
+mene peut differer d'un PC a l'autre (d'ou un `.env` par PC).
+
+1. Sur le PC que tu quittes : `Ctrl + C` (tout est ecrit immediatement), puis
+   attends que Google Drive / OneDrive indique « a jour ».
+2. Sur l'autre PC : lance la partie. La ligne « Sauvegardes » doit montrer ton
+   dossier cloud, et « Donnees chargees » le bon nombre de tables.
+3. Ne lance jamais la partie sur les deux PC en meme temps (le serveur te
+   previent s'il detecte l'autre poste).
+
+Pour trouver le chemin du dossier sur un PC : explorateur de fichiers, ouvre
+ton dossier `JDR`, clique dans la barre d'adresse, copie (`Ctrl + C`), colle
+dans `.env` apres `VTT_ASSETS=`. Ou lance `npm run detecter-assets`.
+
+### Anciennes parties restees dans le projet
+
+Avant cette regle, un `.env` non rempli envoyait les sauvegardes dans le dossier
+`donnees-mj\parties` du projet. Le serveur te le signale au demarrage. Pour les
+garder, copie les dossiers `t-xxxxxxxxxx` qu'il contient dans le dossier
+`parties` de ton cloud.
 
 ## Structure attendue du dossier cloud
 
@@ -32,6 +68,7 @@ JDR/                     <- VTT_ASSETS pointe ici
 ├── jetons/              images de monstres et de PJ
 ├── portraits/           visages du groupe
 ├── compendium/          fichiers de sorts et d'objets (JSON)
+├── referentiel/         factions, races, classes, regles de creation (JSON)
 └── parties/             sauvegardes ecrites par le serveur
 ```
 
@@ -76,7 +113,7 @@ appareil »** (OneDrive) ou **« Disponible hors connexion »** (Google Drive).
 
 | Variable | Role | Defaut |
 | --- | --- | --- |
-| `VTT_ASSETS` | Dossier racine de tes fichiers | `./donnees-mj` |
+| `VTT_ASSETS` | Dossier racine de tes fichiers (chemin complet, OBLIGATOIRE) | aucun : le serveur refuse de demarrer |
 | `VTT_ASSETS_CARTES` … `_PARTIES` | Chemin d'un sous-dossier place ailleurs | dans `VTT_ASSETS` |
 | `VTT_NOM_PARTIE` | Titre affiche dans l'interface | `Ma campagne` |
 | `VTT_PORT` | Port du serveur | `3000` |

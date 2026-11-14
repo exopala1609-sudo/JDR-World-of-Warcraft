@@ -1,20 +1,13 @@
 // Regles de la scene : placer et deplacer les pions, regler la grille,
 // peindre le brouillard, et decider ce que les joueurs ont le droit de voir.
+import { couleurPour } from "../../../shared/couleurs.js";
 import { aimanter, borner, estRevele, traitCouvre } from "../../../shared/geometrie.js";
 import { nouvelId } from "../modeles/identifiants.js";
 import { LIMITES_BROUILLARD } from "../modeles/scene.js";
 import { ErreurRegle } from "./erreurs.js";
 
-// Couleur stable par joueur (le meme pseudo donne toujours la meme couleur).
-const COULEURS_JOUEURS = ["#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#bcbd22", "#8c564b"];
-const COULEUR_PNJ = "#b22222";
-
-export function couleurPour(proprietaire) {
-  if (proprietaire === null) return COULEUR_PNJ;
-  let somme = 0;
-  for (const lettre of proprietaire.toLocaleLowerCase("fr")) somme = (somme * 31 + lettre.charCodeAt(0)) % 1_000_003;
-  return COULEURS_JOUEURS[somme % COULEURS_JOUEURS.length];
-}
+// La couleur d'un pion est celle de son joueur (voir shared/couleurs.js).
+export { couleurPour };
 
 /** Position finale d'un pion : dans la carte, et aimantee a la grille si demande. */
 export function positionValide(scene, x, y, { aimanter: avecAimant = true, taille = 1 } = {}) {
@@ -24,22 +17,49 @@ export function positionValide(scene, x, y, { aimanter: avecAimant = true, taill
   return borner(surLaGrille.x, surLaGrille.y, scene.carte);
 }
 
-export function placerPion(scene, personnage, position) {
+/**
+ * Pose le pion d'un personnage. Un monstre / PNJ arrive CACHE aux joueurs
+ * (le MJ le revele quand il veut : clic droit > "Reveler") ; un heros, visible.
+ * "cache" permet de choisir explicitement.
+ */
+export function placerPion(scene, personnage, position, { cache = personnage.proprietaire === null, taille = 1 } = {}) {
   if (scene.pions.some((p) => p.idPersonnage === personnage.id)) {
     throw new ErreurRegle(`${personnage.nom} est deja sur la carte.`);
   }
   // Sans position precise : au centre de la carte.
-  const { x, y } = positionValide(scene, position?.x ?? scene.carte.largeur / 2, position?.y ?? scene.carte.hauteur / 2);
+  const { x, y } = positionValide(scene, position?.x ?? scene.carte.largeur / 2, position?.y ?? scene.carte.hauteur / 2, { taille });
   const pion = {
     id: nouvelId("j"),
     idPersonnage: personnage.id,
     x,
     y,
-    taille: 1,
+    taille, // en cases : 2 = un ogre (2 x 2), 4 = un dragon
     couleur: couleurPour(personnage.proprietaire),
-    cache: false,
+    cache,
   };
   return { scene: { ...scene, pions: [...scene.pions, pion] }, pion };
+}
+
+/**
+ * Case libre la plus proche d'un point : on tourne en carres de plus en plus
+ * grands autour de lui, jusqu'a trouver une case sans pion dans la carte.
+ */
+export function caseLibreProche(scene, depart) {
+  const pas = scene.grille.taille;
+  const centre = positionValide(scene, depart.x, depart.y);
+  const occupee = (x, y) => scene.pions.some((p) => Math.hypot(p.x - x, p.y - y) < pas / 2);
+  for (let anneau = 0; anneau <= 30; anneau++) {
+    for (let dy = -anneau; dy <= anneau; dy++) {
+      for (let dx = -anneau; dx <= anneau; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== anneau) continue; // seulement le bord du carre
+        const x = centre.x + dx * pas;
+        const y = centre.y + dy * pas;
+        if (x < 0 || y < 0 || x > scene.carte.largeur || y > scene.carte.hauteur) continue;
+        if (!occupee(x, y)) return { x, y };
+      }
+    }
+  }
+  return centre;
 }
 
 export function deplacerPion(scene, idPion, x, y, options) {
@@ -48,6 +68,14 @@ export function deplacerPion(scene, idPion, x, y, options) {
   const position = positionValide(scene, x, y, { ...options, taille: pion.taille });
   const deplace = { ...pion, ...position };
   return { scene: { ...scene, pions: scene.pions.map((p) => (p.id === idPion ? deplace : p)) }, pion: deplace };
+}
+
+/** Taille d'un pion (1 a 4 cases de cote) : il se recale sur la grille. */
+export function changerTaillePion(scene, idPion, taille) {
+  const pion = scene.pions.find((p) => p.id === idPion);
+  if (!pion) throw new ErreurRegle("Ce pion n'est plus sur la carte.");
+  const position = positionValide(scene, pion.x, pion.y, { taille });
+  return { ...scene, pions: scene.pions.map((p) => (p.id === idPion ? { ...p, ...position, taille } : p)) };
 }
 
 export function retirerPion(scene, idPion) {

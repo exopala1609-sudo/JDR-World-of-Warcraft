@@ -40,3 +40,10 @@ button,
 input {
   font: inherit;
 }
+
+/* Les images de l'interface ne se "tirent" pas toutes seules : c'est notre
+   glisser-deposer (ui/glisser.tsx) qui gere les objets. */
+.scene-jeu img {
+  -webkit-user-drag: none;
+  user-select: none;
+}

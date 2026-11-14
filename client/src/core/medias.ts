@@ -15,3 +15,7 @@ export const urlIcone = (nom: string) => `/medias/icones/${encodeURIComponent(no
 
 /** Portrait d'un personnage : portraits/<nom-du-personnage>.png */
 export const urlPortrait = (nom: string) => `/medias/portraits/${encodeURIComponent(nomDeFichier(nom))}`;
+
+/** Icone d'un objet : son champ "icone", sinon son entree du compendium, sinon son nom. */
+export const iconeObjet = (objet: { icone?: string; source?: string | null; nom: string }) =>
+  urlIcone(objet.icone ?? objet.source ?? nomDeFichier(objet.nom));

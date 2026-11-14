@@ -1,0 +1,527 @@
+/* =============================================================================
+   Ecran de creation de personnage, facon World of Warcraft.
+
+      +-------------+--------------------------+-------------+
+      |  Loyaute    |      Race  Classe        |  Classe     |
+      |  (banniere) |                          |  (grille)   |
+      |  Race       |       [ portrait ]       |  Caracs     |
+      |  (grille)   |                          |  PV, CA...  |
+      +-------------+--------------------------+-------------+
+      | Retour            [ Nom ] [Entrer dans le monde]     |
+      +------------------------------------------------------+
+
+   Dessine pour 2560x1440 ; en dessous de 1300 pixels de haut (1920x1080),
+   le mode compact resserre les grilles pour que tout tienne sans defiler.
+   ============================================================================= */
+
+.creation {
+  --couleur-faction: #ffd100; /* redefinie par l'ecran selon la faction choisie */
+  position: absolute;
+  inset: 0;
+  container: creation / size;
+  display: grid;
+  grid-template-columns: minmax(460px, 580px) minmax(0, 1fr) minmax(500px, 640px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 24px;
+  /* Le fond prend la teinte de la faction choisie (bleu Alliance, rouge Horde). */
+  background:
+    radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--couleur-faction) 28%, transparent), transparent 62%),
+    radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.92) 100%),
+    var(--texture-pierre);
+  transition: background 0.4s;
+}
+
+/* --- Colonnes laterales ------------------------------------------------------------ */
+.creation__colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 18px 20px;
+  /* Pas de defilement ici : les rivets du cadre depassent de 3 px et seraient
+     coupes (et une barre de defilement apparaitrait). Seule la description defile. */
+}
+.creation__titre {
+  font-family: var(--police-titre);
+  margin: 4px 0 0;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+/* --- Bannieres de faction ----------------------------------------------------------- */
+.creation__factions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.banniere {
+  --couleur: #ffd100;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  height: 150px;
+  padding: 14px 8px 12px;
+  border: 0;
+  /* Forme d'etendard : pointe en bas. */
+  clip-path: polygon(0 0, 100% 0, 100% 84%, 50% 100%, 0 84%);
+  background:
+    var(--texture-bruit),
+    linear-gradient(180deg, color-mix(in srgb, var(--couleur) 75%, #000) 0%, color-mix(in srgb, var(--couleur) 35%, #000) 70%, #0b0b0e 100%);
+  color: var(--or-pale);
+  font-family: var(--police-ui);
+  cursor: pointer;
+  filter: brightness(0.55) saturate(0.7);
+  transition: filter 0.15s;
+}
+.banniere:hover {
+  filter: brightness(0.8) saturate(0.9);
+}
+.banniere--active {
+  filter: none;
+  /* Le liseré d'or s'allume sur l'etendard choisi. */
+  box-shadow: inset 0 0 0 3px var(--or), inset 0 0 26px rgba(255, 209, 0, 0.55);
+}
+.banniere__embleme {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.9));
+}
+.banniere__embleme.image-absente {
+  font-size: 44px;
+}
+.banniere__nom {
+  font-size: 20px;
+  text-shadow: var(--ombre-texte);
+}
+
+/* --- Grilles d'icones (races, classes) ------------------------------------------------ */
+.grille-choix {
+  display: grid;
+  gap: 8px;
+}
+.grille-choix--races,
+.grille-choix--classes {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.choix {
+  --couleur: var(--metal-clair);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(40, 40, 48, 0.9), rgba(10, 10, 12, 0.9));
+  color: var(--texte-doux);
+  font-family: var(--police-ui);
+  cursor: pointer;
+  transition: filter 0.12s, box-shadow 0.12s;
+}
+.choix:hover {
+  filter: brightness(1.3);
+  border-color: var(--or-bordure-sombre);
+}
+.choix__icone {
+  width: 52px;
+  height: 52px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--metal), inset 0 0 8px rgba(0, 0, 0, 0.8);
+}
+.choix__nom {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.15;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Le choix actif : bordure d'or qui s'illumine, comme dans WoW. */
+.choix--actif {
+  border-color: var(--or);
+  background: linear-gradient(180deg, rgba(90, 70, 20, 0.85), rgba(25, 18, 4, 0.9));
+  color: var(--or);
+  box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--or), 0 0 18px 5px rgba(255, 209, 0, 0.55);
+  animation: lueur-choix 1.8s ease-in-out infinite;
+}
+.choix--actif .choix__icone {
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--or), 0 0 12px rgba(255, 209, 0, 0.7);
+}
+@keyframes lueur-choix {
+  50% {
+    box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--or), 0 0 26px 8px rgba(255, 209, 0, 0.7);
+  }
+}
+/* Classe interdite pour la race choisie : grisee (l'infobulle explique pourquoi). */
+.choix--interdit {
+  filter: grayscale(1) brightness(0.45);
+  cursor: not-allowed;
+}
+.choix--interdit:hover {
+  filter: grayscale(1) brightness(0.6);
+}
+
+/* Image absente du dossier icones/ : une pastille avec des initiales. */
+.image-absente {
+  display: inline-grid;
+  place-items: center;
+  background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--couleur, #7d7667) 70%, #fff 10%), color-mix(in srgb, var(--couleur, #7d7667) 45%, #000));
+  color: #fff;
+  font-family: var(--police-ui);
+  font-size: 20px;
+  text-shadow: var(--ombre-texte);
+}
+
+/* --- Textes de description (parchemin) ----------------------------------------------- */
+.creation__description {
+  flex: 1 1 auto;
+  min-height: 90px;
+  overflow-y: auto;
+  padding: 12px 16px;
+  border-radius: 4px;
+  background: var(--texture-parchemin);
+  box-shadow: inset 0 0 0 1px var(--parchemin-sombre), inset 0 0 18px rgba(80, 50, 10, 0.4);
+  color: var(--encre);
+  font-family: var(--police-texte);
+  font-size: 15px;
+  line-height: 1.35;
+}
+.creation__description h3 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+.creation__description p {
+  margin: 0 0 6px;
+}
+.creation__classe-info {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+/* --- Centre : portrait ------------------------------------------------------------------ */
+.creation__centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  min-height: 0;
+}
+.creation__entete {
+  text-align: center;
+}
+.creation__table {
+  color: var(--texte-doux);
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.creation__resume {
+  font-size: 34px;
+}
+.creation__portrait {
+  position: relative;
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 620px;
+  min-height: 0;
+  max-height: 900px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--couleur-faction) 22%, #1a1a1f), #070708 75%);
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 0 7px var(--metal),
+    0 0 0 8px var(--metal-reflet),
+    0 0 0 11px var(--metal-sombre),
+    0 0 0 12px #000,
+    0 14px 40px rgba(0, 0, 0, 0.85);
+}
+.creation__portrait > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.creation__portrait-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 30px;
+  color: var(--texte-gris);
+  font-size: 15px;
+  text-align: center;
+}
+.creation__portrait-vide code {
+  color: var(--or-pale);
+}
+.creation__portrait-icone {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 3px var(--or-bordure), 0 0 30px rgba(0, 0, 0, 0.9);
+}
+.creation__portrait-icone.image-absente {
+  font-size: 64px;
+}
+.creation__fleche {
+  position: absolute;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  border: 0;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 40% 35%, #4a4a55, #111);
+  box-shadow: var(--bordure-or);
+  color: var(--or);
+  font-size: 34px;
+  line-height: 50px;
+  cursor: pointer;
+}
+.creation__fleche:hover {
+  filter: brightness(1.4);
+}
+.creation__fleche--gauche {
+  left: 18px;
+}
+.creation__fleche--droite {
+  right: 18px;
+}
+
+/* --- Caracteristiques ------------------------------------------------------------------ */
+.creation__methodes {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.onglet {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px 4px 0 0;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--texte-doux);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  cursor: pointer;
+}
+.onglet--actif {
+  border-color: var(--or-bordure);
+  color: var(--or);
+  box-shadow: inset 0 -3px 0 var(--or);
+}
+.creation__points {
+  color: var(--texte-vert);
+  font-size: 15px;
+  text-align: center;
+}
+.creation__points--depasse {
+  color: var(--texte-rouge);
+}
+.creation__bonus-choix {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  color: var(--or);
+  font-size: 14px;
+}
+.caracs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+.caracs th,
+.caracs td {
+  padding: 3px 6px;
+  text-align: center;
+}
+.caracs thead th {
+  color: var(--texte-gris);
+  font-size: 12px;
+  font-weight: normal;
+  text-transform: uppercase;
+}
+.caracs tbody tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.caracs tbody th {
+  color: var(--texte-doux);
+  font-weight: normal;
+  text-align: left;
+}
+.caracs__principale th {
+  color: var(--or) !important; /* caracteristique conseillee pour la classe */
+}
+.caracs__bonus {
+  color: var(--texte-vert);
+}
+.caracs__total {
+  color: #fff;
+  font-family: var(--police-chiffres);
+  font-size: 20px;
+  font-weight: bold;
+}
+.caracs__liste {
+  padding: 2px 6px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: #0d0d10;
+  color: #fff;
+  font-size: 15px;
+}
+.caracs__achat {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.caracs__achat b {
+  min-width: 22px;
+  color: #fff;
+}
+.caracs__achat button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #4a4a55, #1a1a20);
+  box-shadow: 0 0 0 1px #000, 0 0 0 2px var(--or-bordure-sombre);
+  color: var(--or);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.caracs__achat button:disabled {
+  filter: grayscale(1) brightness(0.5);
+  cursor: default;
+}
+.creation__derives {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: center;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 209, 0, 0.25);
+  color: var(--texte-doux);
+  font-size: 15px;
+}
+.creation__derives b {
+  color: var(--or);
+}
+
+/* --- Pied : nom et "Entrer dans le monde" ------------------------------------------------ */
+.creation__pied {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+}
+.creation__retour {
+  justify-self: start;
+  align-self: end;
+  font-size: 17px;
+}
+.creation__validation {
+  display: grid;
+  grid-template-columns: 340px auto;
+  gap: 6px 14px;
+  align-items: center;
+}
+.creation__nom {
+  height: 48px;
+  font-size: 20px;
+  text-align: center;
+}
+.creation__entrer {
+  padding: 12px 40px;
+  font-size: 22px;
+}
+.creation__erreur {
+  grid-column: 1 / -1;
+  min-height: 20px;
+  color: var(--texte-rouge);
+  font-size: 15px;
+  text-align: center;
+}
+.infobulle__ligne--rouge {
+  color: var(--texte-rouge);
+}
+
+/* --- Mode compact : ecrans de 1080 pixels de haut ----------------------------------------- */
+@container creation (height < 1300px) {
+  .creation__colonne {
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .creation__titre {
+    font-size: 19px;
+  }
+  .banniere {
+    height: 112px;
+  }
+  .banniere__embleme {
+    width: 52px;
+    height: 52px;
+  }
+  .choix {
+    padding: 5px 3px 4px;
+  }
+  .choix__icone {
+    width: 40px;
+    height: 40px;
+  }
+  .choix__nom {
+    font-size: 12px;
+  }
+  .caracs {
+    font-size: 15px;
+  }
+  .caracs th,
+  .caracs td {
+    padding: 1px 6px;
+  }
+  .caracs__total {
+    font-size: 17px;
+  }
+  .creation__resume {
+    font-size: 28px;
+  }
+}
+
+/* --- Choix du sexe (sous les races) ------------------------------------------------ */
+.creation__sexe {
+  display: flex;
+  gap: 8px;
+}
+.creation__sexe-bouton {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--texte-doux);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  cursor: pointer;
+}
+.creation__sexe-bouton:hover {
+  border-color: var(--or-bordure);
+}
+.creation__sexe-bouton--actif {
+  border-color: var(--or);
+  background: rgba(60, 50, 20, 0.6);
+  color: var(--or);
+  box-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
+}
