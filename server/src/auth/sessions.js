@@ -12,7 +12,7 @@ import { ROLES } from "../../../shared/protocole.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 
 const DUREE_JETON_MS = 12 * 60 * 60 * 1000; // une longue soiree de jeu
-const ESSAIS_MJ_MAX = 5;
+const ESSAIS_MAX = 5;
 const FENETRE_ESSAIS_MS = 15 * 60 * 1000;
 const MOTS_DE_PASSE_INTERDITS = new Set(["", "change-moi"]);
 
@@ -36,7 +36,7 @@ function motsDePasseIdentiques(propose, attendu) {
   return timingSafeEqual(empreinte(propose), empreinte(attendu));
 }
 
-export function creerGestionnaireSessions({ motDePasseMJ }) {
+export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "" }) {
   /** @type {Map<string, {role: string, pseudo: string, expireLe: number}>} */
   const jetons = new Map();
   /** @type {Map<string, {nombre: number, depuis: number}>} */
@@ -44,13 +44,16 @@ export function creerGestionnaireSessions({ motDePasseMJ }) {
 
   const motDePasseUtilisable = !MOTS_DE_PASSE_INTERDITS.has(motDePasseMJ) && motDePasseMJ.length >= 6;
 
-  // Anti "force brute" : 5 mauvais mots de passe MJ -> 15 minutes d'attente.
+  const codeTableRequis = codeTable.length > 0;
+
+  // Anti "force brute" : 5 mauvais mots de passe (MJ ou code de table) depuis
+  // la meme adresse -> 15 minutes d'attente.
   function verifierEssais(adresse) {
     const essais = echecsParAdresse.get(adresse);
     if (!essais) return;
     if (Date.now() - essais.depuis > FENETRE_ESSAIS_MS) {
       echecsParAdresse.delete(adresse);
-    } else if (essais.nombre >= ESSAIS_MJ_MAX) {
+    } else if (essais.nombre >= ESSAIS_MAX) {
       throw new ErreurAcces("Trop d'essais. Reessaie dans quelques minutes.", 429);
     }
   }
@@ -69,6 +72,7 @@ export function creerGestionnaireSessions({ motDePasseMJ }) {
 
   return {
     motDePasseUtilisable,
+    codeTableRequis,
 
     /** Echange des identifiants contre un jeton. Leve une ErreurAcces sinon. */
     connecter({ role, pseudo, motDePasse }, adresse) {
@@ -94,6 +98,14 @@ export function creerGestionnaireSessions({ motDePasseMJ }) {
         const propre = String(pseudo ?? "").trim();
         if (!MOTIF_PSEUDO.test(propre)) {
           throw new ErreurAcces("Pseudo invalide : 2 a 24 lettres, chiffres, espaces ou tirets.", 400);
+        }
+        if (codeTableRequis) {
+          verifierEssais(adresse);
+          if (!motsDePasseIdentiques(motDePasse ?? "", codeTable)) {
+            noterEchec(adresse);
+            throw new ErreurAcces("Code de la table incorrect.", 401);
+          }
+          echecsParAdresse.delete(adresse);
         }
         const profil = { role: ROLES.JOUEUR, pseudo: propre };
         return { jeton: emettreJeton(profil), profil };

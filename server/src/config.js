@@ -125,6 +125,14 @@ export function construireConfig(env = process.env) {
     nomDuPoste: brutDe(env.VTT_NOM_POSTE) || hostname(),
     port: Number(env.VTT_PORT ?? env.PORT ?? 3000),
     motDePasseMJ: brutDe(env.VTT_MOTDEPASSE_MJ) || "change-moi",
+    // Code a donner aux joueurs. Vide = un pseudo suffit (usage en local).
+    codeTable: brutDe(env.VTT_CODE_TABLE) || "",
+    // Adresse d'ecoute. "127.0.0.1" = seul le tunnel installe sur la meme
+    // machine peut joindre le serveur (recommande sur le NAS).
+    hote: brutDe(env.VTT_HOTE) || "0.0.0.0",
+    // Tunnel Cloudflare PERMANENT (nom de domaine) : jeton fourni par Cloudflare.
+    tunnelJeton: brutDe(env.VTT_TUNNEL_JETON) || "",
+    adressePublique: brutDe(env.VTT_ADRESSE_PUBLIQUE) || "",
     racineAssets,
     cloud: racineAssets ? detecterCloud(racineAssets) : null,
     dossiers,

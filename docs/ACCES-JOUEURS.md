@@ -55,6 +55,10 @@ Tailscale cree un reseau prive entre machines, mais **chaque joueur devrait
 installer Tailscale**, ce qui contredit le cahier des charges. Seule exception :
 `tailscale funnel 3000`, qui publie une adresse accessible sans installation.
 
+## 2 bis. Adresse fixe, table toujours allumee
+Voir [NAS-SYNOLOGY.md](NAS-SYNOLOGY.md) : la table tourne sur le NAS, avec ton
+nom de domaine et un code de table pour les joueurs.
+
 ## 3. Ouverture de port sur la box
 Possible, mais deconseille : ton PC devient joignable en permanence depuis tout
 Internet, et l'adresse change a chaque redemarrage de la box.

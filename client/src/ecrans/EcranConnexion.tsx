@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { jeu, useJeu } from "@/core/jeu";
 
 /**
@@ -14,6 +14,15 @@ export function EcranConnexion() {
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const avis = useJeu((e) => e.avis); // ex. "Le Maitre du Jeu t'a expulse de la table."
+  // Le serveur exige-t-il un code de table pour les joueurs ?
+  const [codeRequis, setCodeRequis] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/session")
+      .then((r) => r.json())
+      .then((infos) => setCodeRequis(Boolean(infos?.codeTableRequis)))
+      .catch(() => {});
+  }, []);
 
   const entrer = async (e: FormEvent) => {
     e.preventDefault();
@@ -30,10 +39,18 @@ export function EcranConnexion() {
         <h1 className="titre-or accueil__titre">Donjons &amp; Dragons</h1>
         <p className="accueil__sous-titre">Table virtuelle</p>
         {role === "joueur" ? (
-          <label>
-            Pseudo
-            <input className="champ" value={pseudo} onChange={(e) => setPseudo(e.target.value)} maxLength={24} autoFocus />
-          </label>
+          <>
+            <label>
+              Pseudo
+              <input className="champ" value={pseudo} onChange={(e) => setPseudo(e.target.value)} maxLength={24} autoFocus />
+            </label>
+            {codeRequis && (
+              <label>
+                Code de la table
+                <input className="champ" type="password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} />
+              </label>
+            )}
+          </>
         ) : (
           <label>
             Mot de passe du Maitre du Jeu
