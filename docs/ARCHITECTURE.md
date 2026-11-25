@@ -40,7 +40,7 @@ JDR-World-of-Warcraft/
 │   │   ├── verrou.js         Empeche deux PC d'ouvrir la partie en meme temps
 │   │   ├── fichiers.js       Lecture/ecriture sures des JSON (atomique, BOM Windows, commentaires //)
 │   │   ├── medias.js         Images du dossier cloud + carre gris de remplacement
-│   │   ├── auth/             Mot de passe MJ, pseudos, jetons d'acces, anti force brute
+│   │   ├── auth/             Mot de passe MJ, comptes joueurs (comptes.js : empreintes scrypt), jetons d'acces, anti force brute
 │   │   ├── donnees/
 │   │   │   ├── depot.js      Memoire du jeu + sauvegarde (fiches, tables, combats) ; met de cote les fichiers abimes
 │   │   │   ├── sauvegardes.js Copies de secours datees (demarrage + chaque heure), menage, restauration

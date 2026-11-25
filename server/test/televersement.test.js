@@ -43,10 +43,10 @@ test("format reconnu sur les premiers octets ; nom de fichier nettoye", () => {
 
 test("un joueur (ou personne) ne peut pas televerser ; le MJ oui, sans jamais ecraser", async () => {
   assert.equal((await envoyer(null, PNG)).status, 401);
-  const joueur = sessions.connecter({ role: "joueur", pseudo: "Thrall" }).jeton;
+  const joueur = (await sessions.connecter({ role: "joueur", pseudo: "Thrall" })).jeton;
   assert.equal((await envoyer(joueur, PNG)).status, 401);
 
-  const mj = sessions.connecter({ role: "mj", motDePasse: "secret-de-test" }).jeton;
+  const mj = (await sessions.connecter({ role: "mj", motDePasse: "secret-de-test" })).jeton;
   assert.equal((await (await envoyer(mj, PNG)).json()).fichier, "foret-d-elwynn.png");
   assert.equal((await (await envoyer(mj, PNG)).json()).fichier, "foret-d-elwynn-2.png");
   const deguise = await envoyer(mj, Buffer.from("<html>pas une image</html>"), "piege.png");

@@ -552,3 +552,26 @@ Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu pré
 **Reporté, en connaissance de cause** : les migrations de format pour la carte, les quêtes et les carnets (prévues dans l'audit). Elles ne servent qu'au jour où l'un de ces formats change ; d'ici là, la mise de côté et les copies empêchent toute perte. À ajouter avec le premier changement de format concerné (règle déjà écrite dans `CLAUDE.md`).
 
 **Limite** : ces copies sont sur le même disque que la partie. La copie hors du NAS (Hyper Backup vers Google Drive) viendra au lot 5.
+
+---
+
+# Suivi — lot 2 livré (25 novembre 2026)
+
+**Lot 1** validé par l'utilisateur, publié sur `main`.
+
+**Lot 2 — comptes joueurs et réglage des PV**, sur `claude/bold-mendel-k31nk5`, en attente de validation :
+
+- **Mot de passe personnel** : choisi à la première connexion (6 caractères min.), exigé ensuite. Enregistré sous forme d'empreinte (scrypt), jamais en clair, dans `parties/comptes.json`, copié avec les sauvegardes. Corrige C2 (usurpation de pseudo).
+- **Pseudos du MJ réservés** (« MJ », « Maître du Jeu »…) : corrige M2.
+- **Anti force brute** étendu aux mots de passe joueurs (5 essais par adresse, 15 min) ; 50 comptes au plus (M6, en partie).
+- **Mot de passe oublié** : bouton dans le menu MJ d'un personnage joueur (clic droit), avec confirmation.
+- **Réglage de table « PV par les joueurs »** (bouton cœur de la barre du MJ), éteint par défaut. Éteint : seul le MJ modifie à la main PV, ressources et états ; allumé : chaque joueur a un bloc « Mes PV » dans sa fiche. Les effets calculés par le serveur (sorts, attaques, repos) ne sont pas concernés. Corrige I8 pour les PV.
+- Le « code de table » (`VTT_CODE_TABLE`) de l'ancienne branche NAS reste possible, en champ séparé.
+- Vérifié : 182 tests, compilation, essai réel dans le navigateur (création du mot de passe, usurpation refusée, pseudo réservé refusé, interrupteur du MJ qui fait apparaître/disparaître le bloc PV en direct chez le joueur, dégâts appliqués, réinitialisation depuis le menu MJ).
+
+**Constat en passant** : avant ce lot, l'interface ne donnait aucun bouton de PV aux joueurs, mais le serveur acceptait leurs demandes. C'était une porte de triche invisible ; elle est fermée par défaut.
+
+**Limites assumées** :
+- N'importe qui ayant le lien peut encore créer un **nouveau** pseudo. Le filtre par e-mail (lot 6) fermera cette porte.
+- Après une réinitialisation, le premier qui se connecte avec ce pseudo choisit le mot de passe : le MJ doit prévenir le joueur rapidement.
+- Les personnages existants n'ont pas de compte : le premier qui se connecte avec leur pseudo le revendique. Sans conséquence ici (personnages d'essai).

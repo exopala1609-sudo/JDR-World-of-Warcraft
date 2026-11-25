@@ -2,7 +2,7 @@
 import { EVENEMENTS } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { schemaId } from "../modeles/identifiants.js";
-import { fabriquerTable, SchemaCreationTable } from "../modeles/table.js";
+import { fabriquerTable, SchemaCreationTable, SchemaReglagesTable } from "../modeles/table.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { salleTable } from "./index.js";
@@ -29,6 +29,16 @@ export function brancher(socket, ctx) {
     const table = depot.enregistrerTable({ ...depot.obtenirTable(idTable), nom });
     io.to(salleTable(idTable)).emit(EVENEMENTS.TABLE_MAJ, { table });
     io.emit(EVENEMENTS.TABLES_LISTE, { tables: depot.listerTables() });
+    return { table };
+  });
+
+  // Reglages de la table ou l'on joue (ex. : les joueurs modifient-ils leurs PV ?).
+  ctx.guichet(socket, EVENEMENTS.TABLE_REGLER, SchemaReglagesTable.partial(), (changements) => {
+    ctx.exigerMJ(socket, "regler la table");
+    const idTable = ctx.exigerTable(socket);
+    const actuelle = depot.obtenirTable(idTable);
+    const table = depot.enregistrerTable({ ...actuelle, reglages: { ...actuelle.reglages, ...changements } });
+    io.to(salleTable(idTable)).emit(EVENEMENTS.TABLE_MAJ, { table });
     return { table };
   });
 

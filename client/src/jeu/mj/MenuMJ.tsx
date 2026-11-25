@@ -26,6 +26,7 @@ export function MenuMJ() {
   const [montant, setMontant] = useState(5);
   const [etat, setEtat] = useState("");
   const [confirmer, setConfirmer] = useState(false);
+  const [reinitialiser, setReinitialiser] = useState(false); // mot de passe oublie : deux clics
   const refMenu = useRef<HTMLDivElement>(null);
   const fermer = () => jeu.modifier({ menu: null });
 
@@ -293,6 +294,20 @@ export function MenuMJ() {
                 Readmettre {p.proprietaire}
               </button>
             )}
+            <button
+              type="button"
+              className={`menu-mj__action${reinitialiser ? " menu-mj__action--confirmer" : ""}`}
+              title="Mot de passe oublie : le joueur en choisira un nouveau a sa prochaine connexion."
+              onClick={async () => {
+                if (!reinitialiser) return setReinitialiser(true);
+                setReinitialiser(false);
+                if ((await jeu.demander(EVENEMENTS.JOUEUR_REINITIALISER_MOT_DE_PASSE, { pseudo: p.proprietaire! })).ok) {
+                  jeu.journaliser(`Mot de passe de ${p.proprietaire} reinitialise : il en choisira un nouveau a sa prochaine connexion. Previens-le vite.`);
+                }
+              }}
+            >
+              {reinitialiser ? `Confirmer : nouveau mot de passe pour ${p.proprietaire} ?` : "Mot de passe oublie"}
+            </button>
           </>
         )}
       </section>

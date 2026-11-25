@@ -63,13 +63,43 @@ nom de domaine et un code de table pour les joueurs.
 Possible, mais deconseille : ton PC devient joignable en permanence depuis tout
 Internet, et l'adresse change a chaque redemarrage de la box.
 
+## Mots de passe des joueurs
+
+- **Premiere connexion** : le joueur tape son pseudo et **choisit** un mot de
+  passe (6 caracteres minimum). Il est enregistre aussitot.
+- **Ensuite** : ce pseudo n'entre plus qu'avec ce mot de passe.
+- **Mot de passe oublie** : clic droit sur son personnage (ou son cadre) >
+  **Mot de passe oublie**, puis confirme. A sa prochaine connexion, le joueur
+  en choisit un nouveau. Previens-le vite : d'ici la, n'importe qui pourrait
+  choisir ce mot de passe a sa place.
+- Les mots de passe ne sont **jamais** enregistres en clair : le fichier
+  `parties/comptes.json` ne contient que leurs « empreintes », qui permettent
+  de reconnaitre un mot de passe sans pouvoir le retrouver. Il est copie avec
+  les sauvegardes (`docs/SAUVEGARDES.md`).
+- Si `VTT_CODE_TABLE` est defini dans `.env`, un champ « Code de la table »
+  s'ajoute : c'est un code commun, en plus du mot de passe personnel.
+
+## Qui modifie les points de vie ?
+
+Par defaut, **seul le MJ** modifie a la main les PV, ressources et etats (clic
+droit sur un personnage). Les degats et soins calcules par le jeu (sorts,
+attaques, repos) s'appliquent toujours normalement.
+
+Le bouton **coeur** de la barre d'outils du MJ change ce reglage pour la table
+en cours : allume, chaque joueur voit un bloc **Mes PV** dans sa fiche (touche
+C) pour noter lui-meme ses degats et soins. Il ne peut jamais toucher au
+personnage d'un autre.
+
 ## Securite quand le serveur est expose
 - **Mot de passe MJ obligatoire** : tant que `VTT_MOTDEPASSE_MJ` vaut
   `change-moi` (ou fait moins de 6 caracteres), l'acces MJ est desactive.
-- **Anti force brute** : 5 mauvais mots de passe MJ bloquent l'adresse 15 minutes.
-- **Les joueurs n'ont qu'un pseudo.** Quelqu'un qui connait le lien ET le pseudo
-  d'un joueur peut prendre sa place. Ne partage le lien que sur votre Discord,
-  et coupe le tunnel (Ctrl + C) a la fin de la seance : l'adresse meurt avec lui.
+- **Anti force brute** : 5 mauvais mots de passe (MJ ou joueur) depuis la meme
+  adresse la bloquent 15 minutes.
+- **Chaque joueur a son mot de passe** (voir plus bas) : personne ne peut prendre
+  le pseudo d'un autre pour jouer son personnage ou lire ses notes. En revanche,
+  quiconque connait le lien peut se creer un NOUVEAU pseudo : ne partage le lien
+  que sur votre Discord (l'acces filtre par e-mail du NAS fermera cette porte).
+- Les pseudos du MJ (« MJ », « Maitre du Jeu »...) sont reserves.
 - Les fiches de PNJ, les lancers secrets du MJ, le compendium et les sauvegardes
   ne sont jamais envoyes aux navigateurs des joueurs.
 - Les pions de monstres caches (ou tapis dans le brouillard) ne sont jamais

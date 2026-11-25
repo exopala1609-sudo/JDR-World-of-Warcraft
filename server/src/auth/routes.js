@@ -1,5 +1,5 @@
 // Les adresses HTTP liees a l'acces. Une seule pour ce sprint :
-//   POST /api/connexion   { role, pseudo, motDePasse }  ->  { jeton, profil }
+//   POST /api/connexion   { role, pseudo, motDePasse, codeTable? }  ->  { jeton, profil, compteCree }
 // Tout le reste du jeu passe ensuite par le canal temps reel.
 import express from "express";
 import { ROLES } from "../../../shared/protocole.js";
@@ -8,10 +8,10 @@ import { ErreurAcces } from "./sessions.js";
 export function routesAcces(sessions) {
   const routeur = express.Router();
 
-  routeur.post("/api/connexion", express.json({ limit: "4kb" }), (requete, reponse) => {
+  routeur.post("/api/connexion", express.json({ limit: "4kb" }), async (requete, reponse) => {
     try {
-      const resultat = sessions.connecter(requete.body ?? {}, requete.ip);
-      console.log(`[acces] ${resultat.profil.pseudo} connecte (${resultat.profil.role}).`);
+      const resultat = await sessions.connecter(requete.body ?? {}, requete.ip);
+      console.log(`[acces] ${resultat.profil.pseudo} connecte (${resultat.profil.role})${resultat.compteCree ? " : nouveau compte" : ""}.`);
       reponse.json(resultat);
     } catch (erreur) {
       if (erreur instanceof ErreurAcces) {

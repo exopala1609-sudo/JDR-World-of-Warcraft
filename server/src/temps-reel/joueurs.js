@@ -35,6 +35,15 @@ export function brancher(socket, ctx) {
     return {};
   });
 
+  // Mot de passe oublie : le compte est oublie, le joueur en choisira un
+  // nouveau a sa prochaine connexion (dis-lui de se reconnecter vite).
+  ctx.guichet(socket, EVENEMENTS.JOUEUR_REINITIALISER_MOT_DE_PASSE, Cibler, ({ pseudo }) => {
+    ctx.exigerMJ(socket, "reinitialiser un mot de passe");
+    if (!ctx.sessions.reinitialiserMotDePasse(pseudo)) throw new ErreurRegle(`${pseudo} n'a pas encore de mot de passe.`);
+    console.log(`[acces] Mot de passe de ${pseudo} reinitialise par le MJ.`);
+    return {};
+  });
+
   ctx.guichet(socket, EVENEMENTS.JOUEUR_READMETTRE, Cibler, ({ pseudo }) => {
     ctx.exigerMJ(socket, "readmettre un joueur");
     ctx.expulses(ctx.exigerTable(socket)).delete(normaliserPseudo(pseudo));

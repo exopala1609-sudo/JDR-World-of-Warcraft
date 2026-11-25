@@ -290,6 +290,7 @@
 }
 .repos-court__titre {
   flex: 1;
+  white-space: nowrap;
   color: #5a1d0a; /* a l'encre, comme les titres du parchemin */
 }
 .repos-court__nombre {
@@ -305,4 +306,9 @@
 }
 .repos-court__bouton {
   padding: 4px 12px;
+}
+.pv-joueur__montant {
+  width: 64px;
+  padding: 2px 6px;
+  text-align: center;
 }

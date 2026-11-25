@@ -22,6 +22,8 @@ export const INTERVALLE_COPIES_MS = 60 * 60 * 1000; // une heure
 // Une table : t-xxxxxxxxxx. Seuls ces dossiers sont copies et restaures : rien
 // d'autre (verrou, fichiers poses a la main) n'est jamais touche.
 const MOTIF_TABLE = /^t-[0-9a-f]{10}$/;
+// Les fichiers communs a toutes les tables, copies et restaures avec elles.
+export const FICHIERS_COMMUNS = ["comptes.json"];
 // Une copie : 2026-11-25_20h05m33_raison. Seuls ces dossiers sont supprimes
 // par le menage : un dossier range a la main dans sauvegardes/ est respecte.
 const MOTIF_COPIE = /^(\d{4})-(\d{2})-(\d{2})_(\d{2})h(\d{2})m(\d{2})_([a-z0-9-]+)$/;
@@ -81,6 +83,9 @@ export function creerCopie(dossierParties, dossierSauvegardes, raison, { mainten
   for (const table of tables) {
     cpSync(join(dossierParties, table), join(destination, table), { recursive: true, filter: aCopier });
   }
+  for (const fichier of FICHIERS_COMMUNS) {
+    if (existsSync(join(dossierParties, fichier))) cpSync(join(dossierParties, fichier), join(destination, fichier));
+  }
 
   for (const ancienne of listerCopies(dossierSauvegardes).slice(garder)) rmSync(ancienne.chemin, { recursive: true, force: true });
   return nom;
@@ -98,6 +103,11 @@ export function restaurerCopie(dossierParties, cheminCopie) {
   for (const table of tablesDe(dossierParties)) rmSync(join(dossierParties, table), { recursive: true, force: true });
   mkdirSync(dossierParties, { recursive: true });
   for (const table of tables) cpSync(join(cheminCopie, table), join(dossierParties, table), { recursive: true });
+  // Les comptes reviennent aussi a l'etat de la copie (une copie d'avant le
+  // lot 2 n'en a pas : on garde alors les comptes actuels).
+  for (const fichier of FICHIERS_COMMUNS) {
+    if (existsSync(join(cheminCopie, fichier))) cpSync(join(cheminCopie, fichier), join(dossierParties, fichier));
+  }
   return tables.length;
 }
 

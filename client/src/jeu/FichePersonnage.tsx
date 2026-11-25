@@ -160,10 +160,43 @@ function ReposCourt({ p }: { p: Personnage }) {
   );
 }
 
+/**
+ * Le joueur modifie lui-meme les PV de SON personnage (degats recus, soins),
+ * seulement si le MJ l'a permis pour cette table (bouton coeur de sa barre).
+ * Le serveur verifie de toute facon le reglage et le proprietaire.
+ */
+function PointsDeVieJoueur({ p }: { p: Personnage }) {
+  const [montant, setMontant] = useState(1);
+  const appliquer = (type: "degats" | "soins") =>
+    montant > 0 && jeu.demander(EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: p.id, type, montant });
+  return (
+    <div className="repos-court">
+      <span className="repos-court__titre">Mes PV</span>
+      <input
+        className="champ pv-joueur__montant"
+        type="number"
+        min={1}
+        max={999}
+        value={montant}
+        aria-label="Nombre de points de vie"
+        onChange={(e) => setMontant(Math.max(0, Math.min(999, Math.floor(Number(e.target.value) || 0))))}
+      />
+      <button type="button" className="bouton bouton--danger repos-court__bouton" onClick={() => appliquer("degats")}>
+        Degats
+      </button>
+      <button type="button" className="bouton repos-court__bouton" onClick={() => appliquer("soins")}>
+        Soins
+      </button>
+    </div>
+  );
+}
+
 export function FichePersonnage({ position }: { position: { x: number; y: number } }) {
   const p = useJeu((e) => jeu.personnageActif(e));
   // On equipe son propre personnage (le MJ : n'importe lequel). Les autres, on les "inspecte".
   const modifiable = useJeu((e) => Boolean(p && (e.profil?.role === "mj" || jeu.mesPersonnages(e).some((m) => m.id === p.id))));
+  // Un joueur, sur son personnage, a une table ou le MJ lui laisse ses PV (le MJ a deja son menu, clic droit).
+  const pvParLeJoueur = useJeu((e) => modifiable && e.profil?.role !== "mj" && Boolean(e.table?.reglages?.joueursModifientPv));
   const fermer = () => jeu.modifier((e) => ({ fenetres: { ...e.fenetres, personnage: false } }));
 
   if (!p) {
@@ -229,6 +262,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
             <Stat nom="Points de vie" valeur={`${pv.actuels} / ${pv.max}`} />
             {pv.temporaires > 0 && <Stat nom="PV temporaires" valeur={pv.temporaires} variation={1} />}
             <Stat nom="Des de vie" valeur={`${p.desDeVie.restants} / ${p.niveau} (d${p.desDeVie.faces})`} />
+            {pvParLeJoueur && <PointsDeVieJoueur p={p} />}
             {modifiable && <ReposCourt p={p} />}
           </details>
           <details open>

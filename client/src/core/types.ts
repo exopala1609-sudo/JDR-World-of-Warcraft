@@ -1,7 +1,13 @@
 // Formes des donnees recues du serveur (voir server/src/modeles).
 export type Role = "mj" | "joueur";
 export type Profil = { role: Role; pseudo: string };
-export type Table = { id: string; nom: string };
+export type Table = {
+  id: string;
+  nom: string;
+  // Reglages choisis par le MJ. joueursModifientPv : chaque joueur peut modifier
+  // lui-meme les PV de son personnage (sinon, seul le MJ).
+  reglages?: { joueursModifientPv: boolean };
+};
 
 export type Ressource = {
   cle: string;

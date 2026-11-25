@@ -48,7 +48,7 @@ function attendre(socket, evenement, delai = 400, filtre = () => true) {
 }
 
 async function connecter(sessions, identite) {
-  const { jeton } = sessions.connecter(identite, "127.0.0.1");
+  const { jeton } = await sessions.connecter(identite, "127.0.0.1");
   const socket = connecterSocket(adresse, { auth: { jeton }, transports: ["websocket"] });
   await new Promise((ok) => socket.on("connect", ok));
   return socket;
@@ -206,9 +206,38 @@ test("degats critiques sur un heros : toute la table voit les gros chiffres jaun
 });
 
 test("soins : le montant reellement rendu, en vert", async () => {
+  // Par defaut, seul le MJ modifie les PV a la main : le MJ l'autorise aux joueurs.
+  await demander(mj, EVENEMENTS.TABLE_REGLER, { joueursModifientPv: true });
   const chezThrall = attendre(thrall, EVENEMENTS.COMBAT_TEXTE, 400, (m) => m.genre === "soins");
   await demander(thrall, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Garrosh.id, type: "soins", montant: 50 });
   assert.deepEqual(await chezThrall, { idPersonnage: perso.Garrosh.id, genre: "soins", montant: 7, critique: false, absorbe: 0 });
+  await demander(mj, EVENEMENTS.TABLE_REGLER, { joueursModifientPv: false });
+});
+
+test("reglage de table : par defaut, un joueur ne modifie pas lui-meme ses PV, ressources ou etats", async () => {
+  for (const [evenement, demande] of [
+    [EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Garrosh.id, type: "soins", montant: 5 }],
+    [EVENEMENTS.ETAT_POSER, { idPersonnage: perso.Garrosh.id, cle: "invisible" }],
+  ]) {
+    const r = await demander(thrall, evenement, demande);
+    assert.equal(r.ok, false);
+    assert.match(r.erreur, /c'est le MJ qui modifie/);
+  }
+  // Seul le MJ regle la table ; tout le monde recoit le nouveau reglage.
+  assert.equal((await demander(thrall, EVENEMENTS.TABLE_REGLER, { joueursModifientPv: true })).ok, false);
+  const chezJaina = attendre(jaina, EVENEMENTS.TABLE_MAJ);
+  await demander(mj, EVENEMENTS.TABLE_REGLER, { joueursModifientPv: true });
+  assert.equal((await chezJaina).table.reglages.joueursModifientPv, true);
+  assert.equal((await demander(thrall, EVENEMENTS.ETAT_POSER, { idPersonnage: perso.Garrosh.id, cle: "invisible" })).ok, true);
+  // ... mais jamais sur le personnage d'un autre.
+  assert.equal((await demander(thrall, EVENEMENTS.PERSONNAGE_MODIFIER_PV, { idPersonnage: perso.Antonidas.id, type: "degats", montant: 1 })).ok, false);
+  await demander(mj, EVENEMENTS.TABLE_REGLER, { joueursModifientPv: false });
+});
+
+test("mot de passe oublie : seul le MJ peut le reinitialiser", async () => {
+  assert.equal((await demander(thrall, EVENEMENTS.JOUEUR_REINITIALISER_MOT_DE_PASSE, { pseudo: "Jaina" })).ok, false);
+  // Les tests tournent sans registre de comptes : rien a reinitialiser.
+  assert.match((await demander(mj, EVENEMENTS.JOUEUR_REINITIALISER_MOT_DE_PASSE, { pseudo: "Jaina" })).erreur, /pas encore de mot de passe/);
 });
 
 test("un monstre dans le brouillard : seul le MJ voit ses chiffres ; une fois revele, tout le monde", async () => {

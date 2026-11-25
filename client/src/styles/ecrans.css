@@ -49,6 +49,12 @@
   color: var(--or);
   text-decoration: underline;
 }
+.accueil__aide {
+  margin: -4px 0 0;
+  color: var(--texte-doux);
+  font-size: 13px;
+  line-height: 1.35;
+}
 .accueil__erreur {
   min-height: 20px;
   color: var(--texte-rouge);

@@ -371,16 +371,17 @@ class Jeu {
     });
   }
 
-  async connecter(role: string, pseudo: string, motDePasse: string): Promise<string | null> {
+  async connecter(role: string, pseudo: string, motDePasse: string, codeTable = ""): Promise<string | null> {
     try {
       const reponse = await fetch("/api/connexion", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role, pseudo, motDePasse }),
+        body: JSON.stringify({ role, pseudo, motDePasse, ...(codeTable && { codeTable }) }),
       });
       const donnees = await reponse.json();
       if (!reponse.ok) return donnees.erreur ?? "Connexion refusee.";
       this.demarrer(donnees.jeton, donnees.profil);
+      if (donnees.compteCree) this.journaliser("Bienvenue ! Ton mot de passe est enregistre : il te sera demande a chaque connexion.");
       return null;
     } catch {
       return "Serveur injoignable.";

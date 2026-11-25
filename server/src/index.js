@@ -3,9 +3,10 @@
 // dans cet ordre : configuration -> donnees -> acces -> pages -> temps reel.
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import express from "express";
 import { exigerMJ, routesAcces } from "./auth/routes.js";
+import { creerRegistreComptes } from "./auth/comptes.js";
 import { creerGestionnaireSessions } from "./auth/sessions.js";
 import { anciennesPartiesLocales, chargerConfig, RACINE } from "./config.js";
 import { afficherDiagnostic, afficherDiagnosticIcones, creerSousDossiersManquants, diagnostiquerDossiers, installerLisezMoi } from "./diagnostic.js";
@@ -86,7 +87,18 @@ const referentiel = creerReferentiel(config.dossiers.referentiel);
 const rapportReferentiel = referentiel.charger();
 
 // --- 3. Acces -----------------------------------------------------------------
-const sessions = creerGestionnaireSessions(config);
+// Les mots de passe des joueurs (leurs empreintes, jamais les mots de passe eux-memes).
+let comptes;
+try {
+  comptes = creerRegistreComptes(join(config.dossiers.parties, "comptes.json"));
+} catch (erreur) {
+  console.error(`\n  !! Le fichier des comptes joueurs est abime : ${join(config.dossiers.parties, "comptes.json")}`);
+  console.error(`     (${erreur.message})`);
+  console.error("     Restaure une copie (npm run restaurer, voir docs/SAUVEGARDES.md), ou supprime ce");
+  console.error("     fichier : chaque joueur choisira alors un nouveau mot de passe.\n");
+  process.exit(1);
+}
+const sessions = creerGestionnaireSessions({ ...config, comptes });
 
 // --- 4. Serveur web -------------------------------------------------------------
 const app = express();

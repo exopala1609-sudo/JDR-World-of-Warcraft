@@ -30,6 +30,19 @@ function reposLongTable() {
   jeu.demander(EVENEMENTS.REPOS_LONG, {});
 }
 
+// Reglage de la table : les joueurs peuvent-ils modifier eux-memes les PV de leur personnage ?
+async function basculerPvJoueurs() {
+  const permis = !jeu.lire().table?.reglages?.joueursModifientPv;
+  const r = await jeu.demander(EVENEMENTS.TABLE_REGLER, { joueursModifientPv: permis });
+  if (r.ok) {
+    jeu.journaliser(
+      permis
+        ? "Les joueurs peuvent maintenant modifier eux-memes les PV de leur personnage (fiche, touche C)."
+        : "Seul le MJ modifie maintenant les PV, ressources et etats a la main.",
+    );
+  }
+}
+
 async function recharger() {
   const r = await jeu.demander(EVENEMENTS.REFERENTIEL_RECHARGER);
   await jeu.demander(EVENEMENTS.COMPENDIUM_RECHARGER);
@@ -46,5 +59,12 @@ export const OUTILS_MJ: OutilMJ[] = [
   { symbole: "!", icone: "outil-quetes", nom: "Journal de quetes", aide: "Donner une quete au groupe (aussi : touche L).", action: () => basculer("quetes"), actif: (e) => e.fenetres.quetes },
   { symbole: "☾", icone: "outil-repos", nom: "Repos long (table)", aide: "Repos long pour toute la table. Deux appuis pour confirmer.", action: reposLongTable },
   { symbole: "✎", icone: "outil-carnet", nom: "Carnet du MJ", aide: "Tes notes privees (aussi : touche N).", action: () => basculer("carnet"), actif: (e) => e.fenetres.carnet },
+  {
+    symbole: "♥",
+    nom: "PV par les joueurs",
+    aide: "Allume : chaque joueur peut modifier lui-meme les PV de son personnage. Eteint : seul le MJ.",
+    action: basculerPvJoueurs,
+    actif: (e) => Boolean(e.table?.reglages?.joueursModifientPv),
+  },
   { symbole: "↻", icone: "outil-recharger", nom: "Recharger", aide: "Relire les fichiers du compendium et du referentiel apres modification.", action: recharger },
 ];

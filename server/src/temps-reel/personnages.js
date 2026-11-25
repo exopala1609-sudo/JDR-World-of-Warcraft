@@ -46,6 +46,19 @@ export function brancher(socket, ctx) {
   const { depot, io } = ctx;
   const pseudo = socket.data.profil.pseudo;
 
+  /**
+   * PV, ressources et etats modifies "a la main" : le MJ toujours ; un joueur
+   * (sur SON personnage) seulement si le MJ l'a permis pour cette table.
+   * Ce que le serveur calcule lui-meme (sorts, attaques, repos) n'est pas concerne.
+   */
+  function exigerModificationManuelle(idPersonnage) {
+    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    if (!ctx.estMJ(socket) && !depot.obtenirTable(personnage.idTable)?.reglages?.joueursModifientPv) {
+      throw new ErreurRegle("A cette table, c'est le MJ qui modifie les PV, ressources et etats.");
+    }
+    return personnage;
+  }
+
   // --- Creation / suppression --------------------------------------------------
 
   // "Entrer dans le monde" : le joueur envoie ses CHOIX depuis l'ecran de
@@ -124,7 +137,7 @@ export function brancher(socket, ctx) {
   // --- Points de vie -------------------------------------------------------------
 
   ctx.guichet(socket, EVENEMENTS.PERSONNAGE_MODIFIER_PV, Demandes.modifierPv, ({ idPersonnage, type, montant, critique, sansTexte }) => {
-    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    const personnage = exigerModificationManuelle(idPersonnage);
     const { pointsDeVie, detail } = appliquerPointsDeVie(personnage.pointsDeVie, type, montant);
     const coupCritique = critique && type === TYPES_PV.DEGATS; // un soin n'est jamais "critique"
     const publie = ctx.publierPersonnage(
@@ -139,7 +152,7 @@ export function brancher(socket, ctx) {
   // --- Ressources ----------------------------------------------------------------
 
   ctx.guichet(socket, EVENEMENTS.RESSOURCE_MODIFIER, Demandes.modifierRessource, ({ idPersonnage, cle, variation }) => {
-    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    const personnage = exigerModificationManuelle(idPersonnage);
     const ressource = personnage.ressources.find((r) => r.cle === cle);
     if (!ressource) throw new ErreurRegle("Ressource inconnue sur ce personnage.");
 
@@ -196,7 +209,7 @@ export function brancher(socket, ctx) {
   // --- Etats (auras / debuffs) ------------------------------------------------------
 
   ctx.guichet(socket, EVENEMENTS.ETAT_POSER, Demandes.poserEtat, ({ idPersonnage, cle, rounds }) => {
-    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    const personnage = exigerModificationManuelle(idPersonnage);
     const definition = ctx.compendium.obtenirDefinitionEtat(cle);
     if (!definition) throw new ErreurRegle("Etat inconnu (ni officiel, ni dans le compendium).");
 
@@ -213,7 +226,7 @@ export function brancher(socket, ctx) {
   });
 
   ctx.guichet(socket, EVENEMENTS.ETAT_RETIRER, Demandes.retirerEtat, ({ idPersonnage, idEtat }) => {
-    const personnage = ctx.exigerPersonnageModifiable(socket, idPersonnage);
+    const personnage = exigerModificationManuelle(idPersonnage);
     const resultat = retirerEtat(personnage, idEtat);
     return {
       personnage: ctx.publierPersonnage(resultat.personnage, {

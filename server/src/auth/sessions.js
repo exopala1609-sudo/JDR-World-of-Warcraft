@@ -36,7 +36,15 @@ function motsDePasseIdentiques(propose, attendu) {
   return timingSafeEqual(empreinte(propose), empreinte(attendu));
 }
 
-export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "" }) {
+// Pseudos qu'un joueur ne peut pas prendre : on ne doit pas pouvoir se faire
+// passer pour le MJ dans la discussion ou la liste des presents.
+const PSEUDOS_RESERVES = new Set(["mj", "gm", "maitre du jeu", "maître du jeu", "maitre-du-jeu", "admin", "administrateur"]);
+
+/**
+ * "comptes" : le registre des mots de passe des joueurs (auth/comptes.js).
+ * Sans registre (certains tests), un pseudo suffit, comme avant le lot 2.
+ */
+export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "", comptes = null }) {
   /** @type {Map<string, {role: string, pseudo: string, expireLe: number}>} */
   const jetons = new Map();
   /** @type {Map<string, {nombre: number, depuis: number}>} */
@@ -74,8 +82,12 @@ export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "" }) {
     motDePasseUtilisable,
     codeTableRequis,
 
-    /** Echange des identifiants contre un jeton. Leve une ErreurAcces sinon. */
-    connecter({ role, pseudo, motDePasse }, adresse) {
+    /**
+     * Echange des identifiants contre un jeton. Leve une ErreurAcces sinon.
+     * Pour un joueur : "motDePasse" est SON mot de passe, "codeTable" le code
+     * commun eventuel (VTT_CODE_TABLE). "compteCree" : c'etait sa premiere fois.
+     */
+    async connecter({ role, pseudo, motDePasse, codeTable: codePropose }, adresse) {
       if (role === ROLES.MJ) {
         if (!motDePasseUtilisable) {
           throw new ErreurAcces(
@@ -99,19 +111,43 @@ export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "" }) {
         if (!MOTIF_PSEUDO.test(propre)) {
           throw new ErreurAcces("Pseudo invalide : 2 a 24 lettres, chiffres, espaces ou tirets.", 400);
         }
-        if (codeTableRequis) {
-          verifierEssais(adresse);
-          if (!motsDePasseIdentiques(motDePasse ?? "", codeTable)) {
-            noterEchec(adresse);
-            throw new ErreurAcces("Code de la table incorrect.", 401);
-          }
-          echecsParAdresse.delete(adresse);
+        if (PSEUDOS_RESERVES.has(normaliserPseudo(propre))) {
+          throw new ErreurAcces("Ce pseudo est reserve au Maitre du Jeu. Choisis-en un autre.", 400);
         }
+        verifierEssais(adresse);
+        if (codeTableRequis && !motsDePasseIdentiques(codePropose ?? "", codeTable)) {
+          noterEchec(adresse);
+          throw new ErreurAcces("Code de la table incorrect.", 401);
+        }
+        let compteCree = false;
+        if (comptes) {
+          let resultat;
+          try {
+            resultat = await comptes.verifierOuCreer(propre, motDePasse);
+          } catch (erreur) {
+            if (erreur instanceof ErreurRegle) throw new ErreurAcces(erreur.message, 400);
+            throw erreur;
+          }
+          if (resultat === "refuse") {
+            noterEchec(adresse);
+            throw new ErreurAcces(`Mot de passe incorrect pour ${propre}. Oublie ? Demande au MJ de le reinitialiser.`, 401);
+          }
+          compteCree = resultat === "cree";
+        }
+        echecsParAdresse.delete(adresse);
         const profil = { role: ROLES.JOUEUR, pseudo: propre };
-        return { jeton: emettreJeton(profil), profil };
+        return { jeton: emettreJeton(profil), profil, compteCree };
       }
 
       throw new ErreurAcces("Role inconnu.", 400);
+    },
+
+    /**
+     * MJ : oublie le mot de passe d'un joueur. Ses connexions en cours restent
+     * ouvertes ; a sa prochaine connexion, il choisira un nouveau mot de passe.
+     */
+    reinitialiserMotDePasse(pseudo) {
+      return comptes ? comptes.reinitialiser(pseudo) : false;
     },
 
     /** Annule tous les jetons d'un joueur (expulsion) : il doit se reconnecter. */

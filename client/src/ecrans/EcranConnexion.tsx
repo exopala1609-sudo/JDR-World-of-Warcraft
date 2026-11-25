@@ -3,14 +3,15 @@ import { jeu, useJeu } from "@/core/jeu";
 
 /**
  * Ecran d'accueil : la porte UNIQUE du jeu (http://localhost:3000/).
- * Par defaut on entre en joueur (un pseudo). Le Maitre du Jeu passe par un
- * lien discret en bas, qui remplace le pseudo par un mot de passe. Ensuite,
- * tout le monde arrive sur la meme interface : seul le ROLE change.
+ * Par defaut on entre en joueur : un pseudo et SON mot de passe (choisi a la
+ * premiere connexion). Le Maitre du Jeu passe par un lien discret en bas.
+ * Ensuite, tout le monde arrive sur la meme interface : seul le ROLE change.
  */
 export function EcranConnexion() {
   const [role, setRole] = useState<"joueur" | "mj">("joueur");
   const [pseudo, setPseudo] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
+  const [code, setCode] = useState(""); // code commun de la table (VTT_CODE_TABLE), si le serveur l'exige
   const [erreur, setErreur] = useState("");
   const [envoi, setEnvoi] = useState(false);
   const avis = useJeu((e) => e.avis); // ex. "Le Maitre du Jeu t'a expulse de la table."
@@ -27,7 +28,7 @@ export function EcranConnexion() {
   const entrer = async (e: FormEvent) => {
     e.preventDefault();
     setEnvoi(true);
-    setErreur((await jeu.connecter(role, pseudo, motDePasse)) ?? "");
+    setErreur((await jeu.connecter(role, pseudo, motDePasse, code)) ?? "");
     setEnvoi(false);
   };
 
@@ -42,12 +43,24 @@ export function EcranConnexion() {
           <>
             <label>
               Pseudo
-              <input className="champ" value={pseudo} onChange={(e) => setPseudo(e.target.value)} maxLength={24} autoFocus />
+              <input className="champ" value={pseudo} onChange={(e) => setPseudo(e.target.value)} maxLength={24} autoComplete="username" autoFocus />
             </label>
+            <label>
+              Mot de passe
+              <input
+                className="champ"
+                type="password"
+                value={motDePasse}
+                onChange={(e) => setMotDePasse(e.target.value)}
+                maxLength={100}
+                autoComplete="current-password"
+              />
+            </label>
+            <p className="accueil__aide">Premiere fois ? Choisis ton mot de passe (6 caracteres minimum) : il te sera demande a chaque connexion.</p>
             {codeRequis && (
               <label>
                 Code de la table
-                <input className="champ" type="password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} />
+                <input className="champ" type="password" value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" />
               </label>
             )}
           </>
@@ -73,6 +86,7 @@ export function EcranConnexion() {
           className="accueil__lien-mj"
           onClick={() => {
             setRole(role === "joueur" ? "mj" : "joueur");
+            setMotDePasse(""); // le mot de passe du MJ ne doit pas rester dans le champ du joueur, ni l'inverse
             setErreur("");
           }}
         >

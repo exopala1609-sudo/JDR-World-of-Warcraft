@@ -43,6 +43,17 @@ test("une copie contient les tables, mais ni le verrou ni les fichiers temporair
   });
 });
 
+test("le fichier des comptes joueurs est copie et restaure avec les tables", () => {
+  avecDossier(({ parties, sauvegardes }) => {
+    tableEnregistree(parties);
+    writeFileSync(join(parties, "comptes.json"), '{"comptes":{"thrall":{}}}');
+    const nom = creerCopie(parties, sauvegardes, "demarrage");
+    writeFileSync(join(parties, "comptes.json"), '{"comptes":{}}');
+    restaurerCopie(parties, join(sauvegardes, nom));
+    assert.match(readFileSync(join(parties, "comptes.json"), "utf8"), /thrall/);
+  });
+});
+
 test("sans aucune table, aucune copie vide n'est creee", () => {
   avecDossier(({ parties, sauvegardes }) => {
     mkdirSync(parties, { recursive: true });

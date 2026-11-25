@@ -3,7 +3,7 @@
 // Un seul fichier de reference : le serveur et les clients ne peuvent pas
 // se desynchroniser sur l'orthographe d'un evenement.
 
-export const VERSION_PROTOCOLE = 16;
+export const VERSION_PROTOCOLE = 17;
 
 export const ROLES = /** @type {const} */ ({
   MJ: "mj",
@@ -18,6 +18,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   TABLE_CREER: "table:creer", // MJ
   TABLE_REJOINDRE: "table:rejoindre",
   TABLE_RENOMMER: "table:renommer", // MJ : le nom affiche au-dessus de la minicarte
+  TABLE_REGLER: "table:regler", // MJ : les reglages de la table (qui modifie les PV...)
 
   // Personnages
   CREATION_VALIDER: "creation:valider", // joueur : "Entrer dans le monde" (ecran de creation)
@@ -127,6 +128,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   // Joueurs (MJ)
   JOUEUR_EXPULSER: "joueur:expulser", // deconnecte un joueur et lui ferme la table
   JOUEUR_READMETTRE: "joueur:readmettre", // lui rouvre la table
+  JOUEUR_REINITIALISER_MOT_DE_PASSE: "joueur:reinitialiser-mot-de-passe", // MJ : mot de passe oublie
 
   // Selecteur d'icones : chercher dans le dossier icones/ (par nom de fichier)
   ICONES_CHERCHER: "icones:chercher",
@@ -138,7 +140,7 @@ export const EVENEMENTS = /** @type {const} */ ({
 
   // ======= Serveur -> Clients : des FAITS (deja valides par le serveur) =====
   TABLES_LISTE: "tables:liste",
-  TABLE_MAJ: "table:maj", // la table a change (nouveau nom)
+  TABLE_MAJ: "table:maj", // la table a change (nouveau nom, reglages)
   TABLE_PRESENCE: "table:presence",
   PERSONNAGE_MAJ: "personnage:maj", // une fiche a change (avec sa "cause")
   PERSONNAGE_SUPPRIME: "personnage:supprime",
