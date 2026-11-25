@@ -9,11 +9,19 @@ import { ecrireJsonAtomique, lireJson } from "./fichiers.js";
 const FRAICHEUR_MS = 90_000; // au-dela, le verrou est considere comme abandonne
 const BATTEMENT_MS = 30_000;
 
-export function poserVerrou(config) {
-  const chemin = join(config.dossiers.parties, "partie-en-cours.verrou.json");
-  const existant = lireJson(chemin);
+export const FICHIER_VERROU = "partie-en-cours.verrou.json";
 
-  if (existant && Date.now() - existant.horodatage < FRAICHEUR_MS && existant.poste !== config.nomDuPoste) {
+/** Le verrou d'un serveur qui tourne en ce moment (ce poste ou un autre), sinon null. */
+export function partieEnCours(dossierParties) {
+  const existant = lireJson(join(dossierParties, FICHIER_VERROU));
+  return existant && Date.now() - existant.horodatage < FRAICHEUR_MS ? existant : null;
+}
+
+export function poserVerrou(config) {
+  const chemin = join(config.dossiers.parties, FICHIER_VERROU);
+  const existant = partieEnCours(config.dossiers.parties);
+
+  if (existant && existant.poste !== config.nomDuPoste) {
     console.warn("");
     console.warn("  ********************************************************");
     console.warn(`  ATTENTION : une partie semble deja ouverte sur "${existant.poste}".`);

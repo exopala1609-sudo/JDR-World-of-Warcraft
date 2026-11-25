@@ -69,7 +69,8 @@ JDR/                     <- VTT_ASSETS pointe ici
 ├── portraits/           visages du groupe
 ├── compendium/          fichiers de sorts et d'objets (JSON)
 ├── referentiel/         factions, races, classes, regles de creation (JSON)
-└── parties/             sauvegardes ecrites par le serveur
+├── parties/             sauvegardes ecrites par le serveur
+└── sauvegardes/         copies de secours datees (voir docs/SAUVEGARDES.md)
 ```
 
 Un dossier peut vivre ailleurs que les autres — par exemple les cartes sur un
@@ -114,7 +115,7 @@ appareil »** (OneDrive) ou **« Disponible hors connexion »** (Google Drive).
 | Variable | Role | Defaut |
 | --- | --- | --- |
 | `VTT_ASSETS` | Dossier racine de tes fichiers (chemin complet, OBLIGATOIRE) | aucun : le serveur refuse de demarrer |
-| `VTT_ASSETS_CARTES` … `_PARTIES` | Chemin d'un sous-dossier place ailleurs | dans `VTT_ASSETS` |
+| `VTT_ASSETS_CARTES` … `_PARTIES`, `_SAUVEGARDES` | Chemin d'un sous-dossier place ailleurs | dans `VTT_ASSETS` |
 | `VTT_NOM_PARTIE` | Titre affiche dans l'interface | `Ma campagne` |
 | `VTT_PORT` | Port du serveur | `3000` |
 | `VTT_MOTDEPASSE_MJ` | Protege l'ecran du Maitre du Jeu | `change-moi` |

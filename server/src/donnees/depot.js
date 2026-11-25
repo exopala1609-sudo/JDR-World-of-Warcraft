@@ -12,7 +12,8 @@
 //       ├── personnages/
 //       │   ├── p-8e21aa04c7.json  <- UN fichier par personnage
 //       │   └── p-51c0d9e3f2.json
-//       └── corbeille/             <- personnages supprimes (recuperables)
+//       ├── corbeille/             <- personnages supprimes (recuperables)
+//       └── abimes/                <- fichiers illisibles mis de cote (voir plus bas)
 //
 // Pourquoi un fichier par personnage ? Si le cloud rencontre un conflit, il
 // ne touche qu'une fiche, pas toute la partie. Et tu peux ouvrir une fiche
@@ -22,8 +23,8 @@
 // a l'echelle d'une campagne). Ensuite le jeu travaille en memoire, et chaque
 // modification est recopiee sur le disque ~1/4 de seconde plus tard.
 import { existsSync, mkdirSync, readdirSync, renameSync, unlinkSync } from "node:fs";
-import { join } from "node:path";
-import { ecrireJsonAtomique, lireJson } from "../fichiers.js";
+import { basename, join, relative } from "node:path";
+import { ecrireJsonAtomique, lireJson, lireTexteJson } from "../fichiers.js";
 import { SchemaCombat } from "../modeles/combat.js";
 import { SchemaJournalQuetes } from "../modeles/quete.js";
 import { SchemaCarnets } from "../modeles/note.js";
@@ -33,6 +34,7 @@ import { SchemaScene, sceneVide } from "../modeles/scene.js";
 import { SchemaTable } from "../modeles/table.js";
 
 const DELAI_ECRITURE_MS = 250;
+const MOTIF_TABLE = /^t-[0-9a-f]{10}$/;
 // La scene change tres souvent (pinceau du brouillard, pions qui glissent) :
 // on l'ecrit au plus une fois par seconde pour menager la synchro du cloud.
 const DELAI_ECRITURE_SCENE_MS = 1000;
@@ -46,6 +48,15 @@ export function creerDepot(dossierParties) {
   /** @type {Map<string, object>} */ const scenes = new Map(); // idTable -> scene
   /** @type {Map<string, {minuterie: NodeJS.Timeout, donnees: object}>} */
   const ecrituresEnAttente = new Map();
+  // Ce que le MJ doit savoir des fichiers abimes trouves au chargement.
+  /** @type {{idTable: string | null, texte: string, misDeCote?: boolean, rappel?: boolean}[]} */
+  const alertes = [];
+  // Fichiers abimes qu'on n'a PAS reussi a mettre de cote : le serveur ne doit
+  // jamais ecrire par-dessus (ce serait les effacer).
+  const cheminsProteges = new Set();
+  // Augmente a chaque modification : les copies de secours horaires ne se
+  // font que si la partie a bouge.
+  let modifications = 0;
 
   const cheminTable = (idTable) => join(dossierParties, idTable);
   const cheminFicheTable = (idTable) => join(cheminTable(idTable), "table.json");
@@ -65,6 +76,11 @@ export function creerDepot(dossierParties) {
 
   // Regroupe les ecritures rapprochees (ex. 5 degats en 1 seconde = 1 ecriture).
   function planifierEcriture(chemin, donnees, delai = DELAI_ECRITURE_MS) {
+    modifications += 1;
+    if (cheminsProteges.has(chemin)) {
+      console.error(`[depot] !! ${chemin} est abime et n'a pas pu etre mis de cote : il n'est PAS remplace. Les changements de ce fichier ne sont pas sauvegardes.`);
+      return;
+    }
     const existante = ecrituresEnAttente.get(chemin);
     if (existante) clearTimeout(existante.minuterie);
     const minuterie = setTimeout(() => {
@@ -86,19 +102,83 @@ export function creerDepot(dossierParties) {
     }
   }
 
+  /**
+   * Lit un fichier de la table (scene, quetes...). Distingue "absent" (normal :
+   * rien n'a encore ete fait) d'"illisible" (JSON casse) : un fichier casse ne
+   * doit surtout pas etre pris pour un fichier absent, puis remplace.
+   */
+  function lireDocument(chemin) {
+    if (!existsSync(chemin)) return { etat: "absent" };
+    try {
+      return { etat: "ok", donnees: lireTexteJson(chemin) };
+    } catch (erreur) {
+      return { etat: "illisible", message: erreur.message };
+    }
+  }
+
+  /**
+   * Un fichier abime (conflit du cloud, edition a la main ratee, ancien format)
+   * est DEPLACE dans le dossier abimes/ de sa table, avec la date. Sans cela,
+   * la premiere modification en jeu l'ecraserait par une version vide.
+   * Le MJ en est averti a son entree dans la table.
+   */
+  function mettreDeCote(idTable, chemin, raison) {
+    const nom = basename(chemin, ".json");
+    const destination = join(cheminTable(idTable), "abimes", `${nom}-${new Date().toISOString().replace(/[:.]/g, "-")}.json`);
+    const lisible = (c) => relative(dossierParties, c);
+    try {
+      mkdirSync(join(cheminTable(idTable), "abimes"), { recursive: true });
+      renameSync(chemin, destination);
+      console.warn(`[depot] !! ${lisible(chemin)} est abime (${raison}) : mis de cote dans ${lisible(destination)}.`);
+      alertes.push({
+        idTable,
+        misDeCote: true,
+        texte: `Fichier abime mis de cote : ${lisible(chemin)} (${raison}). Il a ete deplace dans ${lisible(destination)}. Voir docs/SAUVEGARDES.md pour le recuperer.`,
+      });
+    } catch (erreur) {
+      cheminsProteges.add(chemin);
+      console.error(`[depot] !! ${lisible(chemin)} est abime et n'a pas pu etre deplace (${erreur.message}) : il ne sera pas modifie.`);
+      alertes.push({
+        idTable,
+        texte: `Fichier abime : ${lisible(chemin)} (${raison}). Il n'a pas pu etre mis de cote : ses changements ne seront pas sauvegardes avant reparation. Voir docs/SAUVEGARDES.md.`,
+      });
+    }
+  }
+
+  /** Lit et valide un fichier de la table ; s'il est abime, le met de cote. Renvoie les donnees valides ou null. */
+  function chargerDocument(idTable, chemin, schema) {
+    const lu = lireDocument(chemin);
+    if (lu.etat === "absent") return null;
+    if (lu.etat === "illisible") {
+      mettreDeCote(idTable, chemin, "JSON illisible");
+      return null;
+    }
+    const valide = schema.safeParse(lu.donnees);
+    if (!valide.success || valide.data.idTable !== idTable) {
+      mettreDeCote(idTable, chemin, valide.success ? "il appartient a une autre table" : "format inattendu");
+      return null;
+    }
+    return valide.data;
+  }
+
   return {
     /** Lit toutes les tables et fiches presentes sur le disque. */
     charger() {
       mkdirSync(dossierParties, { recursive: true });
       const ignores = [];
       let migrees = 0;
+      const alertesAvant = alertes.length;
 
       for (const entree of lireDossier(dossierParties)) {
         if (!entree.isDirectory()) continue;
         const brut = lireJson(cheminFicheTable(entree.name));
         const table = SchemaTable.safeParse(brut);
         if (!table.success || table.data.id !== entree.name) {
-          if (brut) ignores.push(cheminFicheTable(entree.name));
+          // Table illisible : rien n'y sera ecrit (elle n'est pas chargee), on previent.
+          if (MOTIF_TABLE.test(entree.name) && existsSync(cheminFicheTable(entree.name))) {
+            ignores.push(cheminFicheTable(entree.name));
+            alertes.push({ idTable: null, texte: `Table ignoree : ${entree.name}/table.json est abime. Ses fichiers sont intacts ; voir docs/SAUVEGARDES.md.` });
+          }
           continue;
         }
         tables.set(table.data.id, table.data);
@@ -117,53 +197,59 @@ export function creerDepot(dossierParties) {
               planifierEcriture(chemin, perso.data); // on enregistre la version a jour
             }
           } else {
+            // Fiche abimee : laissee en place (aucune autre fiche ne porte ce
+            // nom, elle ne sera pas ecrasee), le MJ peut la corriger et relancer.
             ignores.push(chemin);
+            alertes.push({ idTable: table.data.id, texte: `Personnage ignore : ${relative(dossierParties, chemin)} est abime. Corrige-le ou restaure une copie (docs/SAUVEGARDES.md).` });
           }
         }
 
-        // La scene (carte, pions, brouillard) de la table.
-        const brutScene = lireJson(cheminScene(table.data.id));
-        if (brutScene) {
-          const scene = SchemaScene.safeParse(brutScene);
-          if (scene.success && scene.data.idTable === table.data.id) scenes.set(table.data.id, scene.data);
-          else ignores.push(cheminScene(table.data.id));
-        }
+        // La scene (carte, pions, brouillard), le journal de quetes, les carnets
+        // prives, et un combat en cours au moment de l'arret (on le reprend).
+        const id = table.data.id;
+        const scene = chargerDocument(id, cheminScene(id), SchemaScene);
+        if (scene) scenes.set(id, scene);
+        const journal = chargerDocument(id, cheminQuetes(id), SchemaJournalQuetes);
+        if (journal) quetes.set(id, journal.quetes);
+        const lu = chargerDocument(id, cheminNotes(id), SchemaCarnets);
+        if (lu) carnets.set(id, lu.carnets);
+        const combat = chargerDocument(id, cheminCombat(id), SchemaCombat);
+        if (combat) combats.set(id, combat);
 
-        // Le journal de quetes du groupe.
-        const brutQuetes = lireJson(cheminQuetes(table.data.id));
-        if (brutQuetes) {
-          const journal = SchemaJournalQuetes.safeParse(brutQuetes);
-          if (journal.success && journal.data.idTable === table.data.id) quetes.set(table.data.id, journal.data.quetes);
-          else ignores.push(cheminQuetes(table.data.id));
-        }
-
-        // Les carnets de notes prives.
-        const brutNotes = lireJson(cheminNotes(table.data.id));
-        if (brutNotes) {
-          const lu = SchemaCarnets.safeParse(brutNotes);
-          if (lu.success && lu.data.idTable === table.data.id) carnets.set(table.data.id, lu.data.carnets);
-          else ignores.push(cheminNotes(table.data.id));
-        }
-
-        // Combat en cours au moment de l'arret ? On le reprend.
-        const brutCombat = lireJson(cheminCombat(table.data.id));
-        if (brutCombat) {
-          const combat = SchemaCombat.safeParse(brutCombat);
-          if (combat.success && combat.data.idTable === table.data.id) combats.set(table.data.id, combat.data);
-          else ignores.push(cheminCombat(table.data.id));
+        // Des fichiers mis de cote lors d'un lancement precedent attendent
+        // toujours d'etre examines : on le rappelle au MJ a chaque lancement,
+        // tant qu'il n'a pas vide le dossier abimes/.
+        const misDeCote = alertes.filter((x) => x.idTable === id && x.misDeCote).length;
+        const enAttente = lireDossier(join(cheminTable(id), "abimes")).filter((f) => f.isFile()).length - misDeCote;
+        if (enAttente > 0) {
+          alertes.push({
+            idTable: id,
+            texte: `${enAttente} fichier(s) abime(s) attendent dans ${id}/abimes/ (mis de cote lors d'un lancement precedent). Voir docs/SAUVEGARDES.md, puis vide ce dossier.`,
+            rappel: true,
+          });
         }
       }
 
-      // Un fichier abime (conflit cloud, edition manuelle ratee) est ignore,
-      // jamais supprime : on le signale pour que le MJ puisse le reparer.
+      // Un fichier abime n'est jamais supprime ni ecrase : il est signale (et,
+      // pour la scene, les quetes, les carnets et le combat, mis de cote).
       for (const chemin of ignores) console.warn(`[depot] Fichier invalide ignore : ${chemin}`);
       return {
         tables: tables.size,
         personnages: personnages.size,
         combats: combats.size,
         migrees,
-        ignores: ignores.length,
+        ignores: alertes.slice(alertesAvant).filter((x) => !x.rappel).length, // tables, fiches et fichiers abimes de CE lancement
       };
+    },
+
+    /** Les problemes de fichiers trouves au chargement : pour cette table, plus ceux qui ne concernent aucune table. */
+    alertes(idTable) {
+      return alertes.filter((a) => a.idTable === idTable || a.idTable === null).map((a) => a.texte);
+    },
+
+    /** Change a chaque modification (pour ne copier la partie que si elle a bouge). */
+    compteurModifications() {
+      return modifications;
     },
 
     // --- Tables ------------------------------------------------------------
@@ -201,6 +287,7 @@ export function creerDepot(dossierParties) {
 
       const chemin = cheminPersonnage(personnage);
       annulerEcriture(chemin);
+      modifications += 1;
       const corbeille = join(cheminTable(personnage.idTable), "corbeille");
       mkdirSync(corbeille, { recursive: true });
       const destination = join(corbeille, `${personnage.id}-${Date.now()}.json`);
@@ -263,6 +350,7 @@ export function creerDepot(dossierParties) {
     /** Fin du combat : le fichier combat.json disparait. */
     supprimerCombat(idTable) {
       combats.delete(idTable);
+      modifications += 1;
       const chemin = cheminCombat(idTable);
       annulerEcriture(chemin);
       try {

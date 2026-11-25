@@ -42,7 +42,8 @@ JDR-World-of-Warcraft/
 │   │   ├── medias.js         Images du dossier cloud + carre gris de remplacement
 │   │   ├── auth/             Mot de passe MJ, pseudos, jetons d'acces, anti force brute
 │   │   ├── donnees/
-│   │   │   ├── depot.js      Memoire du jeu + sauvegarde (fiches, tables, combats)
+│   │   │   ├── depot.js      Memoire du jeu + sauvegarde (fiches, tables, combats) ; met de cote les fichiers abimes
+│   │   │   ├── sauvegardes.js Copies de secours datees (demarrage + chaque heure), menage, restauration
 │   │   │   ├── compendium.js Lecture des fichiers du compendium, rapport d'erreurs
 │   │   │   └── referentiel.js Lecture des factions, races, classes : liens verifies, rapport d'erreurs
 │   │   ├── modeles/          La "forme" exacte des donnees (verifiee par Zod)
@@ -104,6 +105,7 @@ JDR-World-of-Warcraft/
 ├── cartes/  jetons/  portraits/  icones/  polices/
 ├── compendium/               Tes objets, sorts et auras (voir docs/COMPENDIUM.md)
 ├── referentiel/              Factions, races, classes, regles de creation (voir docs/REFERENTIEL.md)
+├── sauvegardes/              Copies de secours des parties, 30 au plus (voir docs/SAUVEGARDES.md)
 └── parties/
     ├── partie-en-cours.verrou.json   Present seulement quand un serveur tourne
     └── t-3f9a0c1b2d/                 Une table de jeu
@@ -112,7 +114,8 @@ JDR-World-of-Warcraft/
         ├── scene.json                Carte, grille, pions, brouillard
         ├── personnages/
         │   └── p-8e21aa04c7.json     Un fichier par personnage
-        └── corbeille/                Fiches supprimees, recuperables a la main
+        ├── corbeille/                Fiches supprimees, recuperables a la main
+        └── abimes/                   Fichiers illisibles mis de cote au demarrage (jamais effaces)
 ```
 
 ## Pourquoi des fichiers JSON plutot que SQLite

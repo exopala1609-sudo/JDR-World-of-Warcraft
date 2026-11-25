@@ -38,6 +38,7 @@ Architecture detaillee : [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 Ecrire ses objets, sorts et auras : [docs/COMPENDIUM.md](docs/COMPENDIUM.md).
 Modifier les races, classes et regles de creation : [docs/REFERENTIEL.md](docs/REFERENTIEL.md).
 Polices, portraits, icones : [docs/PERSONNALISER.md](docs/PERSONNALISER.md).
+Copies de secours et restauration d'une partie : [docs/SAUVEGARDES.md](docs/SAUVEGARDES.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
 Hebergement permanent sur un NAS Synology avec nom de domaine : [docs/NAS-SYNOLOGY.md](docs/NAS-SYNOLOGY.md).
 

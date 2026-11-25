@@ -475,6 +475,8 @@ class Jeu {
       combat: r.combat as Combat,
     });
     this.journaliser(`Bienvenue a la table "${(r.table as Table).nom}".`);
+    // MJ : des fichiers de sauvegarde abimes ont ete trouves (et mis de cote) au demarrage.
+    for (const alerte of (r.alertes as string[] | undefined) ?? []) this.journaliser(alerte, "erreur");
   }
 
   /** MJ : televerse une image de carte (ecrite par le serveur dans cartes/ du cloud). */

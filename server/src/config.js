@@ -21,6 +21,7 @@ export const CATEGORIES = /** @type {const} */ ({
   compendium: "VTT_ASSETS_COMPENDIUM",
   referentiel: "VTT_ASSETS_REFERENTIEL",
   parties: "VTT_ASSETS_PARTIES",
+  sauvegardes: "VTT_ASSETS_SAUVEGARDES", // copies de secours des parties (voir docs/SAUVEGARDES.md)
 });
 
 // Categories exposees telles quelles aux navigateurs. Le compendium et les

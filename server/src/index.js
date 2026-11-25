@@ -12,6 +12,7 @@ import { afficherDiagnostic, afficherDiagnosticIcones, creerSousDossiersManquant
 import { bibliothequeIcones } from "./donnees/bibliotheque-icones.js";
 import { creerCompendium, installerExemples, installerFichierExemple } from "./donnees/compendium.js";
 import { creerDepot } from "./donnees/depot.js";
+import { creerCopie, planifierCopies } from "./donnees/sauvegardes.js";
 import { creerReferentiel, installerExemplesReferentiel, resumerReferentiel, situerErreur } from "./donnees/referentiel.js";
 import { routesMedias } from "./medias.js";
 import { routesTeleversement } from "./televersement.js";
@@ -54,8 +55,20 @@ if (!rapportDossiers.find((d) => d.categorie === "parties" && ["ok", "vide"].inc
   console.error("     Verifie VTT_ASSETS dans le fichier .env, ou lance : npm run detecter-assets\n");
   process.exit(1);
 }
+// Copie de secours AVANT de charger : le chargement peut mettre a niveau des
+// fiches ou mettre de cote des fichiers abimes. La photo garde l'etat d'origine.
+let copieDemarrage = null;
+try {
+  copieDemarrage = creerCopie(config.dossiers.parties, config.dossiers.sauvegardes, "demarrage");
+} catch (erreur) {
+  // Disque plein, droits... : on joue quand meme, mais le MJ doit le savoir.
+  console.error(`\n  !! Copie de secours impossible au demarrage : ${erreur.message}`);
+  console.error(`     Dossier vise : ${config.dossiers.sauvegardes}\n`);
+}
 const depot = creerDepot(config.dossiers.parties);
 const bilan = depot.charger();
+// Puis une copie par heure de jeu (seulement si la partie a change).
+const arreterCopies = planifierCopies({ depot, dossierParties: config.dossiers.parties, dossierSauvegardes: config.dossiers.sauvegardes });
 
 // Compendium : lecture de tous les fichiers JSON du dossier.
 const compendium = creerCompendium(config.dossiers.compendium);
@@ -151,6 +164,7 @@ serveurHttp.listen(config.port, config.hote, async () => {
   // La ligne la plus importante pour jouer sur deux PC : OU sont les sauvegardes.
   console.log(`  Sauvegardes      : ${config.dossiers.parties}${config.cloud ? `  (${config.cloud})` : ""}`);
   console.log(`  Donnees chargees : ${bilan.tables} table(s), ${bilan.personnages} personnage(s).`);
+  if (copieDemarrage) console.log(`  Copie de secours : ${copieDemarrage}  (dans ${config.dossiers.sauvegardes})`);
   if (!config.cloud) {
     console.log("  !! Ce dossier n'est pas reconnu comme un dossier cloud (OneDrive, Google Drive...).");
     console.log("     Les parties sauvegardees ici ne seront PAS visibles depuis ton autre PC.");
@@ -167,7 +181,7 @@ serveurHttp.listen(config.port, config.hote, async () => {
   }
   if (bilan.combats) console.log(`  Combat(s) en cours repris : ${bilan.combats}.`);
   if (bilan.migrees) console.log(`  Fiches mises au nouveau format : ${bilan.migrees}.`);
-  if (bilan.ignores) console.log(`  !! ${bilan.ignores} fichier(s) invalide(s) ignore(s), voir ci-dessus.`);
+  if (bilan.ignores) console.log(`  !! ${bilan.ignores} fichier(s) abime(s), voir ci-dessus. Rien n'a ete efface ; le MJ en est averti en jeu.`);
   if (exemplesInstalles.length) console.log(`  Compendium vide : exemples installes (${exemplesInstalles.join(", ")}).`);
   console.log(
     `  Compendium : ${rapportCompendium.objets} objet(s), ${rapportCompendium.sorts} sort(s), ` +
@@ -236,6 +250,7 @@ function pageNonCompilee() {
 function arreter() {
   console.log("\n  Arret : sauvegarde des donnees en attente...");
   depot.vider();
+  arreterCopies();
   fermerTunnel();
   libererVerrou();
   process.exit(0);

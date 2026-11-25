@@ -173,6 +173,8 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
         scene: ctx.vueDeLaScene(depot.obtenirScene(idTable), ctx.estMJ(socket)),
         traces: ctx.traces.get(idTable) ?? [],
         quetes: depot.obtenirQuetes(idTable),
+        // MJ seulement : les fichiers abimes trouves au demarrage (mis de cote, jamais effaces).
+        alertes: ctx.estMJ(socket) ? depot.alertes(idTable) : [],
       };
     },
 

@@ -532,3 +532,23 @@ Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu pré
 **Corrections à mon jugement sur l'interface** (d'après tes précisions) : la carte se zoome, les cadres étaient en mode raid (le mode groupe existe), et les icônes ont une infobulle au survol. Ces trois remarques sont retirées ; restent la taille des textes et la découverte des raccourcis, à revoir au lot « prise en main ».
 
 **Ordre confirmé** : lots 1 à 7 (sécurité puis NAS), ensuite prise en main, scènes, vision niveau 2 puis niveau 3.
+
+---
+
+# Suivi — lot 1 livré (25 novembre 2026)
+
+**Lot 0** validé par l'utilisateur sur son PC, puis publié comme branche `main` (vérification GitHub au vert).
+
+**Lot 1 — filet de sécurité des données**, sur la branche `claude/bold-mendel-k31nk5`, en attente de validation :
+
+- Copie de secours datée de toutes les tables **à chaque lancement**, avant tout chargement, puis **chaque heure** si la partie a changé. Les 30 plus récentes sont gardées. Nouveau dossier `sauvegardes/` à côté de `parties/` (déplaçable avec `VTT_ASSETS_SAUVEGARDES`).
+- `npm run restaurer` liste les copies ; `npm run restaurer -- 3` revient à la copie n°3. Refuse si le serveur tourne ; prend d'abord une copie « avant-restauration ».
+- Un fichier abîmé (carte, quêtes, carnets, combat) est **déplacé dans `abimes/`** au lieu d'être écrasé. Une fiche ou une table abîmée est ignorée sans être touchée. Le MJ voit un message rouge dans la discussion, à chaque lancement tant que `abimes/` n'est pas vidé.
+- Guide : `docs/SAUVEGARDES.md`.
+- Vérifié : 173 tests (9 nouveaux), compilation, essai réel avec un vrai serveur (carte abîmée mise de côté, alerte visible dans le navigateur du MJ, restauration refusée serveur allumé, restauration réussie serveur arrêté).
+
+**Correction de C3 dans l'audit** : un fichier illisible n'était pas seulement « ignoré puis écrasé » ; le code le prenait carrément pour un fichier absent. C'est corrigé.
+
+**Reporté, en connaissance de cause** : les migrations de format pour la carte, les quêtes et les carnets (prévues dans l'audit). Elles ne servent qu'au jour où l'un de ces formats change ; d'ici là, la mise de côté et les copies empêchent toute perte. À ajouter avec le premier changement de format concerné (règle déjà écrite dans `CLAUDE.md`).
+
+**Limite** : ces copies sont sur le même disque que la partie. La copie hors du NAS (Hyper Backup vers Google Drive) viendra au lot 5.
