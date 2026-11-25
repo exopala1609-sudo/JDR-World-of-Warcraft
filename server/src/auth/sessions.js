@@ -6,14 +6,23 @@
 //  3. Ensuite, le navigateur montre ce jeton a chaque connexion temps reel.
 //     Le mot de passe du MJ ne circule donc qu'une seule fois.
 //
-// Les jetons vivent en memoire : si le serveur redemarre, chacun se reconnecte.
+// Les jetons sont aussi notes sur le disque (sessions.json) : apres un
+// redemarrage du serveur (mise a jour, coupure du NAS), chacun retrouve sa
+// place sans se reconnecter. Le fichier ne contient que l'EMPREINTE de chaque
+// jeton : quelqu'un qui le lirait ne pourrait pas s'en servir pour entrer.
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { existsSync } from "node:fs";
+import { ecrireJsonAtomique, lireTexteJson } from "../fichiers.js";
 import { ROLES } from "../../../shared/protocole.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 
 export const DUREE_JETON_MS = 12 * 60 * 60 * 1000; // une longue soiree de jeu
 const ESSAIS_MAX = 5;
 const FENETRE_ESSAIS_MS = 15 * 60 * 1000;
+const NETTOYAGE_MS = 10 * 60 * 1000; // menage des jetons expires et des vieux echecs
+
+/** L'empreinte d'un jeton : c'est elle qu'on garde, jamais le jeton lui-meme. */
+const empreinteJeton = (jeton) => createHash("sha256").update(jeton).digest("base64url");
 const MOTS_DE_PASSE_INTERDITS = new Set(["", "change-moi"]);
 
 // Lettres (accents compris), chiffres, espace, tiret, apostrophe, souligne.
@@ -43,10 +52,36 @@ const PSEUDOS_RESERVES = new Set(["mj", "gm", "maitre du jeu", "maître du jeu",
 /**
  * "comptes" : le registre des mots de passe des joueurs (auth/comptes.js).
  * Sans registre (certains tests), un pseudo suffit, comme avant le lot 2.
+ * "fichierSessions" : ou noter les jetons pour survivre a un redemarrage
+ * (absent : en memoire seulement).
  */
-export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "", comptes = null }) {
-  /** @type {Map<string, {role: string, pseudo: string, expireLe: number}>} */
+export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "", comptes = null, fichierSessions = null }) {
+  /** Empreinte du jeton -> session. @type {Map<string, {role: string, pseudo: string, expireLe: number}>} */
   const jetons = new Map();
+
+  // Reprise des sessions d'avant le redemarrage (sauf celles qui ont expire).
+  if (fichierSessions && existsSync(fichierSessions)) {
+    try {
+      const lu = lireTexteJson(fichierSessions);
+      for (const [empreinte, session] of Object.entries(lu?.sessions ?? {})) {
+        const valide =
+          typeof session?.pseudo === "string" && Object.values(ROLES).includes(session.role) && Number.isFinite(session.expireLe);
+        if (valide && session.expireLe > Date.now()) jetons.set(empreinte, { role: session.role, pseudo: session.pseudo, expireLe: session.expireLe });
+      }
+    } catch (erreur) {
+      // Sans gravite : chacun se reconnectera simplement avec son mot de passe.
+      console.warn(`[acces] Sessions precedentes illisibles (${erreur.message}) : chacun devra se reconnecter.`);
+    }
+  }
+
+  function enregistrerSessions() {
+    if (!fichierSessions) return;
+    try {
+      ecrireJsonAtomique(fichierSessions, { sessions: Object.fromEntries(jetons) });
+    } catch (erreur) {
+      console.warn(`[acces] Impossible de noter les sessions (${erreur.message}) : un redemarrage deconnectera tout le monde.`);
+    }
+  }
   /** @type {Map<string, {nombre: number, depuis: number}>} */
   const echecsParAdresse = new Map();
 
@@ -74,12 +109,33 @@ export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "", compte
 
   function emettreJeton(profil) {
     const jeton = randomBytes(32).toString("base64url");
-    jetons.set(jeton, { ...profil, expireLe: Date.now() + DUREE_JETON_MS });
+    jetons.set(empreinteJeton(jeton), { ...profil, expireLe: Date.now() + DUREE_JETON_MS });
+    enregistrerSessions();
     return jeton;
   }
 
+  /** Le menage : jetons expires et vieux compteurs d'echecs (un serveur allume des semaines ne grossit pas). */
+  function nettoyer(maintenant = Date.now()) {
+    let retires = 0;
+    for (const [empreinte, session] of jetons) {
+      if (session.expireLe < maintenant) {
+        jetons.delete(empreinte);
+        retires += 1;
+      }
+    }
+    for (const [adresse, essais] of echecsParAdresse) {
+      if (maintenant - essais.depuis > FENETRE_ESSAIS_MS) echecsParAdresse.delete(adresse);
+    }
+    if (retires) enregistrerSessions();
+    return retires;
+  }
+  if (fichierSessions) setInterval(() => nettoyer(), NETTOYAGE_MS).unref();
+
   return {
     motDePasseUtilisable,
+    nettoyer,
+    /** Nombre de sessions ouvertes (pour le demarrage et les tests). */
+    nombreSessions: () => jetons.size,
     codeTableRequis,
 
     /**
@@ -153,18 +209,20 @@ export function creerGestionnaireSessions({ motDePasseMJ, codeTable = "", compte
     /** Annule tous les jetons d'un joueur (expulsion) : il doit se reconnecter. */
     revoquerPseudo(pseudo) {
       const cible = normaliserPseudo(pseudo);
-      for (const [jeton, session] of jetons) {
-        if (session.role === ROLES.JOUEUR && normaliserPseudo(session.pseudo) === cible) jetons.delete(jeton);
+      for (const [empreinte, session] of jetons) {
+        if (session.role === ROLES.JOUEUR && normaliserPseudo(session.pseudo) === cible) jetons.delete(empreinte);
       }
+      enregistrerSessions();
     },
 
     /** Renvoie le profil associe a un jeton valide, sinon null. */
     verifier(jeton) {
       if (typeof jeton !== "string") return null;
-      const session = jetons.get(jeton);
+      const empreinte = empreinteJeton(jeton);
+      const session = jetons.get(empreinte);
       if (!session) return null;
       if (session.expireLe < Date.now()) {
-        jetons.delete(jeton);
+        jetons.delete(empreinte);
         return null;
       }
       return { role: session.role, pseudo: session.pseudo };

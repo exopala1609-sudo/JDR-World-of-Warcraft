@@ -79,6 +79,17 @@ Internet, et l'adresse change a chaque redemarrage de la box.
 - Si `VTT_CODE_TABLE` est defini dans `.env`, un champ « Code de la table »
   s'ajoute : c'est un code commun, en plus du mot de passe personnel.
 
+## Redemarrage du serveur en pleine partie
+
+Les connexions ouvertes sont notees sur le disque (`parties/sessions.json`,
+sous forme d'empreintes : ce fichier ne permet pas de se faire passer pour
+quelqu'un). Si le serveur redemarre (mise a jour, coupure, plantage), chacun
+voit le bandeau « reconnexion » quelques secondes, puis revient en jeu tout
+seul, **sans retaper son mot de passe**. Une connexion reste valable 12 heures.
+
+En cas de plantage, le serveur ecrit d'abord tout ce qui attendait encore en
+memoire, puis s'arrete.
+
 ## Qui modifie les points de vie ?
 
 Par defaut, **seul le MJ** modifie a la main les PV, ressources et etats (clic

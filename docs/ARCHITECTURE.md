@@ -108,6 +108,8 @@ JDR-World-of-Warcraft/
 ├── sauvegardes/              Copies de secours des parties, 30 au plus (voir docs/SAUVEGARDES.md)
 └── parties/
     ├── partie-en-cours.verrou.json   Present seulement quand un serveur tourne
+    ├── comptes.json                  Mots de passe des joueurs (empreintes seulement, jamais en clair)
+    ├── sessions.json                 Connexions ouvertes (empreintes des jetons) : survivent a un redemarrage
     └── t-3f9a0c1b2d/                 Une table de jeu
         ├── table.json
         ├── combat.json               Present seulement pendant un combat

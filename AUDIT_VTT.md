@@ -593,3 +593,19 @@ Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu pré
 **Ce que le lot ne fait pas (choix validé)** : un joueur connecté peut toujours retrouver l'image entière de la carte dans son navigateur. La réponse prévue est la vision par joueur (scènes et champ de vision, lots 9 et 10), pas un découpage de la carte côté serveur.
 
 **I2 (images de Blizzard)** : réglé pour la partie ; les textures d'interface restent accessibles sans connexion, ce qui sera couvert par le filtre par e-mail du lot 6.
+
+---
+
+# Suivi — lot 4 livré (25 novembre 2026)
+
+**Lot 4 — serveur longue durée**, sur `claude/bold-mendel-k31nk5`, avec le lot 3, en attente de validation des deux :
+
+- Les sessions sont notées dans `parties/sessions.json` sous forme d'**empreintes** (SHA-256) : le fichier ne permet pas d'entrer. Après un redémarrage, chacun revient en jeu tout seul (corrige I7). Un joueur expulsé ne revient pas.
+- Fichier de sessions abîmé : sans gravité, chacun se reconnecte.
+- Ménage toutes les 10 minutes des jetons expirés et des vieux compteurs d'échecs (corrige M4).
+- Plantage imprévu : écriture d'urgence de tout ce qui attend en mémoire avant l'arrêt (corrige M5).
+- Vérifié : 187 tests (3 nouveaux), compilation, essai réel (serveur arrêté puis relancé pendant qu'un joueur était en jeu : bandeau « reconnexion », retour en jeu sans mot de passe, carte toujours accessible).
+
+**Non testé en réel** : l'écriture d'urgence sur plantage (il faudrait provoquer un vrai plantage ; le mécanisme est court et repose sur la même fonction que l'arrêt normal, elle testée).
+
+**Toujours en mémoire seulement** : la liste des joueurs expulsés (un expulsé peut revenir après un redémarrage, avec son mot de passe) et les jets de dés en attente de validation.

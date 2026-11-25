@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { creerRegistreComptes, fabriquerEmpreinte, verifierEmpreinte } from "../src/auth/comptes.js";
@@ -81,4 +81,45 @@ test("empreinte : deux fois le meme mot de passe donne deux empreintes different
   assert.notEqual(a, b);
   assert.equal(await verifierEmpreinte("secret", a), true);
   assert.equal(await verifierEmpreinte("Secret", a), false);
+});
+
+test("redemarrage du serveur : les sessions sont reprises, sans que le fichier contienne un seul jeton", async () => {
+  const dossier = mkdtempSync(join(tmpdir(), "vtt-sessions-"));
+  try {
+    const fichierSessions = join(dossier, "sessions.json");
+    const avant = creerGestionnaireSessions({ motDePasseMJ: "secret-mj", fichierSessions });
+    const { jeton } = await avant.connecter({ role: "mj", motDePasse: "secret-mj" }, "1.1.1.1");
+    const joueur = (await avant.connecter({ role: "joueur", pseudo: "Thrall" }, "1.1.1.1")).jeton;
+    assert.doesNotMatch(readFileSync(fichierSessions, "utf8"), new RegExp(jeton));
+
+    const apres = creerGestionnaireSessions({ motDePasseMJ: "secret-mj", fichierSessions });
+    assert.deepEqual(apres.verifier(jeton), { role: "mj", pseudo: "Maitre du Jeu" });
+    assert.deepEqual(apres.verifier(joueur), { role: "joueur", pseudo: "Thrall" });
+    assert.equal(apres.verifier("jeton-invente"), null);
+
+    // Un joueur expulse : ses sessions ne reviennent pas apres un redemarrage.
+    apres.revoquerPseudo("thrall");
+    assert.equal(creerGestionnaireSessions({ motDePasseMJ: "secret-mj", fichierSessions }).verifier(joueur), null);
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test("un fichier de sessions abime n'empeche pas de demarrer : chacun se reconnecte", () => {
+  const dossier = mkdtempSync(join(tmpdir(), "vtt-sessions-"));
+  try {
+    const fichierSessions = join(dossier, "sessions.json");
+    writeFileSync(fichierSessions, "{ pas du json");
+    assert.equal(creerGestionnaireSessions({ motDePasseMJ: "secret-mj", fichierSessions }).nombreSessions(), 0);
+  } finally {
+    rmSync(dossier, { recursive: true, force: true });
+  }
+});
+
+test("menage : les jetons expires disparaissent", async () => {
+  const s = creerGestionnaireSessions({ motDePasseMJ: "secret-mj" });
+  await s.connecter({ role: "joueur", pseudo: "Thrall" }, "1.1.1.1");
+  assert.equal(s.nombreSessions(), 1);
+  assert.equal(s.nettoyer(Date.now() + 13 * 60 * 60 * 1000), 1); // 13 h plus tard
+  assert.equal(s.nombreSessions(), 0);
 });

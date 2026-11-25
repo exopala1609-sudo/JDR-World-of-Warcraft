@@ -98,7 +98,8 @@ try {
   console.error("     fichier : chaque joueur choisira alors un nouveau mot de passe.\n");
   process.exit(1);
 }
-const sessions = creerGestionnaireSessions({ ...config, comptes });
+// Les sessions ouvertes survivent a un redemarrage (voir auth/sessions.js).
+const sessions = creerGestionnaireSessions({ ...config, comptes, fichierSessions: join(config.dossiers.parties, "sessions.json") });
 
 // --- 4. Serveur web -------------------------------------------------------------
 const app = express();
@@ -206,6 +207,7 @@ serveurHttp.listen(config.port, config.hote, async () => {
   if (referentielInstalle.length) console.log(`  Referentiel vide : exemples installes (${referentielInstalle.join(", ")}).`);
   console.log(`  Referentiel : ${resumerReferentiel(rapportReferentiel)}.`);
   for (const erreur of rapportReferentiel.erreurs) console.log(`  !! ${situerErreur(erreur)} : ${erreur.message}`);
+  if (sessions.nombreSessions()) console.log(`  Sessions reprises : ${sessions.nombreSessions()} (personne n'a a se reconnecter).`);
   if (!sessions.motDePasseUtilisable) {
     console.log("  !! Acces MJ DESACTIVE : definis VTT_MOTDEPASSE_MJ (6 caracteres min.) dans .env.");
   }
@@ -269,3 +271,18 @@ function arreter() {
 }
 process.once("SIGINT", arreter);
 process.once("SIGTERM", arreter);
+
+// Plantage imprevu (une erreur que personne n'a rattrapee) : on ecrit d'abord
+// tout ce qui attend encore en memoire, PUIS on s'arrete. Sur le NAS, le
+// script de demarrage relance le serveur ; les joueurs se reconnectent seuls.
+function plantage(erreur) {
+  console.error("\n  !! Erreur imprevue, le serveur s'arrete :", erreur);
+  try {
+    depot.vider();
+  } catch (echec) {
+    console.error("  !! Sauvegarde d'urgence impossible :", echec.message);
+  }
+  process.exit(1);
+}
+process.on("uncaughtException", plantage);
+process.on("unhandledRejection", plantage);
