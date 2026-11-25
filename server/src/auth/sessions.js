@@ -11,7 +11,7 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { ROLES } from "../../../shared/protocole.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 
-const DUREE_JETON_MS = 12 * 60 * 60 * 1000; // une longue soiree de jeu
+export const DUREE_JETON_MS = 12 * 60 * 60 * 1000; // une longue soiree de jeu
 const ESSAIS_MAX = 5;
 const FENETRE_ESSAIS_MS = 15 * 60 * 1000;
 const MOTS_DE_PASSE_INTERDITS = new Set(["", "change-moi"]);

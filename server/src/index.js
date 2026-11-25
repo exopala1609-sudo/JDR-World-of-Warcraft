@@ -139,7 +139,7 @@ app.get(["/test", "/test/*"], (_requete, reponse) => reponse.redirect(301, "/"))
 
 // Medias : servis directement depuis le dossier (cloud) du MJ, sans upload,
 // avec une image de remplacement grise pour tout fichier encore absent.
-app.use(routesMedias(config));
+app.use(routesMedias(config, sessions));
 
 // Une adresse d'API inconnue : une vraie erreur, pas la page du jeu.
 app.use("/api", (_requete, reponse) => reponse.status(404).json({ erreur: "Adresse inconnue." }));

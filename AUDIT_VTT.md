@@ -575,3 +575,21 @@ Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu pré
 - N'importe qui ayant le lien peut encore créer un **nouveau** pseudo. Le filtre par e-mail (lot 6) fermera cette porte.
 - Après une réinitialisation, le premier qui se connecte avec ce pseudo choisit le mot de passe : le MJ doit prévenir le joueur rapidement.
 - Les personnages existants n'ont pas de compte : le premier qui se connecte avec leur pseudo le revendique. Sans conséquence ici (personnages d'essai).
+
+---
+
+# Suivi — lot 3 livré (25 novembre 2026)
+
+**Lot 2** validé par l'utilisateur, publié sur `main`.
+
+**Lot 3 — images et sons réservés aux personnes connectées**, sur `claude/bold-mendel-k31nk5`, en attente de validation :
+
+- À la connexion, le serveur pose un **cookie** (copie du jeton, `httpOnly`, `sameSite=strict`, `secure` en https, 12 h). Le navigateur le présente tout seul pour chaque image.
+- **Cartes, jetons, portraits, icônes et sons** : refusés (401) sans cookie valide. Un joueur expulsé ou un serveur redémarré invalide aussitôt l'accès.
+- Ces réponses sont marquées `private` : un intermédiaire comme Cloudflare ne doit jamais les garder en cache et les resservir à un inconnu. Point important pour le lot 6.
+- **Restent ouverts** : textures de l'interface et polices (l'écran de connexion en a besoin, elles ne révèlent rien de la partie).
+- Vérifié : 184 tests (2 nouveaux), compilation, essai réel (inconnu refusé sur carte, son et portrait ; joueur connecté qui voit la carte, aussi après F5 ; cookie d'un expulsé refusé).
+
+**Ce que le lot ne fait pas (choix validé)** : un joueur connecté peut toujours retrouver l'image entière de la carte dans son navigateur. La réponse prévue est la vision par joueur (scènes et champ de vision, lots 9 et 10), pas un découpage de la carte côté serveur.
+
+**I2 (images de Blizzard)** : réglé pour la partie ; les textures d'interface restent accessibles sans connexion, ce qui sera couvert par le filtre par e-mail du lot 6.

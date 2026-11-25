@@ -500,6 +500,9 @@ class Jeu {
     this.jeton = jeton;
     this.memoriser({ jeton, profil });
     this.modifier({ profil });
+    // Le cookie qui ouvre les images, sons et cartes (voir server/src/auth/cookie.js) :
+    // redemande a chaque demarrage d'onglet (F5, plusieurs onglets). Sans effet s'il echoue.
+    fetch("/api/cookie", { method: "POST", headers: { Authorization: `Bearer ${jeton}` } }).catch(() => {});
     const socket = io({ auth: { jeton } });
     this.socket = socket;
 

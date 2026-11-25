@@ -8,9 +8,17 @@
 // Une image peut etre demandee SANS extension (ex. /medias/icones/epee-longue) :
 // le serveur cherche alors epee-longue.png, .webp, .jpg... C'est ce qui permet
 // au compendium de parler d'icones sans se soucier du format du fichier.
+//
+// QUI PEUT LES VOIR ? Les cartes, jetons, portraits, icones et sons sont
+// reserves aux personnes connectees (le cookie de connexion, voir
+// auth/cookie.js) : quelqu'un qui devine une adresse d'image ne recoit rien.
+// Les textures de l'interface et les polices restent ouvertes : l'ecran de
+// connexion en a besoin AVANT que l'on soit connecte, et elles ne revelent
+// rien de la partie.
 import { existsSync, readdirSync } from "node:fs";
 import { basename, extname, join, relative, sep } from "node:path";
 import express from "express";
+import { lireCookieJeton } from "./auth/cookie.js";
 import { CATEGORIES_PUBLIQUES } from "./config.js";
 import { bibliothequeIcones } from "./donnees/bibliotheque-icones.js";
 
@@ -20,6 +28,11 @@ export const EXTENSIONS_SON = [".ogg", ".mp3", ".wav", ".m4a", ".webm"];
 // (Les polices, elles, repondent "introuvable" : le navigateur passe alors a
 // la police de substitution.)
 const CATEGORIES_IMAGES = ["cartes", "jetons", "portraits", "icones"];
+// Reservees aux personnes connectees.
+export const CATEGORIES_PROTEGEES = ["cartes", "jetons", "portraits", "icones", "sons"];
+// "private" : le navigateur peut garder l'image, mais JAMAIS un intermediaire
+// (le reseau de Cloudflare, par exemple), qui la resservirait a n'importe qui.
+const CACHE_PROTEGE = { sons: "private, no-cache", autres: "private, max-age=3600" };
 
 const REMPLACEMENTS = {
   cartes: { largeur: 2000, hauteur: 2000, titre: "Carte introuvable" },
@@ -66,9 +79,22 @@ export function imageDeRemplacement(categorie, nom) {
 // Un nom de fichier simple : ni dossier, ni "..", ni caractere nul.
 const nomSur = (nom) => nom && basename(nom) === nom && nom !== ".." && !nom.includes("\0");
 
-export function routesMedias(config) {
+export function routesMedias(config, sessions) {
   const routeur = express.Router();
   const interfaceWow = creerIndexInterface(config.dossiers.interface);
+
+  // Le controle a l'entree des dossiers proteges, AVANT tout envoi de fichier.
+  for (const categorie of CATEGORIES_PROTEGEES) {
+    routeur.use(`/medias/${categorie}`, (requete, reponse, suite) => {
+      if (!sessions.verifier(lireCookieJeton(requete))) {
+        return reponse.set("Cache-Control", "no-store").status(401).end();
+      }
+      reponse.set("Cache-Control", CACHE_PROTEGE[categorie] ?? CACHE_PROTEGE.autres);
+      suite();
+    });
+  }
+  // Envoi d'un fichier : un dossier protege garde l'en-tete "private" pose ci-dessus.
+  const optionsEnvoi = (categorie) => (CATEGORIES_PROTEGEES.includes(categorie) ? { cacheControl: false } : { maxAge: "1h" });
 
   // La liste des textures du dossier interface/ : le navigateur y cherche
   // celles qu'il sait utiliser (bouton de fermeture, bordures...).
@@ -82,7 +108,7 @@ export function routesMedias(config) {
     // 1. Le fichier existe tel quel : on l'envoie. (Sous-dossiers permis, ex.
     //    /medias/interface/Buttons/UI-Quickslot2.png ; express.static refuse
     //    tout chemin qui tenterait de sortir du dossier avec "..".)
-    routeur.use(`/medias/${categorie}`, express.static(dossier, { maxAge: "1h", dotfiles: "ignore" }));
+    routeur.use(`/medias/${categorie}`, express.static(dossier, { ...optionsEnvoi(categorie), dotfiles: "ignore" }));
 
     // Sons : demandes sans extension (/medias/sons/murmure -> murmure.ogg, .mp3...).
     // Absent : "introuvable" ; le navigateur joue alors son son de remplacement.
@@ -92,7 +118,7 @@ export function routesMedias(config) {
         if (nomSur(nom) && !extname(nom)) {
           for (const extension of EXTENSIONS_SON) {
             const chemin = join(dossier, nom + extension);
-            if (existsSync(chemin)) return reponse.sendFile(chemin, { maxAge: 0 });
+            if (existsSync(chemin)) return reponse.sendFile(chemin, optionsEnvoi(categorie));
           }
         }
         reponse.set("Cache-Control", "no-store").status(404).end();
@@ -108,14 +134,14 @@ export function routesMedias(config) {
       if (nomSur(nom) && !extname(nom)) {
         for (const extension of EXTENSIONS_IMAGE) {
           const chemin = join(dossier, nom + extension);
-          if (existsSync(chemin)) return reponse.sendFile(chemin, { maxAge: "1h" });
+          if (existsSync(chemin)) return reponse.sendFile(chemin, optionsEnvoi(categorie));
         }
       }
       // Icones : elles peuvent etre rangees dans des sous-dossiers, avec d'autres
       // majuscules (WoW-Icones\ICONS\inv_sword_04.png pour "INV_Sword_04").
       if (categorie === "icones" && nomSur(nom)) {
         const trouve = await bibliothequeIcones(dossier).chemin(extname(nom) ? nom.slice(0, -extname(nom).length) : nom);
-        if (trouve) return reponse.sendFile(trouve, { maxAge: "1h" });
+        if (trouve) return reponse.sendFile(trouve, optionsEnvoi(categorie));
       }
       // "?remplacement=non" : pour un decor facultatif (ex. griffons de la
       // barre d'actions), on prefere "introuvable" : l'interface garde alors

@@ -102,7 +102,13 @@ personnage d'un autre.
 - Les pseudos du MJ (« MJ », « Maitre du Jeu »...) sont reserves.
 - Les fiches de PNJ, les lancers secrets du MJ, le compendium et les sauvegardes
   ne sont jamais envoyes aux navigateurs des joueurs.
+- **Images et sons reserves aux personnes connectees** : cartes, jetons,
+  portraits, icones et sons ne sont envoyes qu'a un navigateur connecte
+  (joueur ou MJ). Quelqu'un qui devine l'adresse d'une image recoit un refus ;
+  un joueur expulse perd l'acces aussitot. Ces fichiers ne sont jamais gardes
+  en memoire par un intermediaire (Cloudflare). Les textures de l'interface et
+  les polices restent ouvertes : l'ecran de connexion en a besoin.
 - Les pions de monstres caches (ou tapis dans le brouillard) ne sont jamais
-  envoyes aux joueurs. **En revanche, l'image de la carte leur est envoyee en
-  entier** : le brouillard la masque a l'affichage, mais un joueur qui ouvre
-  l'adresse de l'image dans son navigateur voit tout le donjon.
+  envoyes aux joueurs. **En revanche, l'image de la carte est envoyee en entier
+  aux joueurs connectes** : le brouillard la masque a l'affichage, mais un
+  joueur qui fouille son navigateur peut voir tout le donjon.

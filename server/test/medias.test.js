@@ -28,10 +28,13 @@ writeFileSync(join(dossiers.icones, "ICONS", "Achievements", "achievement_charac
 writeFileSync(join(dossiers.icones, "ICONS", "inv_misc_bag_07.blp"), "BLP2");
 let serveur;
 let adresse;
+// Une requete avec le cookie de connexion, comme le fait le navigateur d'un joueur connecte.
+const connecte = (url, jeton = "jeton-valide") => fetch(url, { headers: { cookie: `autre=1; vtt_jeton=${jeton}` } });
 
 before(async () => {
   const app = express();
-  app.use(routesMedias({ dossiers }));
+  // Un faux gestionnaire de sessions : seul le jeton "jeton-valide" est reconnu.
+  app.use(routesMedias({ dossiers }, { verifier: (jeton) => (jeton === "jeton-valide" ? { role: "joueur", pseudo: "Thrall" } : null) }));
   serveur = createServer(app);
   await new Promise((ok) => serveur.listen(0, "127.0.0.1", ok));
   adresse = `http://127.0.0.1:${serveur.address().port}`;
@@ -59,13 +62,13 @@ test("/api/interface : liste les images (sous-dossiers compris), sans fichiers c
 });
 
 test("icone absente : le point d'interrogation de WoW s'il est dans interface/, 404 si remplacement=non", async () => {
-  const r = await fetch(`${adresse}/medias/icones/epee-introuvable`);
+  const r = await connecte(`${adresse}/medias/icones/epee-introuvable`);
   assert.equal(r.status, 200);
   assert.equal(await r.text(), "INCONNUE");
   assert.equal(r.headers.get("cache-control"), "no-store");
-  assert.equal((await fetch(`${adresse}/medias/icones/epee-introuvable?remplacement=non`)).status, 404);
+  assert.equal((await connecte(`${adresse}/medias/icones/epee-introuvable?remplacement=non`)).status, 404);
   // Les autres categories gardent leur carre gris.
-  assert.match((await fetch(`${adresse}/medias/jetons/absent`)).headers.get("content-type"), /svg/);
+  assert.match((await connecte(`${adresse}/medias/jetons/absent`)).headers.get("content-type"), /svg/);
 });
 
 test("bibliotheque d'icones : lue une fois, recherche multi-mots, limite, actualisation", async () => {
@@ -90,14 +93,33 @@ test("bibliotheque d'icones : lue une fois, recherche multi-mots, limite, actual
 
 test("icones rangees dans des sous-dossiers, autres majuscules : trouvees ; .blp comptes a part", async () => {
   for (const nom of ["Achievement_Character_Orc_Male", "Achievement_Character_Orc_Male.png", "ACHIEVEMENT_CHARACTER_ORC_MALE"]) {
-    const r = await fetch(`${adresse}/medias/icones/${nom}?remplacement=non`);
+    const r = await connecte(`${adresse}/medias/icones/${nom}?remplacement=non`);
     assert.equal(r.status, 200, nom);
     assert.equal(await r.text(), "ORC");
   }
   // Une icone .blp n'est pas affichable : "introuvable", et le diagnostic la compte.
-  assert.equal((await fetch(`${adresse}/medias/icones/inv_misc_bag_07?remplacement=non`)).status, 404);
+  assert.equal((await connecte(`${adresse}/medias/icones/inv_misc_bag_07?remplacement=non`)).status, 404);
   const etat = await creerBibliothequeIcones(dossiers.icones).etat();
   assert.equal(etat.blp, 1);
   assert.ok(etat.sousDossiers >= 2);
   assert.deepEqual((await creerBibliothequeIcones(dossiers.icones).chercher("character orc")).icones, ["achievement_character_orc_male"]);
+});
+
+test("cartes, jetons, portraits, icones et sons : refuses sans connexion, jamais mis en cache par un intermediaire", async () => {
+  writeFileSync(join(dossiers.cartes, "donjon.png"), "CARTE");
+  for (const url of ["/medias/cartes/donjon.png", "/medias/cartes/donjon", "/medias/jetons/absent", "/medias/icones/INV_Sword_04", "/medias/sons/murmure"]) {
+    const sans = await fetch(`${adresse}${url}`);
+    assert.equal(sans.status, 401, url);
+    assert.equal((await connecte(`${adresse}${url}`, "jeton-expire")).status, 401, url);
+  }
+  const avec = await connecte(`${adresse}/medias/cartes/donjon.png`);
+  assert.equal(avec.status, 200);
+  assert.equal(await avec.text(), "CARTE");
+  assert.match(avec.headers.get("cache-control"), /^private/);
+  assert.match((await connecte(`${adresse}/medias/cartes/donjon`)).headers.get("cache-control"), /^private/);
+});
+
+test("interface et polices restent ouvertes : l'ecran de connexion en a besoin", async () => {
+  assert.equal((await fetch(`${adresse}/medias/interface/Buttons/UI-Quickslot2.png`)).status, 200);
+  assert.equal((await fetch(`${adresse}/medias/polices/absente.ttf`)).status, 404); // introuvable, pas "refuse"
 });

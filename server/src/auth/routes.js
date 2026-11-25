@@ -3,7 +3,8 @@
 // Tout le reste du jeu passe ensuite par le canal temps reel.
 import express from "express";
 import { ROLES } from "../../../shared/protocole.js";
-import { ErreurAcces } from "./sessions.js";
+import { poserCookieJeton } from "./cookie.js";
+import { DUREE_JETON_MS, ErreurAcces } from "./sessions.js";
 
 export function routesAcces(sessions) {
   const routeur = express.Router();
@@ -12,6 +13,8 @@ export function routesAcces(sessions) {
     try {
       const resultat = await sessions.connecter(requete.body ?? {}, requete.ip);
       console.log(`[acces] ${resultat.profil.pseudo} connecte (${resultat.profil.role})${resultat.compteCree ? " : nouveau compte" : ""}.`);
+      // Le meme jeton, en cookie : pour les images, sons et cartes (voir cookie.js).
+      poserCookieJeton(requete, reponse, resultat.jeton, DUREE_JETON_MS);
       reponse.json(resultat);
     } catch (erreur) {
       if (erreur instanceof ErreurAcces) {
@@ -21,6 +24,15 @@ export function routesAcces(sessions) {
         reponse.status(500).json({ erreur: "Erreur interne du serveur." });
       }
     }
+  });
+
+  // Un onglet qui reprend sa session (F5) redemande son cookie : utile si le
+  // navigateur l'a perdu, ou si plusieurs onglets jouent des roles differents.
+  routeur.post("/api/cookie", (requete, reponse) => {
+    const jeton = requete.get("authorization")?.replace(/^Bearer\s+/i, "");
+    if (!sessions.verifier(jeton)) return reponse.status(401).json({ erreur: "Session expiree." });
+    poserCookieJeton(requete, reponse, jeton, DUREE_JETON_MS);
+    reponse.json({ ok: true });
   });
 
   return routeur;
