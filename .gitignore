@@ -27,3 +27,8 @@ donnees-mj/
 *.tsbuildinfo
 vtt.log
 vtt.ancien.log
+
+# NAS : outils telecharges, journaux, pause pendant une mise a jour
+.outils/
+vtt-nas.log
+.maintenance

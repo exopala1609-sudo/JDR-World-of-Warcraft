@@ -609,3 +609,33 @@ Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu pré
 **Non testé en réel** : l'écriture d'urgence sur plantage (il faudrait provoquer un vrai plantage ; le mécanisme est court et repose sur la même fonction que l'arrêt normal, elle testée).
 
 **Toujours en mémoire seulement** : la liste des joueurs expulsés (un expulsé peut revenir après un redémarrage, avec son mot de passe) et les jets de dés en attente de validation.
+
+---
+
+# Suivi — lot 5 préparé (25 novembre 2026)
+
+**Lots 3 et 4** validés par l'utilisateur, publiés sur `main`. Domaine choisi : `exopala.com` chez Cloudflare.
+
+**Lot 5 — installation sur le NAS (réseau local)**, publié sur `main` sans attendre de test, par nécessité : la branche `deploiement` dont le NAS a besoin n'est fabriquée qu'à partir de `main`. Seul le texte de la bannière de démarrage change côté PC.
+
+- **GitHub compile pour le NAS** (`.github/workflows/deploiement.yml`) : à chaque version de `main`, tests puis compilation, puis publication sur la branche `deploiement` avec l'interface déjà compilée. Le NAS (~300 Mo libres) n'a jamais à compiler.
+- **Scripts NAS** (`scripts/nas-*.sh`) :
+  - `nas-installer.sh` vérifie Node.js et git, installe les bibliothèques et demande le mot de passe du MJ (`.env` créé en droits 600).
+  - `nas-demarrer.sh` relance la table si elle s'arrête et refuse un double lancement.
+  - `nas-arreter.sh` arrête proprement.
+  - `nas-mettre-a-jour.sh` télécharge, met en pause, installe et vérifie ; il revient tout seul à l'ancienne version en cas d'échec.
+  - Aucune dépendance à `pgrep`/`pkill` (non garantis sur DSM). L'outil de tunnel et le cache npm sont rangés dans `.outils/`.
+- Le serveur reconnaît un dossier de NAS (`/volume1/...`) : plus d'alerte « dossier cloud ». La bannière n'affiche plus l'ancienne page `/test/`, et n'affiche plus de lien réseau quand `VTT_HOTE=127.0.0.1`.
+- **Guide réécrit** : `docs/NAS-SYNOLOGY.md` (sécurisation, utilisateur `vtt`, deux dossiers partagés, copie des données, SSH une seule fois, tâches planifiées, mise à jour, Hyper Backup vers Google Drive).
+- Vérifié : 188 tests, compilation, et une **répétition générale sur un faux NAS** :
+  - installation, mot de passe demandé au clavier ;
+  - démarrage et double lancement refusé ;
+  - mise à jour réussie (moins de 10 s) ;
+  - version volontairement cassée refusée, l'ancienne remise toute seule ;
+  - arrêt propre.
+
+**À vérifier sur le vrai NAS** :
+- `git` fourni par Git Server ;
+- une tâche « au démarrage » peut tourner en permanence ;
+- mémoire réellement utilisée ;
+- chemin `/volume1`.

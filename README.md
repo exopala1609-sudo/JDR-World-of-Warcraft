@@ -40,7 +40,7 @@ Modifier les races, classes et regles de creation : [docs/REFERENTIEL.md](docs/R
 Polices, portraits, icones : [docs/PERSONNALISER.md](docs/PERSONNALISER.md).
 Copies de secours et restauration d'une partie : [docs/SAUVEGARDES.md](docs/SAUVEGARDES.md).
 Pour des joueurs hors de ton reseau, voir [docs/ACCES-JOUEURS.md](docs/ACCES-JOUEURS.md).
-Hebergement permanent sur un NAS Synology avec nom de domaine : [docs/NAS-SYNOLOGY.md](docs/NAS-SYNOLOGY.md).
+Installer la table sur un NAS Synology (demarrage automatique, mises a jour en un clic) : [docs/NAS-SYNOLOGY.md](docs/NAS-SYNOLOGY.md).
 
 ## Ou je mets mes fichiers ?
 Dans un dossier unique — y compris un dossier synchronise (Google Drive,

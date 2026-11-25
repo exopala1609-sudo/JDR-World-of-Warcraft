@@ -1,24 +1,30 @@
 #!/bin/sh
-# Lance la table sur le NAS Synology et la relance toute seule si elle plante.
-# Appele par le Planificateur de taches de DSM au demarrage du NAS.
-# Pour l'arreter : scripts/nas-arreter.sh. Journal : vtt.log (racine du projet).
+# Lance la table sur le NAS et la relance toute seule si elle s'arrete.
+# Appele par le Planificateur de taches de DSM, au demarrage du NAS.
+# Journal : vtt.log (le precedent : vtt.ancien.log). Arret : nas-arreter.sh.
+. "$(dirname "$0")/nas-commun.sh"
 
-DOSSIER="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$DOSSIER" || exit 1
-
-# Node.js 22, installe depuis le Centre de paquets de DSM.
-NODE=/var/packages/Node.js_v22/target/usr/local/bin/node
-[ -x "$NODE" ] || NODE="$(command -v node)"
-
-if pgrep -f "server/src/index.js" >/dev/null 2>&1; then
+# Deja lancee ? (deux boucles feraient tourner deux serveurs)
+if boucle_active; then
   echo "La table tourne deja."
   exit 0
 fi
+echo "$$" > "$FICHIER_PID"
 
+journal "Demarrage de la table (Node.js $("$NODE" --version))."
 while true; do
-  # Garde le journal precedent, pour ne pas remplir le disque.
+  # Pendant une mise a jour (fichier .maintenance), on attend sans relancer.
+  if [ -f .maintenance ]; then
+    sleep 3
+    continue
+  fi
+  # On garde le journal precedent, pour ne pas remplir le disque.
   [ -f vtt.log ] && mv -f vtt.log vtt.ancien.log
-  "$NODE" server/src/index.js >> vtt.log 2>&1
-  echo "$(date) : serveur arrete, relance dans 30 s" >> vtt.ancien.log
-  sleep 30
+  "$NODE" server/src/index.js >> vtt.log 2>&1 &
+  echo "$!" > "$FICHIER_PID_SERVEUR"
+  wait "$!"
+  code=$?
+  rm -f "$FICHIER_PID_SERVEUR"
+  [ -f .maintenance ] || journal "Le serveur s'est arrete (code $code), relance dans 5 s."
+  sleep 5
 done

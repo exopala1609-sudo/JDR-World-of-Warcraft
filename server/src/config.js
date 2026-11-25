@@ -136,6 +136,9 @@ export function construireConfig(env = process.env) {
     adressePublique: brutDe(env.VTT_ADRESSE_PUBLIQUE) || "",
     racineAssets,
     cloud: racineAssets ? detecterCloud(racineAssets) : null,
+    // Un NAS Synology (/volume1/...) : les donnees y sont la reference, pas un
+    // dossier cloud synchronise entre deux PC.
+    nas: Boolean(racineAssets && /^\/volume\d+\//.test(racineAssets)),
     dossiers,
   };
 }

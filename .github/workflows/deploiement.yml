@@ -1,0 +1,42 @@
+# Version prete pour le NAS.
+#
+# A chaque nouvelle version sur la branche main, GitHub :
+#   1. relance les tests (rien de casse ne part sur le NAS) ;
+#   2. compile l'interface (le NAS n'a pas assez de memoire pour le faire) ;
+#   3. publie le tout, interface compilee comprise, sur la branche "deploiement".
+# Le NAS ne fait que telecharger cette branche (scripts/nas-mettre-a-jour.sh).
+name: Deploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # bouton "Run workflow" sur GitHub, pour relancer a la main
+
+permissions:
+  contents: write # pour publier la branche "deploiement"
+
+concurrency: deploiement
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm run build
+      - name: Publier la branche deploiement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Le numero de la version de main, pour savoir ce qui tourne sur le NAS.
+          echo "${GITHUB_SHA}" > VERSION
+          git checkout --orphan deploiement
+          git add -A
+          git add -f client/dist
+          git commit -q -m "Version prete pour le NAS (main ${GITHUB_SHA::7})"
+          git push -f origin deploiement

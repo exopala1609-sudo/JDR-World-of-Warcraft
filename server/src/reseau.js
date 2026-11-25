@@ -12,7 +12,7 @@ export function adressesLocales() {
 // serveur de jeu : le bandeau doit donner l'adresse que l'on ouvre vraiment.
 export const PORT_VITE = 5173;
 
-export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }, { modeDev = false } = {}) {
+export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste, hote = "0.0.0.0", adressePublique = "" }, { modeDev = false } = {}) {
   const portInterface = modeDev ? PORT_VITE : port;
   const lignes = [
     "",
@@ -23,11 +23,15 @@ export function afficherBanniere({ port, nomDeLaPartie, nomDuPoste }, { modeDev 
     `   Interface de jeu (WoW) : http://localhost:${portInterface}/`,
   ];
 
-  for (const ip of adressesLocales()) {
-    lignes.push(`   Lien joueurs (reseau)  : http://${ip}:${portInterface}/`);
+  // Ecoute limitee a la machine elle-meme (NAS derriere son tunnel) : pas de lien reseau.
+  if (hote === "127.0.0.1" || hote === "localhost") {
+    lignes.push("   Reseau local          : ferme (seul le tunnel peut entrer, VTT_HOTE=127.0.0.1)");
+  } else {
+    for (const ip of adressesLocales()) {
+      lignes.push(`   Lien joueurs (reseau)  : http://${ip}:${portInterface}/`);
+    }
   }
-
-  lignes.push("", `   Outils du MJ           : http://localhost:${portInterface}/test/`);
+  if (adressePublique) lignes.push(`   Adresse des joueurs    : ${adressePublique}`);
 
   lignes.push(
     "",

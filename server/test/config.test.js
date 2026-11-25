@@ -53,3 +53,8 @@ test("un sous-dossier deplace (VTT_ASSETS_PARTIES...) obeit aux memes regles", (
   const ko = construireConfig({ VTT_ASSETS: "/srv/jdr", VTT_ASSETS_PARTIES: "parties" });
   assert.match(ko.problemes[0], /VTT_ASSETS_PARTIES=parties : ce n'est pas un chemin absolu/);
 });
+
+test("un dossier de NAS Synology est reconnu (pas d'alerte « dossier cloud »)", () => {
+  assert.equal(construireConfig({ VTT_ASSETS: "/volume1/jdr" }).nas, true);
+  assert.equal(construireConfig({ VTT_ASSETS: "/srv/jdr" }).nas, false);
+});

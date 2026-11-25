@@ -178,7 +178,7 @@ serveurHttp.listen(config.port, config.hote, async () => {
   console.log(`  Sauvegardes      : ${config.dossiers.parties}${config.cloud ? `  (${config.cloud})` : ""}`);
   console.log(`  Donnees chargees : ${bilan.tables} table(s), ${bilan.personnages} personnage(s).`);
   if (copieDemarrage) console.log(`  Copie de secours : ${copieDemarrage}  (dans ${config.dossiers.sauvegardes})`);
-  if (!config.cloud) {
+  if (!config.cloud && !config.nas) {
     console.log("  !! Ce dossier n'est pas reconnu comme un dossier cloud (OneDrive, Google Drive...).");
     console.log("     Les parties sauvegardees ici ne seront PAS visibles depuis ton autre PC.");
   }
