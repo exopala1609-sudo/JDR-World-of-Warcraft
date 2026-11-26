@@ -55,7 +55,12 @@
             }
           ]
         }
-      ]
+      ],
+      "langue": "commun",
+      "renommee": {
+        "faction": "hurlevent",
+        "valeur": 3
+      }
     },
     {
       "id": "nain",
@@ -86,7 +91,12 @@
         }
       ],
       "source": "SRD 5.2",
-      "pvParNiveau": 1
+      "pvParNiveau": 1,
+      "langue": "nain",
+      "renommee": {
+        "faction": "forgefer",
+        "valeur": 3
+      }
     },
     {
       "id": "elfe",
@@ -167,7 +177,8 @@
             }
           ]
         }
-      ]
+      ],
+      "langue": "thalassien"
     },
     {
       "id": "gnome",
@@ -193,7 +204,12 @@
           "description": "Tu connais Réparation et Prestidigitation, et tu peux fabriquer de petits mécanismes (jouet, briquet, boîte à musique) avec Prestidigitation."
         }
       ],
-      "source": "SRD 5.2"
+      "source": "SRD 5.2",
+      "langue": "gnome",
+      "renommee": {
+        "faction": "gnomeregan",
+        "valeur": 3
+      }
     },
     {
       "id": "orc",
@@ -219,7 +235,12 @@
           "description": "Quand tu tombes à 0 PV sans mourir, tu restes à 1 PV. Une fois par repos long."
         }
       ],
-      "source": "SRD 5.2"
+      "source": "SRD 5.2",
+      "langue": "orc",
+      "renommee": {
+        "faction": "orgrimmar",
+        "valeur": 3
+      }
     }
   ]
 }

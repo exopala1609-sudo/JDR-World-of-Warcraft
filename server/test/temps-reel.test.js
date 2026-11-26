@@ -289,6 +289,7 @@ test("premiere connexion : un joueur sans personnage reste a la porte, puis entr
       specialisation: "precision",
       historique: "criminel",
       repartition: { dexterite: 2, constitution: 1 },
+      langues: ["orc", "gobelin", "zandali"],
       methode: "achat-de-points",
       caracteristiques: { force: 8, dexterite: 15, constitution: 15, intelligence: 10, sagesse: 12, charisme: 8 },
     };
@@ -384,6 +385,7 @@ test("tirage aux des : vu par toute la table, 2 relances offertes puis sur accor
       specialisation: "armes",
       historique: "soldat",
       repartition: { force: 2, constitution: 1 },
+      langues: ["orc", "gobelin", "zandali"],
       methode: "tirage-4d6",
       caracteristiques: { ...caracteristiques, charisme: 18, force: 18 },
     };
@@ -398,6 +400,24 @@ test("tirage aux des : vu par toute la table, 2 relances offertes puis sur accor
   } finally {
     baine.close();
   }
+});
+
+test("renommee et langues : seul le MJ les change, le joueur voit sa fiche a jour", async () => {
+  const id = perso.Garrosh.id;
+  assert.equal((await demander(thrall, EVENEMENTS.PERSONNAGE_RENOMMEE, { idPersonnage: id, faction: "orgrimmar", variation: 5 })).ok, false);
+  const chezThrall = attendre(thrall, EVENEMENTS.PERSONNAGE_MAJ, 400, (m) => m.cause.action === "renommee");
+  const r = await demander(mj, EVENEMENTS.PERSONNAGE_RENOMMEE, { idPersonnage: id, faction: "orgrimmar", variation: 5 });
+  assert.equal(r.ok, true);
+  const { personnage, cause } = await chezThrall;
+  assert.deepEqual(personnage.renommees.find((x) => x.faction === "orgrimmar").score, 5);
+  assert.deepEqual([cause.faction, cause.apres], ["Orgrimmar", 5]);
+  assert.match((await demander(mj, EVENEMENTS.PERSONNAGE_RENOMMEE, { idPersonnage: id, faction: "atlantide", score: 3 })).erreur, /inconnue/);
+  await demander(mj, EVENEMENTS.PERSONNAGE_RENOMMEE, { idPersonnage: id, faction: "orgrimmar", score: null });
+
+  assert.equal((await demander(thrall, EVENEMENTS.PERSONNAGE_LANGUE, { idPersonnage: id, langue: "kalimag", connue: true })).ok, false);
+  const ajout = await demander(mj, EVENEMENTS.PERSONNAGE_LANGUE, { idPersonnage: id, langue: "kalimag", connue: true });
+  assert.ok(ajout.personnage.langues.includes("kalimag")); // une langue rare, donnee en jeu
+  assert.equal((await demander(mj, EVENEMENTS.PERSONNAGE_LANGUE, { idPersonnage: id, langue: "kalimag", connue: false })).ok, true);
 });
 
 test("l'ecran de creation est reserve aux joueurs", async () => {

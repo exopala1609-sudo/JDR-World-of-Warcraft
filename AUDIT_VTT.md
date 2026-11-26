@@ -737,3 +737,23 @@ Réalisé :
 - les joueurs à l'écran de création reçoivent désormais en direct les réglages de la table (méthodes, lore libre) ;
 - correction d'un défaut de l'étape 1 : changer un réglage de table (ex. « PV par les joueurs ») remettait les autres (ex. « Lore libre ») à leur valeur par défaut ;
 - tests : 200, tous verts ; essai réel dans le navigateur (tirage, relance autorisée par le MJ, meilleur tirage gardé, retrait de la méthode par le MJ, création).
+
+---
+
+# Suivi — création de personnage, étape 3 : langues et renommée (26 novembre 2026)
+
+Choix validés par l'utilisateur :
+- les langues ne sont pas imposées : le joueur en choisit 3 dans la table de sa faction (deux tables pour un peuple sans faction), le Commun ou l'Orc étant seulement conseillé ;
+- hors de sa faction (lore libre), la faction de son peuple le voit d'un mauvais œil (−3, Hostile), et il peut prendre la langue de son peuple ;
+- bonus de classe du livre : Mage +3 Kirin Tor, Druide +3 Cercle cénarien, Chaman +3 Cercle terrestre ;
+- barres de réputation avec les paliers du jeu (Hostile, Neutre, Amical 3, Honoré 10, Révéré 25, Exalté 50 : seuils du chapitre 4) ;
+- seul le MJ modifie la renommée et les langues en jeu.
+
+Réalisé :
+- référentiel : sections `langues` et `renommees` (24 factions, avantages par palier résumés du chapitre 4 dans les fichiers privés), langue du peuple, renommée de classe, paliers dans `creation` ;
+- fiche version 8 : `langues` et `renommees`, migration des anciennes fiches (listes vides) ;
+- création : choix des langues, renommée de départ affichée avec son palier (en rouge si négative) ;
+- fiche (touche C) : section « Réputation » (barres colorées, avantages dépliables, palier suivant en grisé) et « Langues » ; boutons du MJ (−, +, retirer, ajouter une faction ou une langue, y compris rare) ;
+- tests : 208, tous verts ; essai réel dans le navigateur.
+
+Pas encore automatisé (à la main par le MJ) : la hausse de la faction de départ quand une autre sous-faction de son camp atteint un palier ; les avantages Alliance/Horde (Honoré, Révéré, Ambassadeur).

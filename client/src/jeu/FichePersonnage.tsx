@@ -10,6 +10,7 @@ import { rolePortrait, useTexture, useTextures, type RoleTexture } from "@/core/
 import { InfobulleObjet } from "@/jeu/Sacs";
 import { Fenetre } from "@/ui/Fenetre";
 import { preparerGlisser, useCible } from "@/ui/glisser";
+import { Langues, Reputation } from "./Reputation";
 import { avecInfobulle } from "@/ui/InfoBulle";
 
 // Les emplacements d'equipement, disposes comme dans WoW (identifiants de shared/equipement.js).
@@ -294,6 +295,8 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
               </div>
             ))}
           </details>
+          <Reputation p={p} />
+          <Langues p={p} />
           <details>
             <summary>Grimoire ({p.grimoire.length})</summary>
             {p.grimoire.map((s) => (

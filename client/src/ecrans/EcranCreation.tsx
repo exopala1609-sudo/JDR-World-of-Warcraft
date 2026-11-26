@@ -6,6 +6,10 @@ import {
   choixPossibles,
   choixRetenus,
   detailsOrigine,
+  languesProposees,
+  palierRenommee,
+  renommeesDeDepart,
+  verifierLangues,
   methodesDeLaTable,
   valeursARepartir,
   NOMS_CARACTERISTIQUES,
@@ -134,6 +138,24 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
     else if (!donsSupplementaires.some((d) => d.id === donSupplementaire)) setDonSupplementaire(donsSupplementaires[0].id);
   }, [race?.id, historique?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Langues (etape 3) : choisies dans la table de la faction ; celles qui ne sont
+  // plus proposees (autre faction, autre peuple) sont retirees.
+  const [langues, setLangues] = useState<string[]>([]);
+  // Les conseillees (Commun, Orc) d'abord, puis par ordre alphabetique.
+  const rangLangue = (id: string) => referentiel.langues.find((l) => l.id === id);
+  const languesPossibles = (race ? (languesProposees({ race, choixOptions: options, idFaction }, referentiel) as string[]) : []).sort(
+    (a, b) => Number(Boolean(rangLangue(b)?.conseillee)) - Number(Boolean(rangLangue(a)?.conseillee)) || (rangLangue(a)?.nom ?? a).localeCompare(rangLangue(b)?.nom ?? b, "fr"),
+  );
+  const nombreLangues = Math.min(regles.languesAuChoix, languesPossibles.length);
+  useEffect(() => {
+    setLangues((l) => l.filter((x) => languesPossibles.includes(x)));
+  }, [languesPossibles.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+  const basculerLangue = (id: string) =>
+    setLangues((l) => (l.includes(id) ? l.filter((x) => x !== id) : l.length < nombreLangues ? [...l, id] : l));
+  // Renommee de depart : peuple + classe, avec le malus hors faction.
+  const renommeesDepart =
+    race && classe ? (renommeesDeDepart({ race, classe, choixOptions: options, idFaction }, referentiel) as { faction: string; score: number }[]) : [];
+
   // --- Enchainement des choix (comme dans WoW : faction -> race -> classe) ---------------
   const choisirFaction = (id: string) => {
     setIdFaction(id);
@@ -232,6 +254,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         (referentiel.historiques.length ? verifierRepartitionHistorique(historique, repartition) : null) ??
         (classe.specialisations.length && !idSpecialisation ? "Choisis une specialisation." : null) ??
         (race.donOrigineSupplementaire && !donSupplementaire ? "Choisis ton don d'origine supplementaire." : null) ??
+        (verifierLangues(langues, languesPossibles, regles.languesAuChoix) as string | null) ??
         verifierBase(methode, base, regles, { methodes, valeursTirage }) ??
         verifierChoixBonus(race, bonusAuChoix) ??
         (nom.trim().length < 2 ? "Donne un nom a ton personnage." : null));
@@ -256,6 +279,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
       options,
       specialisation: classe.specialisations.length ? idSpecialisation : null,
       donSupplementaire: race.donOrigineSupplementaire ? donSupplementaire : null,
+      langues,
       ignorerLore: ignorerLore && loreAutorise,
     });
     // En cas de succes, le magasin bascule tout seul sur l'ecran de jeu.
@@ -373,9 +397,19 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
               {race.pvParNiveau ? ` - +${race.pvParNiveau} PV par niveau` : ""}
               {BonusTexte(race) ? ` - Bonus : ${BonusTexte(race)}` : ""}
             </p>
-            {apercu.renommee && (
+            {renommeesDepart.length > 0 && (
               <p>
-                <b>Renommee de depart :</b> {apercu.renommee.faction} ({apercu.renommee.valeur})
+                <b>Renommee de depart :</b>{" "}
+                {renommeesDepart.map((r, i) => {
+                  const faction = referentiel.renommees.find((f) => f.id === r.faction);
+                  const { palier } = palierRenommee(r.score, regles.paliersRenommee);
+                  return (
+                    <span key={r.faction} className={r.score < 0 ? "creation__malus" : undefined}>
+                      {i > 0 ? ", " : ""}
+                      {faction?.nom ?? r.faction} {r.score} ({palier.nom})
+                    </span>
+                  );
+                })}
               </p>
             )}
             {choixRetenus(race, options)
@@ -523,6 +557,36 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
                   ))}
                 </select>
               </label>
+            )}
+          </>
+        )}
+
+        {languesPossibles.length > 0 && (
+          <>
+            <h2 className="creation__titre titre-or">
+              Langues ({langues.length}/{nombreLangues})
+            </h2>
+            <div className="creation__langues">
+              {languesPossibles.map((id) => {
+                const langue = referentiel.langues.find((l) => l.id === id);
+                const choisie = langues.includes(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`creation__langue${choisie ? " creation__langue--choisie" : ""}`}
+                    aria-pressed={choisie}
+                    disabled={!choisie && langues.length >= nombreLangues}
+                    title={langue?.description || undefined}
+                    onClick={() => basculerLangue(id)}
+                  >
+                    {langue?.nom ?? id}
+                  </button>
+                );
+              })}
+            </div>
+            {langues.length === nombreLangues && !langues.some((id) => referentiel.langues.find((l) => l.id === id)?.conseillee) && (
+              <p className="creation__conseil">Conseil : le Commun ou l'Orc permet de parler avec la plupart des peuples de sa faction.</p>
             )}
           </>
         )}

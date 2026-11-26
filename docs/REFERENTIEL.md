@@ -34,6 +34,8 @@ modèles du projet (`exemples/referentiel/`), avec un `LISEZ-MOI.txt`.
 | `ressources.json` | Jauges et compteurs : maximum, départ plein/vide, règles de repos |
 | `historiques.json` | Historiques (règles 2024) : caractéristiques, don d'origine, compétences |
 | `dons.json` | Dons : d'origine, généraux... (le texte est affiché, pas appliqué) |
+| `langues.json` | Langues : table de faction où on les choisit, langues rares |
+| `renommees.json` | Factions de renommée (Forgefer, Kirin Tor...) et leurs avantages par palier |
 | `creation.json` | Tableau standard, achat de points, plafond, restrictions on/off |
 
 Ce découpage n'est qu'une convention : le serveur lit **tous** les `.json` du
@@ -110,6 +112,7 @@ s'écrivent `force`, `dexterite`, `constitution`, `intelligence`, `sagesse`,
 | `renommee` | facultatif. Renommée de départ, ex. `{ "faction": "Alliance", "valeur": 3 }` |
 | `donOrigineSupplementaire` | facultatif. `true` : le joueur choisit un don d'origine en plus (Humain) |
 | `source` | facultatif. D'où vient l'entrée, ex. `"SRD 5.2"` ou `"Livre, p. 42"` |
+| `langue` | facultatif. `id` de la langue du peuple : proposée en plus à un personnage joué hors de sa faction |
 | `classesAutorisees` | facultatif, ancien format. Préfère `restrictionLore` dans la classe |
 
 Une **option** propose plusieurs choix ; chaque choix peut changer la taille,
@@ -152,6 +155,7 @@ de la faction choisie.
 | `sousClasseCreation` | facultatif. Sous-classe obtenue dès le niveau 1 (ex. Chevalier de la mort) |
 | `typeCreature` | facultatif. Remplace celui du peuple (ex. `Mort-vivant` pour le Chevalier de la mort) |
 | `restrictionLore` | facultatif. Peuples autorisés par le lore, voir ci-dessous |
+| `renommee` | facultatif. Renommée gagnée en prenant la classe, ex. Mage : `{ "faction": "kirin-tor", "valeur": 3 }` |
 
 La **restriction de lore** liste les peuples (et, si besoin, les choix
 d'option) qui ont accès à la classe. Le MJ peut la lever pour sa table avec
@@ -177,6 +181,37 @@ restrictions de lore ».
 | `source` | facultatif |
 
 Dès qu'au moins un historique existe, **le joueur doit en choisir un**.
+
+### Langue
+
+| Champ | Valeurs |
+|---|---|
+| `id`, `nom` | |
+| `description` | facultatif |
+| `tables` | factions dont la table la propose à la création, ex. `["alliance"]` |
+| `rare` | facultatif. `true` : seulement donnée en jeu par le MJ |
+| `conseillee` | facultatif. `true` pour le Commun et l'Orc (le jeu le conseille) |
+
+À la création, le joueur choisit `languesAuChoix` langues (3 par défaut) dans
+la table de sa faction. Un peuple sans faction (Dracthyr sans weyrn de camp...)
+choisit dans les deux tables. Un personnage joué hors de sa faction (lore
+libre) peut aussi prendre la `langue` de son peuple.
+
+### Faction de renommée
+
+| Champ | Valeurs |
+|---|---|
+| `id`, `nom` | |
+| `faction` | son camp : `alliance`, `horde`, ou `null` pour une faction neutre |
+| `description` | facultatif |
+| `avantages` | facultatif. `[{ "palier": "honore", "nom": "...", "description": "..." }]` |
+
+La renommée de départ d'un personnage additionne celle de son peuple (ou de
+son choix de lignée, weyrn...) et celle de sa classe. **Hors de sa faction**,
+la faction de camp de son peuple part à `renommeeHorsFaction` (−3 : Hostile).
+En jeu, seul le MJ la change (fiche du personnage, touche C). Les paliers
+(`paliersRenommee`, dans `creation`) sont ceux de WoW : Hostile (moins de 0),
+Neutre (0), Amical (3), Honoré (10), Révéré (25), Exalté (50).
 
 ### Don
 
@@ -227,6 +262,9 @@ offertes ; au-delà, le MJ en accorde d'autres (fenêtre **⚅ Création**).
 Recharger la page ne donne pas de relance. Le joueur garde toujours son
 **meilleur** tirage (le total le plus haut).
 | `restrictionsRaceClasse` | `true`. `false` = plus aucune restriction de lore, pour toutes les tables |
+| `languesAuChoix` | `3` : langues choisies à la création |
+| `renommeeHorsFaction` | `-3` : renommée de départ auprès de la faction de son peuple, joué hors de sa faction |
+| `paliersRenommee` | les 6 paliers de WoW (voir « Faction de renommée ») |
 
 ## Vérifications automatiques
 
@@ -236,6 +274,8 @@ En plus de la forme de chaque entrée, le serveur vérifie les **liens** :
   n'a plus aucune faction) ;
 - une classe inconnue dans `classesAutorisees` est signalée et retirée ;
 - un peuple inconnu dans une `restrictionLore` est signalé et retiré ;
+- une faction de renommée, une langue ou un palier inconnus sont signalés
+  et ignorés ;
 - un historique dont le don d'origine manque, ou n'est pas un don
   d'origine, est signalé ;
 - une ressource inconnue dans une classe est signalée et retirée ;

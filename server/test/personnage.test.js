@@ -4,13 +4,17 @@ import {
   apercuPersonnage,
   baseParDefaut,
   detailsOrigine,
+  languesProposees,
+  palierRenommee,
   pointsDepenses,
   pvMax,
   raceDisponible,
+  renommeesDeDepart,
   repartitionParDefaut,
   restrictionDeLore,
   verifierBase,
   verifierChoixBonus,
+  verifierLangues,
   verifierOptions,
   verifierRepartitionHistorique,
 } from "../../shared/creation.js";
@@ -96,7 +100,7 @@ test("options de peuple et details d'origine : taille, type de creature, renomme
   assert.equal(verifierOptions(pandaren, { philosophie: "tushui" }, "horde", true), null); // lore libre
   assert.match(verifierOptions(pandaren, {}, "horde", false), /choisis philosophie/);
   assert.match(verifierOptions(pandaren, { philosophie: "huojin", couleur: "roux" }, "horde", false), /option inconnue/);
-  assert.deepEqual(detailsOrigine(pandaren, simule.obtenirClasse("moine"), { philosophie: "huojin" }).renommee, { faction: "Horde", valeur: 3 });
+  assert.deepEqual(detailsOrigine(pandaren, simule.obtenirClasse("moine"), { philosophie: "huojin" }).renommee, { faction: "huojin", valeur: 3 });
   // Le type de creature vient de la classe, sinon du choix, sinon du peuple.
   assert.equal(detailsOrigine(simule.obtenirRace("dracthyr"), simule.obtenirClasse("guerrier"), {}).typeCreature, "Dragon");
   const humain = simule.obtenirRace("humain");
@@ -118,6 +122,8 @@ test("restriction de lore : l'Evocateur est reserve aux Dracthyrs, le Chasseur d
 
 // --- Creation guidee (joueur) ------------------------------------------------------------
 
+const LANGUES_HORDE = ["orc", "gobelin", "zandali"]; // dans la table de la Horde
+
 const choixValides = {
   nom: "Garrosh",
   faction: "horde",
@@ -126,13 +132,14 @@ const choixValides = {
   specialisation: "armes",
   historique: "soldat",
   repartition: { force: 2, constitution: 1 },
+  langues: LANGUES_HORDE,
   methode: "tableau-standard",
   caracteristiques: { force: 15, dexterite: 12, constitution: 14, intelligence: 8, sagesse: 13, charisme: 10 },
 };
 
 test("creation guidee : le serveur applique les regles du referentiel", () => {
   const p = fabriquerPersonnageGuide(choixValides, contexte);
-  assert.equal(p.versionSchema, 7);
+  assert.equal(p.versionSchema, 8);
   assert.deepEqual([p.race, p.faction, p.classe, p.niveau, p.portrait], ["orc", "horde", "guerrier", 1, null]);
   assert.equal(p.caracteristiques.force, 17); // 15 + 2 (historique Soldat)
   assert.equal(p.caracteristiques.constitution, 15); // 14 + 1
@@ -167,7 +174,7 @@ test("creation guidee : chaque tricherie ou incoherence est refusee avec un mess
 });
 
 test("creation guidee : l'Humain choisit un don d'origine en plus, parmi ceux de son peuple", () => {
-  const humain = { ...choixValides, faction: "alliance", race: "humain", options: { taille: "moyenne" } };
+  const humain = { ...choixValides, faction: "alliance", race: "humain", options: { taille: "moyenne" }, langues: ["commun", "nain", "pandaren"] };
   const p = fabriquerPersonnageGuide({ ...humain, donSupplementaire: "vigilant" }, contexte);
   assert.deepEqual(p.origine.dons, ["agresseur-sauvage", "vigilant"]);
   const ctx = { ...contexte, referentiel: referentielSimule() };
@@ -177,23 +184,24 @@ test("creation guidee : l'Humain choisit un don d'origine en plus, parmi ceux de
 
 test("creation guidee : restriction de lore, levee seulement si le MJ autorise le lore libre", () => {
   const ctx = { ...contexte, referentiel: referentielSimule() };
-  const evocateurOrc = { ...choixValides, classe: "evocateur", specialisation: "devastation" };
+  const evocateurOrc = { ...choixValides, classe: "evocateur", specialisation: "devastation", langues: LANGUES_HORDE };
   assert.throws(() => fabriquerPersonnageGuide(evocateurOrc, ctx), /dracthyrs/);
   assert.throws(() => fabriquerPersonnageGuide({ ...evocateurOrc, ignorerLore: true }, ctx), /n'autorise pas/);
   const p = fabriquerPersonnageGuide({ ...evocateurOrc, ignorerLore: true }, { ...ctx, loreLibre: true });
   assert.equal(p.classe, "evocateur");
   // Un Dracthyr peut etre Evocateur sans lore libre ; son type de creature est garde.
-  const dracthyr = fabriquerPersonnageGuide({ ...evocateurOrc, race: "dracthyr" }, ctx);
+  // Le Dracthyr n'a pas de faction : il choisit dans les deux tables.
+  const dracthyr = fabriquerPersonnageGuide({ ...evocateurOrc, race: "dracthyr", langues: ["commun", "orc", "nain"] }, ctx);
   assert.equal(dracthyr.origine.typeCreature, "Dragon");
 });
 
 test("creation guidee : le Pandaren de la Horde suit la philosophie Huojin, et la renommee est notee", () => {
   const ctx = { ...contexte, referentiel: referentielSimule() };
-  const pandaren = { ...choixValides, race: "pandaren", classe: "moine", specialisation: "tisse-brume" };
+  const pandaren = { ...choixValides, race: "pandaren", classe: "moine", specialisation: "tisse-brume", langues: LANGUES_HORDE };
   assert.throws(() => fabriquerPersonnageGuide({ ...pandaren, options: { philosophie: "tushui" } }, ctx), /indisponible pour cette faction/);
   const p = fabriquerPersonnageGuide({ ...pandaren, options: { philosophie: "huojin" } }, ctx);
   assert.deepEqual(p.origine.optionsRace, { philosophie: "huojin" });
-  assert.deepEqual(p.origine.renommee, { faction: "Horde", valeur: 3 });
+  assert.deepEqual(p.origine.renommee, { faction: "huojin", valeur: 3 });
 });
 
 test("creation guidee : portrait choisi parmi les fichiers du dossier", () => {
@@ -204,7 +212,7 @@ test("creation guidee : portrait choisi parmi les fichiers du dossier", () => {
 test("restrictions desactivees dans creation.json : plus de controle de lore", () => {
   const simule = referentielSimule();
   const permissif = { ...simule, reglesCreation: () => ({ ...simule.reglesCreation(), restrictionsRaceClasse: false }) };
-  const p = fabriquerPersonnageGuide({ ...choixValides, classe: "evocateur", specialisation: "devastation" }, { ...contexte, referentiel: permissif });
+  const p = fabriquerPersonnageGuide({ ...choixValides, classe: "evocateur", specialisation: "devastation", langues: LANGUES_HORDE }, { ...contexte, referentiel: permissif });
   assert.equal(p.classe, "evocateur");
 });
 
@@ -238,4 +246,58 @@ test("creation guidee : le sexe choisi est garde (portrait par defaut race + sex
   assert.equal(fabriquerPersonnageGuide({ ...choixValides, sexe: "feminin" }, contexte).sexe, "feminin");
   assert.equal(fabriquerPersonnageGuide(choixValides, contexte).sexe, null);
   assert.throws(() => fabriquerPersonnageGuide({ ...choixValides, sexe: "autre" }, contexte));
+});
+
+// --- Langues et renommee (etape 3) --------------------------------------------------------
+
+test("langues proposees : table de sa faction, deux tables sans faction, langue du peuple hors faction", () => {
+  const simule = referentielSimule();
+  const liste = simule.lister();
+  const proposees = (race, idFaction, choixOptions = {}) => languesProposees({ race: simule.obtenirRace(race), idFaction, choixOptions }, liste);
+  const horde = proposees("orc", "horde");
+  assert.ok(["orc", "gobelin", "zandali", "taur-ahe"].every((l) => horde.includes(l)));
+  assert.ok(!horde.includes("commun") && !horde.includes("kalimag")); // ni l'autre table, ni les langues rares
+  const dracthyr = proposees("dracthyr", "horde"); // sans faction : les deux tables
+  assert.ok(dracthyr.includes("commun") && dracthyr.includes("orc"));
+  assert.ok(!proposees("pandaren", "alliance", { philosophie: "tushui" }).includes("orc"));
+  // Un Orc dans l'Alliance (lore libre) garde la langue de son peuple.
+  const orcAlliance = proposees("orc", "alliance");
+  assert.ok(orcAlliance.includes("commun") && orcAlliance.includes("orc") && !orcAlliance.includes("gobelin"));
+  assert.equal(verifierLangues(["orc", "gobelin", "zandali"], horde, 3), null);
+  assert.match(verifierLangues(["orc", "orc", "zandali"], horde, 3), /deux fois/);
+  assert.match(verifierLangues(["orc", "kalimag", "zandali"], horde, 3), /non proposee/);
+  assert.match(verifierLangues(["orc"], horde, 3), /Choisis 3 langues/);
+});
+
+test("renommee de depart : peuple + classe, et malus hors faction", () => {
+  const simule = referentielSimule();
+  const liste = simule.lister();
+  const depart = (race, classe, idFaction, choixOptions = {}) =>
+    renommeesDeDepart({ race: simule.obtenirRace(race), classe: simule.obtenirClasse(classe), idFaction, choixOptions }, liste);
+  assert.deepEqual(depart("orc", "guerrier", "horde"), [{ faction: "orgrimmar", score: 3 }]);
+  // Mage : +3 Kirin Tor (neutre : pas de malus).
+  assert.deepEqual(depart("orc", "magicien", "horde"), [{ faction: "orgrimmar", score: 3 }, { faction: "kirin-tor", score: 3 }]);
+  // Un Orc dans l'Alliance : Orgrimmar le voit d'un mauvais oeil (-3 = Hostile).
+  assert.deepEqual(depart("orc", "magicien", "alliance"), [{ faction: "orgrimmar", score: -3 }, { faction: "kirin-tor", score: 3 }]);
+  assert.deepEqual(depart("pandaren", "moine", "horde", { philosophie: "huojin" }), [{ faction: "huojin", score: 3 }]);
+});
+
+test("paliers de reputation facon WoW : Hostile, Neutre, Amical (3), Honore (10), Revere (25), Exalte (50)", () => {
+  const paliers = referentielExemple().reglesCreation().paliersRenommee;
+  const nom = (score) => palierRenommee(score, paliers).palier.nom;
+  assert.deepEqual([-3, 0, 2, 3, 9, 10, 25, 49, 50, 80].map(nom), ["Hostile", "Neutre", "Neutre", "Amical", "Amical", "Honoré", "Révéré", "Révéré", "Exalté", "Exalté"]);
+  const { suivant, progression } = palierRenommee(6, paliers);
+  assert.equal(suivant.nom, "Honoré");
+  assert.equal(progression, 3 / 7);
+  assert.equal(palierRenommee(80, paliers).progression, 1);
+});
+
+test("creation guidee : langues choisies et renommee de depart enregistrees sur la fiche", () => {
+  const ctx = { ...contexte, referentiel: referentielSimule() };
+  const mage = { ...choixValides, classe: "magicien", specialisation: "feu", historique: "sage", repartition: { intelligence: 2, constitution: 1 }, langues: LANGUES_HORDE };
+  const p = fabriquerPersonnageGuide(mage, ctx);
+  assert.deepEqual(p.langues, LANGUES_HORDE);
+  assert.deepEqual(p.renommees, [{ faction: "orgrimmar", score: 3 }, { faction: "kirin-tor", score: 3 }]);
+  assert.throws(() => fabriquerPersonnageGuide({ ...mage, langues: ["orc"] }, ctx), /Choisis 3 langues/);
+  assert.throws(() => fabriquerPersonnageGuide({ ...mage, langues: ["orc", "gobelin", "kalimag"] }, ctx), /non proposee/);
 });

@@ -112,6 +112,37 @@ test("restriction de lore : une race inconnue est signalee et ignoree", () => {
   );
 });
 
+test("langues et renommee : faction, langue et palier inconnus signales puis ignores", () => {
+  avecDossier(
+    {
+      "base.json": {
+        ...BASE,
+        classes: [{ ...BASE.classes[1], renommee: { faction: "kirin-tor", valeur: 3 } }],
+      },
+      "races.json": { races: [{ id: "orc", nom: "Orc", factions: ["horde"], renommee: { faction: "orgrimar", valeur: 3 }, langue: "orcc" }] },
+      "monde.json": {
+        langues: [{ id: "orc", nom: "Orc", tables: ["horde", "kul-tiras"] }],
+        renommees: [
+          { id: "kirin-tor", nom: "Kirin Tor", avantages: [{ palier: "amical", nom: "Kirin Tor : Amical", description: "" }, { palier: "glorieux", nom: "?", description: "" }] },
+          { id: "orgrimmar", nom: "Orgrimmar", faction: "horde" },
+        ],
+      },
+    },
+    (dossier) => {
+      const referentiel = creerReferentiel(dossier);
+      const erreurs = JSON.stringify(referentiel.charger().erreurs);
+      assert.match(erreurs, /Faction inconnue : kul-tiras/);
+      assert.match(erreurs, /Palier inconnu : glorieux/);
+      assert.match(erreurs, /Faction de renommee inconnue : orgrimar/);
+      assert.match(erreurs, /Langue inconnue : orcc/);
+      assert.equal(referentiel.obtenirRace("orc").renommee, null);
+      assert.deepEqual(referentiel.obtenirLangue("orc").tables, ["horde"]);
+      assert.equal(referentiel.obtenirRenommee("kirin-tor").avantages.length, 1);
+      assert.deepEqual(referentiel.obtenirClasse("mage").renommee, { faction: "kirin-tor", valeur: 3 });
+    },
+  );
+});
+
 test("historique : son don d'origine doit exister et etre un don d'origine", () => {
   avecDossier(
     {

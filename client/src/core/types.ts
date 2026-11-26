@@ -177,6 +177,8 @@ export type Personnage = {
   jeton: string | null; // image du pion (dossier jetons/), sinon le portrait
   // Heros cree a l'ecran de creation (regles du livre) ; null pour un monstre ou une fiche ancienne.
   origine?: OriginePersonnage | null;
+  langues?: string[]; // langues connues (ids du referentiel)
+  renommees?: { faction: string; score: number }[]; // renommee aupres des factions (le MJ la fait evoluer)
   sacPrive?: boolean; // fiche d'un autre joueur : le serveur n'envoie pas le contenu de son sac
   niveau: number;
   caracteristiques: Record<string, number>;
@@ -261,6 +263,7 @@ export type Race = {
   bonusAuChoix?: { bonus: number[]; parmi: "toutes" | Caracteristique[] };
   pvParNiveau: number;
   langues: string[];
+  langue?: string; // langue du peuple (proposee en plus hors de sa faction)
   traits: Trait[];
   classesPermises: string[]; // calcule par le serveur (restrictions comprises)
 };
@@ -290,6 +293,7 @@ export type Classe = {
   sousClasseCreation?: string;
   typeCreature?: string;
   restrictionLore?: { peuples: { race: string; choix?: string[] }[]; message: string };
+  renommee?: Renommee; // renommee gagnee en prenant cette classe (Mage : Kirin Tor)
   description: string;
   icone: string;
   couleur: string;
@@ -306,6 +310,16 @@ export type ModeleRessource = { id: string; nom: string; type: "jauge" | "compte
 
 export type MethodeCaracteristiques = "tableau-standard" | "achat-de-points" | "tirage-4d6";
 
+export type Langue = { id: string; nom: string; description: string; tables: string[]; rare: boolean; conseillee: boolean };
+export type PalierRenommee = { id: string; nom: string; min: number; couleur: string };
+export type FactionRenommee = {
+  id: string;
+  nom: string;
+  faction: string | null; // son camp (alliance, horde), null si neutre
+  description: string;
+  avantages: { palier: string; nom: string; description: string }[];
+};
+
 export type Referentiel = {
   factions: Faction[];
   races: Race[];
@@ -313,12 +327,17 @@ export type Referentiel = {
   historiques: Historique[];
   dons: Don[];
   ressources: ModeleRessource[];
+  langues: Langue[];
+  renommees: FactionRenommee[];
   creation: {
     methodes: MethodeCaracteristiques[];
     tableauStandard: number[];
     achatDePoints: { budget: number; couts: Record<string, number> };
     caracteristiqueMaximale: number;
     restrictionsRaceClasse: boolean;
+    languesAuChoix: number;
+    renommeeHorsFaction: number;
+    paliersRenommee: PalierRenommee[];
   };
 };
 

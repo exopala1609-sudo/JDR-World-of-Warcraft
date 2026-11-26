@@ -44,6 +44,13 @@ export function decrireCause(p: Personnage, cause: any): string {
       return `${p.nom} se debarrasse de [${cause.nom}].`;
     case "sort-appris":
       return `${p.nom} a appris un nouveau sort : ${cause.nom}.`;
+    case "renommee": {
+      if (cause.apres === null) return `${p.nom} : renommee (${cause.faction}) retiree.`;
+      const ecart = cause.avant === null ? "" : ` (${cause.apres >= cause.avant ? "+" : ""}${cause.apres - cause.avant})`;
+      return `Renommee de ${p.nom} (${cause.faction}) : ${cause.apres}${ecart}.`;
+    }
+    case "langue":
+      return cause.connue ? `${p.nom} parle desormais : ${cause.langue}.` : `${p.nom} ne parle plus : ${cause.langue}.`;
     default:
       return "";
   }

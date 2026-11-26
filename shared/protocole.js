@@ -27,6 +27,8 @@ export const EVENEMENTS = /** @type {const} */ ({
   PERSONNAGE_CREER: "personnage:creer", // MJ : creation libre (PNJ, monstres)
   PERSONNAGE_SUPPRIMER: "personnage:supprimer",
   PERSONNAGE_MODIFIER_PV: "personnage:modifierPv",
+  PERSONNAGE_RENOMMEE: "personnage:renommee", // MJ : renommee aupres d'une faction (+/-, fixer, retirer)
+  PERSONNAGE_LANGUE: "personnage:langue", // MJ : ajouter ou retirer une langue connue
 
   // Ressources (Mana, Rage, Eclats d'ame...)
   RESSOURCE_MODIFIER: "ressource:modifier", // depenser / gagner

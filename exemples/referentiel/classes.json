@@ -145,7 +145,11 @@
           "ressource": "emplacements-niveau-1"
         }
       ],
-      "caracteristiqueIncantation": "sagesse"
+      "caracteristiqueIncantation": "sagesse",
+      "renommee": {
+        "faction": "cercle-cenarien",
+        "valeur": 3
+      }
     },
     {
       "id": "evocateur",
@@ -273,7 +277,11 @@
           "ressource": "emplacements-niveau-1"
         }
       ],
-      "caracteristiqueIncantation": "intelligence"
+      "caracteristiqueIncantation": "intelligence",
+      "renommee": {
+        "faction": "kirin-tor",
+        "valeur": 3
+      }
     },
     {
       "id": "moine",
@@ -489,7 +497,11 @@
         {
           "ressource": "rage-barbare"
         }
-      ]
+      ],
+      "renommee": {
+        "faction": "cercle-terrestre",
+        "valeur": 3
+      }
     },
     {
       "id": "occultiste",

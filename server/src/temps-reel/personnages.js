@@ -11,6 +11,7 @@ import { poserEtat, retirerEtat } from "../regles/etats.js";
 import { appliquerPointsDeVie, texteDeCombat } from "../regles/points-de-vie.js";
 import { modifierRessource } from "../regles/ressources.js";
 import { caseLibreProche, placerPion } from "../regles/scene.js";
+import { changerLangue, changerRenommee } from "../regles/renommee.js";
 import { appliquerTirage, autoriserRelance, tirerCaracteristiques, totalTirage, valeursRetenues } from "../regles/tirage.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { methodesDeLaTable } from "../../../shared/creation.js";
@@ -45,6 +46,15 @@ const Demandes = {
   }),
   retirerEtat: z.strictObject({ idPersonnage, idEtat: schemaId("e") }),
   autoriserRelance: z.strictObject({ pseudo: z.string().trim().min(1).max(24) }),
+  renommee: z
+    .strictObject({
+      idPersonnage,
+      faction: schemaIdReferentiel,
+      score: z.int().min(-100).max(1000).nullable().optional(), // null = retirer la faction
+      variation: z.int().min(-100).max(100).optional(),
+    })
+    .refine((d) => d.score !== undefined || d.variation !== undefined, "Indique un score ou une variation."),
+  langue: z.strictObject({ idPersonnage, langue: schemaIdReferentiel, connue: z.boolean() }),
 };
 
 export function brancher(socket, ctx) {
@@ -192,6 +202,32 @@ export function brancher(socket, ctx) {
       ctx.publierCombat(personnage.idTable, { action: "retrait", nom: personnage.nom, par: pseudo });
     }
     return {};
+  });
+
+  // --- Renommee et langues (le MJ seulement) -----------------------------------------
+
+  ctx.guichet(socket, EVENEMENTS.PERSONNAGE_RENOMMEE, Demandes.renommee, ({ idPersonnage, faction, score, variation }) => {
+    ctx.exigerMJ(socket, "modifier la renommee");
+    const personnage = ctx.exigerPersonnageVisible(socket, idPersonnage);
+    const modele = ctx.referentiel.obtenirRenommee(faction);
+    if (!modele) throw new ErreurRegle(`Faction de renommee inconnue du referentiel : "${faction}".`);
+    const { renommees, avant, apres } = changerRenommee(personnage.renommees, faction, { score, variation });
+    return {
+      personnage: ctx.publierPersonnage({ ...personnage, renommees }, { action: "renommee", par: pseudo, faction: modele.nom, avant, apres }),
+    };
+  });
+
+  ctx.guichet(socket, EVENEMENTS.PERSONNAGE_LANGUE, Demandes.langue, ({ idPersonnage, langue, connue }) => {
+    ctx.exigerMJ(socket, "modifier les langues");
+    const personnage = ctx.exigerPersonnageVisible(socket, idPersonnage);
+    const modele = ctx.referentiel.obtenirLangue(langue);
+    if (!modele) throw new ErreurRegle(`Langue inconnue du referentiel : "${langue}".`);
+    return {
+      personnage: ctx.publierPersonnage(
+        { ...personnage, langues: changerLangue(personnage.langues, langue, connue) },
+        { action: "langue", par: pseudo, langue: modele.nom, connue },
+      ),
+    };
   });
 
   // --- Points de vie -------------------------------------------------------------

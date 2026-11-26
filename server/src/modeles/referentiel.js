@@ -75,9 +75,9 @@ const schemaTaille = z.enum(TAILLES, 'Taille : "petite", "moyenne" ou "grande".'
 
 const schemaTrait = z.strictObject({ nom: schemaNom, description: texte(3000) });
 
-// Renommee de depart aupres d'une faction (chapitre 4 du livre). Pour l'instant
-// un simple texte : la reputation sera geree en jeu a l'etape 3.
-const schemaRenommee = z.strictObject({ faction: schemaNom, valeur: entier(1, 50).default(3) });
+// Renommee de depart aupres d'une faction de renommee (section "renommees",
+// chapitre 4 du livre) : ex. { "faction": "forgefer", "valeur": 3 }.
+const schemaRenommee = z.strictObject({ faction: schemaIdReferentiel, valeur: entier(-50, 100).default(3) });
 
 // Un choix possible d'une option : une lignee, un clan, un weyrn...
 const schemaChoixOption = z.strictObject({
@@ -156,6 +156,9 @@ export const SchemaRace = z.strictObject({
     .refine((options) => new Set(options.map((o) => o.id)).size === options.length, "Deux options portent le meme id."),
   // (facultatif) Renommee de depart (un choix d'option peut la remplacer).
   renommee: schemaRenommee.nullable().default(null),
+  // (facultatif) Langue du peuple (section "langues") : proposee en plus a un
+  // personnage qui joue hors de sa faction (ex. un Orc dans l'Alliance).
+  langue: schemaIdReferentiel.optional(),
   // (facultatif) true : un don d'origine en plus de celui de l'historique (Humain).
   donOrigineSupplementaire: z.boolean().default(false),
   // (facultatif) D'ou viennent les traits, pour memoire (ex. "Manuel des joueurs 2024").
@@ -198,6 +201,8 @@ export const SchemaClasse = z.strictObject({
   sousClasseCreation: z.string().trim().max(80).optional(),
   // (facultatif) Type de creature impose par la classe (ex. Mort-vivant).
   typeCreature: schemaNom.optional(),
+  // (facultatif) Renommee gagnee en prenant cette classe (ex. Mage : Kirin Tor +3).
+  renommee: schemaRenommee.optional(),
   // (facultatif) Restriction "de lore" : seuls ces peuples (et, si precise, ces
   // choix d'options) jouent cette classe, sauf si le MJ autorise le lore libre.
   restrictionLore: z
@@ -263,6 +268,52 @@ export const SchemaDon = z.strictObject({
   source: z.string().trim().max(120).optional(),
 });
 
+// --- Langues et renommee (chapitres 2 et 4 du livre) ----------------------------------
+
+// Une langue. "tables" : les factions (alliance, horde) dont la table la propose a
+// la creation ; "rare" : seulement donnee en jeu par le MJ ; "conseillee" : le
+// Commun, l'Orc (au moins une des deux est recommandee).
+export const SchemaLangue = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  description: texte(300),
+  tables: z.array(schemaIdReferentiel).max(10).default([]),
+  rare: z.boolean().default(false),
+  conseillee: z.boolean().default(false),
+});
+
+// Les paliers de reputation (facon WoW) : un nom et le score minimum.
+export const SchemaPalierRenommee = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  min: entier(-100, 1000),
+  couleur: schemaCouleur.default("#ffffff"),
+});
+
+export const PALIERS_RENOMMEE_PAR_DEFAUT = [
+  { id: "hostile", nom: "Hostile", min: -100, couleur: "#cc2a2a" },
+  { id: "neutre", nom: "Neutre", min: 0, couleur: "#e5c100" },
+  { id: "amical", nom: "Amical", min: 3, couleur: "#2fb52f" },
+  { id: "honore", nom: "Honoré", min: 10, couleur: "#2fb58c" },
+  { id: "revere", nom: "Révéré", min: 25, couleur: "#2fa8c8" },
+  { id: "exalte", nom: "Exalté", min: 50, couleur: "#5fd7ff" },
+];
+
+// Une faction de renommee (Forgefer, Kirin Tor...). "faction" : son camp
+// (alliance, horde), absent pour une faction neutre. "avantages" : ce que
+// chaque palier apporte (affiche sur la fiche, pas applique automatiquement).
+export const SchemaFactionRenommee = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  faction: schemaIdReferentiel.nullable().default(null),
+  description: texte(2000),
+  avantages: z
+    .array(z.strictObject({ palier: schemaIdReferentiel, nom: schemaNom, description: texte(2000) }))
+    .max(20)
+    .default([]),
+  source: z.string().trim().max(120).optional(),
+});
+
 // --- Regles de creation (caracteristiques) -------------------------------------------
 
 // "tirage-4d6" : six fois 4d6, on garde les 3 meilleurs (le serveur lance).
@@ -290,6 +341,16 @@ export const SchemaReglesCreation = z.strictObject({
     })
     .default({ budget: 27, couts: { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 } }),
   caracteristiqueMaximale: entier(10, 30).default(20),
+  // Langues choisies a la creation (si la section "langues" existe).
+  languesAuChoix: entier(0, 10).default(3),
+  // Renommee de depart d'un personnage joue HORS de sa faction (lore libre) aupres
+  // de la faction de son peuple : -3 = Hostile.
+  renommeeHorsFaction: entier(-50, 0).default(-3),
+  paliersRenommee: z
+    .array(SchemaPalierRenommee)
+    .min(2)
+    .refine((p) => p.every((x, i) => i === 0 || x.min > p[i - 1].min), "Les paliers vont du plus bas au plus haut (min croissants).")
+    .default(PALIERS_RENOMMEE_PAR_DEFAUT),
   restrictionsRaceClasse: z.boolean().default(true),
 });
 

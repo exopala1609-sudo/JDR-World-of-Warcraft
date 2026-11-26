@@ -691,3 +691,41 @@
   color: var(--or);
   font-size: 22px;
 }
+
+/* --- Langues (etape 3) ------------------------------------------------------------ */
+.creation__langues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.creation__langue {
+  padding: 3px 10px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--texte-doux);
+  font-family: var(--police-lecture);
+  font-size: 15px;
+  cursor: pointer;
+}
+.creation__langue:hover:not(:disabled) {
+  border-color: var(--or-bordure);
+  color: var(--texte);
+}
+.creation__langue--choisie {
+  border-color: var(--or);
+  background: rgba(255, 209, 0, 0.15);
+  color: var(--or);
+}
+.creation__langue:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.creation__conseil {
+  margin: 0;
+  color: var(--texte-doux);
+  font-size: 15px;
+}
+.creation__malus {
+  color: #8b1a1a;
+}

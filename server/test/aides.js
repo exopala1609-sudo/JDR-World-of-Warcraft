@@ -40,8 +40,8 @@ export function referentielSimule() {
               id: "philosophie",
               nom: "Philosophie",
               choix: [
-                { id: "huojin", nom: "Huojin", factions: ["horde"], renommee: { faction: "Horde", valeur: 3 } },
-                { id: "tushui", nom: "Tushui", factions: ["alliance"], renommee: { faction: "Alliance", valeur: 3 } },
+                { id: "huojin", nom: "Huojin", factions: ["horde"], renommee: { faction: "huojin", valeur: 3 } },
+                { id: "tushui", nom: "Tushui", factions: ["alliance"], renommee: { faction: "tushui", valeur: 3 } },
               ],
             },
           ],

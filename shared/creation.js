@@ -333,3 +333,70 @@ export function apercuPersonnage({ race, classe, base, bonusAuChoix = [], repart
     ...origine,
   };
 }
+
+// --- Langues et renommee (etape 3) ---------------------------------------------------------
+
+/**
+ * Le personnage joue-t-il HORS de sa faction ? (lore libre : un Orc dans
+ * l'Alliance, un elfe de sang chez les Alliance...)
+ */
+export function horsFaction(race, choixOptions, idFaction) {
+  return !race.factions.includes(idFaction) || choixRetenus(race, choixOptions).some((c) => c.factions && !c.factions.includes(idFaction));
+}
+
+/**
+ * Les langues proposees a la creation : la table de sa faction ; les deux tables
+ * pour un peuple sans faction (Dracthyr sans weyrn de camp...) ; plus la langue
+ * de son peuple s'il joue hors de sa faction. Jamais les langues rares.
+ */
+export function languesProposees({ race, choixOptions = {}, idFaction }, referentiel) {
+  const sansFaction = race.factions.length > 1 && !choixRetenus(race, choixOptions).some((c) => c.factions);
+  const tables = sansFaction ? race.factions : [idFaction];
+  const ids = (referentiel.langues ?? []).filter((l) => !l.rare && l.tables.some((t) => tables.includes(t))).map((l) => l.id);
+  if (race.langue && !ids.includes(race.langue) && horsFaction(race, choixOptions, idFaction)) ids.push(race.langue);
+  return ids;
+}
+
+/** Les langues choisies sont-elles correctes ? (null = oui) */
+export function verifierLangues(langues, proposees, nombre) {
+  if (!proposees.length || nombre === 0) return langues.length ? "Aucune langue a choisir ici." : null;
+  if (new Set(langues).size !== langues.length) return "Une langue est choisie deux fois.";
+  const absente = langues.find((l) => !proposees.includes(l));
+  if (absente) return `Langue non proposee a ce personnage : ${absente}.`;
+  const attendu = Math.min(nombre, proposees.length);
+  if (langues.length !== attendu) return `Choisis ${attendu} langue${attendu > 1 ? "s" : ""}.`;
+  return null;
+}
+
+/**
+ * La renommee de depart : celle du peuple (ou de son choix : lignee, weyrn...)
+ * plus celle de la classe (Mage : Kirin Tor...). Hors de sa faction, la faction
+ * d'un camp de son peuple le voit d'un mauvais oeil (renommeeHorsFaction : -3).
+ * Renvoie [{ faction, score }].
+ */
+export function renommeesDeDepart({ race, classe, choixOptions = {}, idFaction }, referentiel) {
+  const sources = [detailsOrigine(race, classe, choixOptions).renommee, classe?.renommee].filter(Boolean);
+  const scores = new Map();
+  for (const source of sources) {
+    const faction = (referentiel.renommees ?? []).find((f) => f.id === source.faction);
+    if (!faction) continue;
+    const valeur = faction.faction && faction.faction !== idFaction ? referentiel.creation.renommeeHorsFaction : source.valeur;
+    scores.set(faction.id, (scores.get(faction.id) ?? 0) + valeur);
+  }
+  return [...scores].map(([faction, score]) => ({ faction, score }));
+}
+
+/**
+ * Le palier d'un score de renommee (Neutre, Amical, Honore...), le suivant, et
+ * l'avancement de la barre vers le suivant (0 a 1).
+ */
+export function palierRenommee(score, paliers) {
+  let index = 0;
+  paliers.forEach((p, i) => {
+    if (score >= p.min) index = i;
+  });
+  const palier = paliers[index];
+  const suivant = paliers[index + 1] ?? null;
+  const progression = suivant ? Math.max(0, Math.min(1, (score - palier.min) / (suivant.min - palier.min))) : 1;
+  return { palier, suivant, progression };
+}

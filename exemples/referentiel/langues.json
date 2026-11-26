@@ -1,0 +1,290 @@
+// =============================================================================
+//  LANGUES (chapitre 2 du livre) : a la creation, le joueur en choisit 3 dans la
+//  table de sa faction ("tables"). Un peuple sans faction choisit dans les deux.
+//  "rare" : seulement donnee en jeu par le MJ. "conseillee" : Commun, Orc.
+//  Ne change jamais un "id" : les fiches l'enregistrent.
+// =============================================================================
+{
+  "langues": [
+    {
+      "id": "commun",
+      "nom": "Commun",
+      "description": "Langue des humains, commune à l'Alliance.",
+      "tables": [
+        "alliance"
+      ],
+      "rare": false,
+      "conseillee": true
+    },
+    {
+      "id": "langue-signes-commune",
+      "nom": "Langue des signes commune",
+      "description": "",
+      "tables": [
+        "alliance"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "darnassien",
+      "nom": "Darnassien",
+      "description": "Elfes de la nuit.",
+      "tables": [
+        "alliance"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "draconique",
+      "nom": "Draconique",
+      "description": "Dragons.",
+      "tables": [
+        "alliance",
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "draenei",
+      "nom": "Draeneï",
+      "description": "",
+      "tables": [
+        "alliance"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "nain",
+      "nom": "Nain",
+      "description": "",
+      "tables": [
+        "alliance"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "gnome",
+      "nom": "Gnome",
+      "description": "",
+      "tables": [
+        "alliance"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "harani",
+      "nom": "Hara'ni",
+      "description": "Haranirs.",
+      "tables": [
+        "alliance",
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "pandaren",
+      "nom": "Pandaren",
+      "description": "",
+      "tables": [
+        "alliance",
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "thalassien",
+      "nom": "Thalassien",
+      "description": "Hauts-elfes et elfes de sang.",
+      "tables": [
+        "alliance",
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "orc",
+      "nom": "Orc",
+      "description": "Langue des orcs, commune à la Horde.",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": true
+    },
+    {
+      "id": "langue-signes-orque",
+      "nom": "Langue des signes orque",
+      "description": "",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "gobelin",
+      "nom": "Gobelin",
+      "description": "",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "bas-parler",
+      "nom": "Bas-parler",
+      "description": "Langue des Réprouvés.",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "shalassien",
+      "nom": "Shalassien",
+      "description": "Sacrenuits.",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "taur-ahe",
+      "nom": "Taur-ahe",
+      "description": "Taurens.",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "vulperin",
+      "nom": "Vulpérin",
+      "description": "",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "zandali",
+      "nom": "Zandali",
+      "description": "Trolls.",
+      "tables": [
+        "horde"
+      ],
+      "rare": false,
+      "conseillee": false
+    },
+    {
+      "id": "chiffres-premiers",
+      "nom": "Chiffres des Premiers",
+      "description": "Fragments laissés par les Premiers.",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "druidique",
+      "nom": "Druidique",
+      "description": "Cercles druidiques.",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "eredun",
+      "nom": "Érédun",
+      "description": "Démons de la Légion ardente.",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "furbolg",
+      "nom": "Furbolg",
+      "description": "",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "kalimag",
+      "nom": "Kalimag",
+      "description": "Élémentaires (le Primordial de D&D).",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "nathrezim",
+      "nom": "Nathrezim",
+      "description": "",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "nazja",
+      "nom": "Nazja",
+      "description": "Nagas.",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "nerglish",
+      "nom": "Nerglish",
+      "description": "Murlocs.",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "nerubien",
+      "nom": "Nérubien",
+      "description": "",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "ogre",
+      "nom": "Ogre",
+      "description": "",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "qiraji",
+      "nom": "Qiraji",
+      "description": "",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    },
+    {
+      "id": "shath-yar",
+      "nom": "Shath'Yar",
+      "description": "Dieux très anciens (le Profond de D&D).",
+      "tables": [],
+      "rare": true,
+      "conseillee": false
+    }
+  ]
+}

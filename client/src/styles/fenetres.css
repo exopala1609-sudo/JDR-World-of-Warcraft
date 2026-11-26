@@ -312,3 +312,111 @@
   padding: 2px 6px;
   text-align: center;
 }
+
+/* --- Reputation et langues (fiche) : barres facon WoW --------------------------------- */
+.reputation {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.reputation > details {
+  flex: 1;
+  margin: 0;
+}
+.statistiques .reputation__ligne {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  border: 0;
+  color: var(--encre);
+  font-family: var(--police-lecture);
+  font-size: 15px;
+  list-style: none;
+}
+.reputation__ligne::-webkit-details-marker {
+  display: none;
+}
+.reputation__barre {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid #2a1a08;
+  border-radius: 2px;
+  /* Toute la barre prend la teinte du palier (sombre), le remplissage la montre vive. */
+  background: color-mix(in srgb, var(--couleur-palier) 35%, #111);
+}
+.reputation__remplissage {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--couleur-palier) 80%, white), var(--couleur-palier) 45%, color-mix(in srgb, var(--couleur-palier) 60%, black));
+}
+.reputation__texte {
+  position: relative;
+  display: block;
+  color: #fff;
+  font-family: var(--police-chiffres);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  text-shadow: 0 1px 2px #000;
+}
+.reputation__avantage {
+  margin: 2px 0 6px;
+  font-family: var(--police-lecture);
+  font-size: 14px;
+  line-height: 1.3;
+}
+.reputation__avantage--futur {
+  opacity: 0.55;
+}
+.reputation__vide {
+  margin: 4px 0;
+  font-family: var(--police-lecture);
+  font-size: 14px;
+  opacity: 0.75;
+}
+.reputation__mj {
+  display: flex;
+  gap: 2px;
+  padding-top: 3px;
+}
+.reputation__mj button,
+.langues__langue button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #5a3d1a;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--encre);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.reputation__ajout {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.reputation__ajout select {
+  flex: 1;
+  min-width: 0;
+}
+.langues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0;
+}
+.langues__langue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid rgba(46, 31, 14, 0.45);
+  border-radius: 10px;
+  font-family: var(--police-lecture);
+  font-size: 15px;
+}

@@ -19,6 +19,9 @@ import {
   verifierChoixBonus,
   verifierOptions,
   verifierRepartitionHistorique,
+  languesProposees,
+  renommeesDeDepart,
+  verifierLangues,
 } from "../../../shared/creation.js";
 import { CARACTERISTIQUES, bonusDeMaitrise, modificateur } from "../../../shared/dnd5e.js";
 import { attaquesEquipees, IDS_EMPLACEMENTS, TAILLE_BARRE } from "../../../shared/equipement.js";
@@ -32,7 +35,7 @@ import { z } from "./zod.js";
 
 // Version du format des fiches. Si elle change, modeles/migrations.js sait
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
-export const VERSION_FICHE = 7;
+export const VERSION_FICHE = 8;
 export const SEXES = /** @type {const} */ (["masculin", "feminin"]);
 export const RANGS = /** @type {const} */ (["normal", "elite", "rare", "boss"]);
 
@@ -131,8 +134,12 @@ export const SchemaOrigine = z.strictObject({
   taille: z.enum(TAILLES),
   typeCreature: z.string().max(60),
   apparence: schemaIdReferentiel, // images a utiliser (portraits, icones)
-  renommee: z.strictObject({ faction: z.string().max(60), valeur: entier(1, 50) }).nullable(),
+  // Renommee de depart du peuple (pour memoire ; la renommee en jeu est dans "renommees").
+  renommee: z.strictObject({ faction: z.string().max(60), valeur: entier(-50, 100) }).nullable(),
 });
+
+// Renommee aupres d'une faction (Forgefer, Kirin Tor...) : le MJ la fait evoluer en jeu.
+export const SchemaRenommeePersonnage = z.strictObject({ faction: schemaIdReferentiel, score: entier(-100, 1000) });
 
 // --- La fiche complete -------------------------------------------------------
 
@@ -174,6 +181,12 @@ export const SchemaPersonnage = z
     // "gnoll" = jetons/gnoll.png ; "icones/inv_misc_head_gnoll_01" = une icone choisie au selecteur.
     jeton: z.string().regex(/^(icones\/)?[A-Za-z0-9_-]{1,80}$/).nullable(),
     origine: SchemaOrigine.nullable(),
+    // Langues connues et renommee (etape 3) : choisies a la creation, puis le MJ les change.
+    langues: z.array(schemaIdReferentiel).max(30),
+    renommees: z
+      .array(SchemaRenommeePersonnage)
+      .max(60)
+      .refine((r) => new Set(r.map((x) => x.faction)).size === r.length, "Une faction de renommee apparait deux fois."),
     creeLe: z.iso.datetime(),
     modifieLe: z.iso.datetime(),
   })
@@ -203,6 +216,7 @@ export const SchemaCreationGuidee = z.strictObject({
   options: z.record(schemaIdReferentiel, schemaIdReferentiel).default({}), // { lignee: "elfe-de-sang" }
   specialisation: schemaIdReferentiel.nullable().default(null),
   donSupplementaire: schemaIdReferentiel.nullable().default(null), // Humain : un don d'origine en plus
+  langues: z.array(schemaIdReferentiel).max(10).default([]), // langues choisies dans la table de sa faction
   ignorerLore: z.boolean().default(false), // possible seulement si le MJ l'autorise a cette table
 });
 
@@ -236,7 +250,24 @@ function exigerDansReferentiel(referentiel, { classe, race, faction }) {
   return trouvee;
 }
 
-function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrait, sexe = null, niveau, caracteristiques, classeArmure, pvMaximum, ressources, origine = null }) {
+function ficheNeuve({
+  idTable,
+  proprietaire,
+  nom,
+  classe,
+  race,
+  faction,
+  portrait,
+  sexe = null,
+  niveau,
+  caracteristiques,
+  classeArmure,
+  pvMaximum,
+  ressources,
+  origine = null,
+  langues = [],
+  renommees = [],
+}) {
   const maintenant = new Date().toISOString();
   return SchemaPersonnage.parse({
     versionSchema: VERSION_FICHE,
@@ -264,6 +295,8 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
     attaquesMonstre: [],
     jeton: null,
     origine,
+    langues,
+    renommees,
     creeLe: maintenant,
     modifieLe: maintenant,
   });
@@ -314,6 +347,11 @@ export function fabriquerPersonnageGuide(
   }
   if (!classe.specialisations.length && choix.specialisation) throw new ErreurRegle(`${classe.nom} n'a pas de specialisation.`);
 
+  // Langues : le joueur les choisit dans la table de sa faction (etape 3).
+  const contexteOrigine = { race, classe, choixOptions: choix.options, idFaction: faction.id };
+  const erreurLangues = verifierLangues(choix.langues, languesProposees(contexteOrigine, tout), regles.languesAuChoix);
+  if (erreurLangues) throw new ErreurRegle(erreurLangues);
+
   // Dons : celui de l'historique, plus un don d'origine au choix pour un Humain.
   const dons = historique ? [historique.donOrigine] : [];
   if (race.donOrigineSupplementaire) {
@@ -356,6 +394,8 @@ export function fabriquerPersonnageGuide(
       apparence: apercu.apparence,
       renommee: apercu.renommee,
     },
+    langues: choix.langues,
+    renommees: renommeesDeDepart(contexteOrigine, tout),
   });
 }
 

@@ -81,6 +81,9 @@ const ETAPES = {
   // Version 6 -> 7 (etape 1 du livre WoW) : l'origine (historique, lignee,
   // specialisation...). Les fiches d'avant n'en ont pas : null.
   6: (fiche) => ({ ...fiche, versionSchema: 7, origine: fiche.origine ?? null }),
+  // Version 7 -> 8 (etape 3) : langues connues et renommee. Les fiches d'avant
+  // n'en ont pas : le MJ les ajoute en jeu s'il le souhaite.
+  7: (fiche) => ({ ...fiche, versionSchema: 8, langues: fiche.langues ?? [], renommees: fiche.renommees ?? [] }),
 };
 
 /**

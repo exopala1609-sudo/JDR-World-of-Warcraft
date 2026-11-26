@@ -1,0 +1,132 @@
+// =============================================================================
+//  FACTIONS DE RENOMMEE (chapitre 4 du livre) : Forgefer, Orgrimmar, Kirin Tor...
+//  "faction" : son camp (alliance, horde), ou null si elle est neutre.
+//  "avantages" : ce que chaque palier apporte (Amical 3+, Honore 10+, Revere 25+, Exalte 50+).
+//  Affiches sur la fiche du personnage ; le MJ les applique.
+//
+//  EXEMPLE : noms seulement ; les avantages du livre sont dans les fichiers prives du MJ.
+// =============================================================================
+{
+  "renommees": [
+    {
+      "id": "darnassus",
+      "nom": "Darnassus",
+      "faction": "alliance"
+    },
+    {
+      "id": "exodar",
+      "nom": "Exodar",
+      "faction": "alliance"
+    },
+    {
+      "id": "gilneas",
+      "nom": "Gilnéas",
+      "faction": "alliance"
+    },
+    {
+      "id": "gnomeregan",
+      "nom": "Gnomeregan",
+      "faction": "alliance"
+    },
+    {
+      "id": "forgefer",
+      "nom": "Forgefer",
+      "faction": "alliance"
+    },
+    {
+      "id": "gardiens-obsidienne",
+      "nom": "Gardiens d'obsidienne",
+      "faction": "alliance"
+    },
+    {
+      "id": "hurlevent",
+      "nom": "Hurlevent",
+      "faction": "alliance"
+    },
+    {
+      "id": "tushui",
+      "nom": "Tushui",
+      "faction": "alliance"
+    },
+    {
+      "id": "cartel-baille-fonds",
+      "nom": "Cartel Baille-Fonds",
+      "faction": "horde"
+    },
+    {
+      "id": "serres-sombres",
+      "nom": "Serres-Sombres",
+      "faction": "horde"
+    },
+    {
+      "id": "tribu-sombrelance",
+      "nom": "Tribu Sombrelance",
+      "faction": "horde"
+    },
+    {
+      "id": "huojin",
+      "nom": "Huojin",
+      "faction": "horde"
+    },
+    {
+      "id": "orgrimmar",
+      "nom": "Orgrimmar",
+      "faction": "horde"
+    },
+    {
+      "id": "lune-argent",
+      "nom": "Lune-d'Argent",
+      "faction": "horde"
+    },
+    {
+      "id": "pitons-du-tonnerre",
+      "nom": "Les Pitons-du-Tonnerre",
+      "faction": "horde"
+    },
+    {
+      "id": "fossoyeuse",
+      "nom": "Fossoyeuse",
+      "faction": "horde"
+    },
+    {
+      "id": "aube-argent",
+      "nom": "Aube d'argent",
+      "faction": null
+    },
+    {
+      "id": "cercle-cenarien",
+      "nom": "Cercle cénarien",
+      "faction": null
+    },
+    {
+      "id": "cercle-terrestre",
+      "nom": "Cercle terrestre",
+      "faction": null
+    },
+    {
+      "id": "ligue-explorateurs",
+      "nom": "Ligue des explorateurs",
+      "faction": "alliance"
+    },
+    {
+      "id": "reliquaire",
+      "nom": "Reliquaire",
+      "faction": "horde"
+    },
+    {
+      "id": "kirin-tor",
+      "nom": "Kirin Tor",
+      "faction": null
+    },
+    {
+      "id": "cartel-gentepression",
+      "nom": "Cartel Gentepression",
+      "faction": null
+    },
+    {
+      "id": "accord-valdrakken",
+      "nom": "Accord de Valdrakken",
+      "faction": null
+    }
+  ]
+}

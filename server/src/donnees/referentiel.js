@@ -17,7 +17,9 @@ import {
   SchemaClasse,
   SchemaDon,
   SchemaFaction,
+  SchemaFactionRenommee,
   SchemaHistorique,
+  SchemaLangue,
   SchemaModeleRessource,
   SchemaRace,
   SchemaReglesCreation,
@@ -31,6 +33,8 @@ const LISTES = {
   historiques: SchemaHistorique,
   dons: SchemaDon,
   ressources: SchemaModeleRessource,
+  langues: SchemaLangue,
+  renommees: SchemaFactionRenommee,
 };
 const SECTIONS = [...Object.keys(LISTES), "creation"];
 
@@ -63,7 +67,7 @@ export function resumerReferentiel(rapport) {
   const creation = rapport.creationPersonnalisee ? "" : " - regles de creation officielles par defaut";
   return (
     `${rapport.factions} faction(s), ${rapport.races} race(s), ${rapport.classes} classe(s), ` +
-    `${rapport.historiques ?? 0} historique(s), ${rapport.dons ?? 0} don(s), ${rapport.ressources} ressource(s)${creation}`
+    `${rapport.historiques ?? 0} historique(s), ${rapport.dons ?? 0} don(s), ${rapport.langues ?? 0} langue(s), ${rapport.renommees ?? 0} faction(s) de renommee, ${rapport.ressources} ressource(s)${creation}`
   );
 }
 
@@ -78,6 +82,8 @@ export function creerReferentiel(dossier) {
       historiques: new Map(),
       dons: new Map(),
       ressources: new Map(),
+      langues: new Map(),
+      renommees: new Map(),
       creation: REGLES_CREATION_PAR_DEFAUT,
     };
   }
@@ -218,6 +224,49 @@ export function creerReferentiel(dossier) {
         signaler(origine.get(`historiques:${historique.id}`), `historiques (${historique.id})`, `${historique.donOrigine} n'est pas un don d'origine.`);
       }
     }
+    // Langues et renommee : tables de langues, langue du peuple, factions de
+    // renommee citees par les peuples et les classes, paliers des avantages.
+    for (const langue of nouveau.langues.values()) {
+      const absentes = inconnus(langue.tables, "factions");
+      if (absentes.length) signaler(origine.get(`langues:${langue.id}`), `langues (${langue.id})`, `Faction inconnue : ${absentes.join(", ")} (ignoree).`);
+      langue.tables = langue.tables.filter((id) => nouveau.factions.has(id));
+    }
+    const paliers = new Set(nouveau.creation.paliersRenommee.map((p) => p.id));
+    for (const faction of nouveau.renommees.values()) {
+      const ou = `renommees (${faction.id})`;
+      if (faction.faction && !nouveau.factions.has(faction.faction)) {
+        signaler(origine.get(`renommees:${faction.id}`), ou, `Faction inconnue : ${faction.faction} (faction neutre).`);
+        faction.faction = null;
+      }
+      const sansPalier = faction.avantages.filter((a) => !paliers.has(a.palier));
+      if (sansPalier.length) {
+        signaler(origine.get(`renommees:${faction.id}`), ou, `Palier inconnu : ${sansPalier.map((a) => a.palier).join(", ")} (ignore).`);
+        faction.avantages = faction.avantages.filter((a) => paliers.has(a.palier));
+      }
+    }
+    const verifierRenommee = (fichier, ou, porteur) => {
+      if (!porteur?.renommee) return;
+      if (!nouveau.renommees.has(porteur.renommee.faction)) {
+        if (!dejaSignales.has(porteur.renommee.faction)) {
+          signaler(fichier, ou, `Faction de renommee inconnue : ${porteur.renommee.faction} (ajoute-la dans la section "renommees").`);
+        }
+        porteur.renommee = null;
+      }
+    };
+    for (const race of nouveau.races.values()) {
+      const fichier = origine.get(`races:${race.id}`);
+      verifierRenommee(fichier, `races (${race.id})`, race);
+      for (const option of race.options) for (const choix of option.choix) verifierRenommee(fichier, `races (${race.id}) > ${option.id} > ${choix.id}`, choix);
+      if (race.langue && !nouveau.langues.has(race.langue)) {
+        if (!dejaSignales.has(race.langue)) signaler(fichier, `races (${race.id})`, `Langue inconnue : ${race.langue} (ignoree).`);
+        delete race.langue;
+      }
+    }
+    for (const classe of nouveau.classes.values()) {
+      verifierRenommee(origine.get(`classes:${classe.id}`), `classes (${classe.id})`, classe);
+      if (classe.renommee === null) delete classe.renommee;
+    }
+
     for (const section of ["factions", "races", "classes"]) {
       if (!nouveau[section].size) signaler(null, section, "Aucune entree valide : la creation de personnage est impossible.");
     }
@@ -231,6 +280,8 @@ export function creerReferentiel(dossier) {
       historiques: nouveau.historiques.size,
       dons: nouveau.dons.size,
       ressources: nouveau.ressources.size,
+      langues: nouveau.langues.size,
+      renommees: nouveau.renommees.size,
       creationPersonnalisee: fichierCreation !== null,
       erreurs,
     };
@@ -259,6 +310,8 @@ export function creerReferentiel(dossier) {
       historiques: [...contenu.historiques.values()],
       dons: [...contenu.dons.values()],
       ressources: [...contenu.ressources.values()],
+      langues: [...contenu.langues.values()],
+      renommees: [...contenu.renommees.values()],
       creation: contenu.creation,
     }),
 
@@ -268,6 +321,8 @@ export function creerReferentiel(dossier) {
     obtenirRessource: (id) => contenu.ressources.get(id) ?? null,
     obtenirHistorique: (id) => contenu.historiques.get(id) ?? null,
     obtenirDon: (id) => contenu.dons.get(id) ?? null,
+    obtenirLangue: (id) => contenu.langues.get(id) ?? null,
+    obtenirRenommee: (id) => contenu.renommees.get(id) ?? null,
     reglesCreation: () => contenu.creation,
 
     /** Cette race peut-elle prendre cette classe ? (les deux doivent exister) */
