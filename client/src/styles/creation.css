@@ -144,8 +144,8 @@
   font-size: 15px;
   line-height: 1.15;
   text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Un nom long ("Chevalier de la mort") passe sur deux lignes au lieu d'etre coupe. */
+  overflow-wrap: anywhere;
 }
 /* Le choix actif : bordure d'or qui s'illumine, comme dans WoW. */
 .choix--actif {
@@ -193,7 +193,7 @@
   background: var(--texture-parchemin);
   box-shadow: inset 0 0 0 1px var(--parchemin-sombre), inset 0 0 18px rgba(80, 50, 10, 0.4);
   color: var(--encre);
-  font-family: var(--police-texte);
+  font-family: var(--police-lecture);
   font-size: 18px;
   line-height: 1.35;
 }
@@ -465,7 +465,7 @@
 /* --- Mode compact : ecrans de 1080 pixels de haut ----------------------------------------- */
 @container creation (height < 1300px) {
   .creation__colonne {
-    gap: 8px;
+    gap: 6px;
     padding: 14px 16px;
   }
   .creation__titre {
@@ -572,4 +572,32 @@
    meme taille de texte que le reste, lisible sans plisser les yeux. */
 .creation select {
   font-size: 16px;
+}
+
+/* Lisibilite : la police WoW reste pour les titres, bannieres et boutons ;
+   tout ce qui se LIT (descriptions, aides, noms sous les icones, tableau,
+   infobulles) passe dans une police classique. */
+.creation__colonne,
+.creation .infobulle,
+.choix__nom,
+.creation__portrait-vide {
+  font-family: var(--police-lecture);
+}
+.creation__titre,
+.creation__description h3 {
+  font-family: var(--police-titre);
+}
+
+/* Contenu de la colonne de droite : defile si besoin, avec une barre discrete. */
+.creation__defilant {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  margin-right: -8px;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--metal) transparent;
 }

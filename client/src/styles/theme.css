@@ -54,6 +54,9 @@
   --police-chiffres: "Arial Narrow WoW", "Arial Narrow", Arial, sans-serif;
   --police-titre: var(--police-ui);
   --police-combat: "Skurri WoW", var(--police-ui);
+  /* Les textes longs a LIRE (regles, descriptions) : une police classique,
+     bien plus lisible que les polices WoW en petite taille. */
+  --police-lecture: "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
 
   /* Textes */
   --or: #ffd100; /* le jaune-or des titres de WoW */

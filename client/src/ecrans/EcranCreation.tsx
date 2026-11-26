@@ -5,6 +5,7 @@ import {
   caracteristiquesAuChoix,
   choixPossibles,
   choixRetenus,
+  detailsOrigine,
   NOMS_CARACTERISTIQUES,
   pointsDepenses,
   raceDisponible,
@@ -81,6 +82,11 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   const [idRace, setIdRace] = useState(racesDeLaFaction[0]?.id ?? "");
   const race = referentiel.races.find((r) => r.id === idRace) ?? racesDeLaFaction[0];
   const [options, setOptions] = useState<Record<string, string>>(() => (race ? optionsParDefaut(race, idFaction, lore) : {}));
+  // L'image d'un peuple dans la grille suit sa lignee : choix en cours pour le
+  // peuple selectionne, sinon le premier choix possible dans la faction
+  // (ex. Elfe cote Horde = elfe de sang, cote Alliance = elfe de la nuit).
+  const apparenceAffichee = (r: Race) =>
+    detailsOrigine(r, undefined, r.id === race?.id ? options : optionsParDefaut(r, idFaction, lore)).apparence as string;
   // Par defaut, une classe de base (les classes heroiques se prennent normalement au niveau 3).
   const [idClasse, setIdClasse] = useState((referentiel.classes.find((c) => !c.heroique) ?? referentiel.classes[0])?.id ?? "");
   const classe = referentiel.classes.find((c) => c.id === idClasse);
@@ -281,7 +287,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
               actif={r.id === race?.id}
               onClick={() => choisirRace(r)}
               aide={<AideRace race={r} />}
-              secours={textures[`portrait-${r.id}-${sexe}`]}
+              secours={textures[`portrait-${apparenceAffichee(r)}-${sexe}`] ?? textures[`portrait-${r.id}-${sexe}`]}
             />
           ))}
         </div>
@@ -402,7 +408,10 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
       </section>
 
       {/* ===== Droite : classe, historique et caracteristiques ===== */}
+      {/* Le contenu defile s'il manque de place (petit ecran, Humain et son don en plus) ;
+          le cadre, lui, ne bouge pas (ses rivets ne sont pas coupes). */}
       <section className="creation__colonne cadre">
+        <div className="creation__defilant">
         <h2 className="creation__titre titre-or">Classe</h2>
         <div className="grille-choix grille-choix--classes">
           {referentiel.classes.map((c) => {
@@ -551,6 +560,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
             ))}
           </div>
         )}
+        </div>
       </section>
 
       {/* ===== Bas : nom et entree dans le monde ===== */}
