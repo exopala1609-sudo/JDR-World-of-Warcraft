@@ -1,306 +1,225 @@
 // =============================================================================
-//  RACES : le deuxième choix de l'écran de création
-// =============================================================================
+//  PEUPLES : le deuxieme choix de l'ecran de creation.
 //
-//  DONNÉES PROVISOIRES, en attendant le livre « D&D World of Warcraft » :
-//  bonus, traits et restrictions sont INVENTÉS, inspirés du jeu vidéo.
-//  L'ordre de la liste est l'ordre d'affichage.
+//  Regles de D&D 2024 : les peuples ne donnent PAS de bonus de caracteristiques
+//  (c'est l'historique). Ils donnent des traits et des choix ("options").
+//  Ne change jamais un "id" : les fiches l'enregistrent.
 //
-//  Le premier peuple (Humain) détaille chaque champ en commentaire.
-//  Les champs marqués (facultatif) peuvent être supprimés.
+//  Contient du contenu du System Reference Document 5.2 (SRD 5.2) de Wizards of the Coast LLC, disponible sur https://dnd.wizards.com/resources/systems-reference-document, sous licence Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode). Traduction et adaptation libres.
 //
-//  Caractéristiques : force, dexterite, constitution, intelligence, sagesse,
-//  charisme (sans accent, en minuscules).
-//
-//  Les lignes qui commencent par // sont des commentaires : le jeu les ignore.
+//  EXEMPLE MINIMAL : les 16 peuples du livre viennent des fichiers prives du MJ.
 // =============================================================================
 {
   "races": [
-    // =========================== ALLIANCE ====================================
     {
-      // Nom technique : minuscules, chiffres et tirets.
-      // !! NE LE CHANGE JAMAIS une fois des personnages créés. Pour renommer,
-      // !! change seulement "nom".
       "id": "humain",
-
-      // Nom affiché.
       "nom": "Humain",
-
-      // Faction(s) : des "id" de factions.json. Une race jouable dans les deux
-      // camps en cite deux : ["alliance", "horde"].
-      "factions": ["alliance"],
-
-      "description": "Peuple jeune et ambitieux, les humains de Hurlevent ont maintes fois défendu Azeroth.",
-
-      // (facultatif) Image du dossier icones/, sans extension.
-      // Par défaut : "race-" suivi de l'id (ici icones/race-humain.png).
-      // "icone": "race-humain",
-
-      // (facultatif) "petite", "moyenne" (par défaut) ou "grande".
-      "taille": "moyenne",
-
-      // (facultatif) Vitesse en mètres, par pas de 1,5 m. Par défaut : 9.
-      "vitesse": 9,
-
-      // Bonus FIXES ajoutés aux caractéristiques (règles de 2014).
-      // Mets {} s'il n'y en a aucun.
-      "bonusCaracteristiques": {
-        "force": 1,
-        "dexterite": 1,
-        "constitution": 1,
-        "intelligence": 1,
-        "sagesse": 1,
-        "charisme": 1
-      },
-
-      // (facultatif) Bonus que le JOUEUR répartit lui-même (règles de 2024),
-      // chacun sur une caractéristique différente. Exemple :
-      //   "bonusAuChoix": { "bonus": [2, 1], "parmi": "toutes" },
-      // "parmi" : "toutes", ou une liste comme ["force", "constitution"].
-
-      // (facultatif) Points de vie en plus à chaque niveau. Par défaut : 0.
-      "pvParNiveau": 0,
-
-      // (facultatif) Langues connues (texte libre).
-      "langues": ["Commun", "une langue au choix"],
-
-      // (facultatif) Traits raciaux : un nom et une description, affichés
-      // sur la fiche. Le jeu ne les applique PAS automatiquement.
-      "traits": [
-        { "nom": "Chacun pour soi", "description": "Une fois par repos long, réussit automatiquement un jet de sauvegarde contre l'état entravé ou agrippé." },
-        { "nom": "Esprit diplomatique", "description": "Maîtrise de la compétence Persuasion." }
+      "factions": [
+        "alliance"
       ],
-
-      // Classes que cette race peut choisir : des "id" de classes.json, ou
-      // "toutes". Ignoré si "restrictionsRaceClasse" vaut false dans creation.json.
-      "classesAutorisees": [
-        "guerrier", "paladin", "rodeur", "roublard", "clerc", "chevalier-de-la-mort",
-        "magicien", "occultiste", "moine", "barbare", "barde", "ensorceleur"
+      "description": "Peuple jeune et tenace, cœur de l'Alliance.",
+      "taille": "moyenne",
+      "vitesse": 9,
+      "bonusCaracteristiques": {},
+      "traits": [
+        {
+          "nom": "Ingénieux",
+          "description": "Tu gagnes l'Inspiration héroïque chaque fois que tu termines un repos long."
+        },
+        {
+          "nom": "Doué",
+          "description": "Tu gagnes la maîtrise d'une compétence de ton choix."
+        },
+        {
+          "nom": "Polyvalent",
+          "description": "Tu gagnes un don d'origine de ton choix (en plus de celui de ton historique)."
+        }
+      ],
+      "source": "SRD 5.2 (Manuel des joueurs 2024)",
+      "donOrigineSupplementaire": true,
+      "options": [
+        {
+          "id": "taille",
+          "nom": "Taille",
+          "description": "",
+          "choix": [
+            {
+              "id": "moyenne",
+              "nom": "Moyenne",
+              "taille": "moyenne"
+            },
+            {
+              "id": "petite",
+              "nom": "Petite",
+              "taille": "petite"
+            }
+          ]
+        }
       ]
     },
     {
       "id": "nain",
       "nom": "Nain",
-      "factions": ["alliance"],
-      "description": "Robustes forgerons de Forgefer, les nains explorent sans relâche les secrets de leurs origines titanesques.",
-      "vitesse": 7.5,
-      "bonusCaracteristiques": { "constitution": 2, "force": 1 },
-      "pvParNiveau": 1,
-      "langues": ["Commun", "Nain"],
-      "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Forme de pierre", "description": "Une fois par repos long, par une action bonus, met fin aux états empoisonné et saignement." },
-        { "nom": "Robustesse naine", "description": "+1 point de vie par niveau (déjà compté par le jeu)." }
+      "factions": [
+        "alliance"
       ],
-      "classesAutorisees": [
-        "guerrier", "paladin", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman",
-        "magicien", "occultiste", "moine", "barbare", "barde", "ensorceleur"
-      ]
+      "description": "Forgerons et guerriers des montagnes.",
+      "taille": "moyenne",
+      "vitesse": 9,
+      "bonusCaracteristiques": {},
+      "traits": [
+        {
+          "nom": "Vision dans le noir",
+          "description": "Portée de 36 m (120 pieds)."
+        },
+        {
+          "nom": "Résilience naine",
+          "description": "Résistance aux dégâts de poison ; avantage aux jets de sauvegarde pour éviter ou terminer l'état empoisonné."
+        },
+        {
+          "nom": "Robustesse naine",
+          "description": "Tes PV maximum augmentent de 1, puis de 1 à chaque niveau (déjà compté dans les PV)."
+        },
+        {
+          "nom": "Connaissance de la pierre",
+          "description": "Action bonus : Perception des vibrations sur 18 m pendant 10 minutes, si tu es sur de la pierre ou la touches. Utilisations = bonus de maîtrise, par repos long."
+        }
+      ],
+      "source": "SRD 5.2",
+      "pvParNiveau": 1
     },
     {
-      "id": "elfe-de-la-nuit",
-      "nom": "Elfe de la nuit",
-      "factions": ["alliance"],
-      "description": "Anciens gardiens de Kalimdor, les kaldorei vénèrent Élune et protègent les forêts sacrées.",
-      "vitesse": 10.5,
-      "bonusCaracteristiques": { "dexterite": 2, "sagesse": 1 },
-      "langues": ["Commun", "Darnassien"],
-      "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Camouflage dans l'ombre", "description": "Une fois par repos court, peut se cacher par une action bonus même lorsqu'il est observé, s'il est immobile." }
+      "id": "elfe",
+      "nom": "Elfe",
+      "factions": [
+        "alliance",
+        "horde"
       ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "magicien",
-        "occultiste", "moine", "druide", "chasseur-de-demons", "barbare", "barde", "ensorceleur"
+      "description": "Peuple ancien et magique.",
+      "taille": "moyenne",
+      "vitesse": 9,
+      "bonusCaracteristiques": {},
+      "traits": [
+        {
+          "nom": "Vision dans le noir",
+          "description": "Portée de 18 m (60 pieds)."
+        },
+        {
+          "nom": "Ascendance féerique",
+          "description": "Avantage aux jets de sauvegarde pour éviter ou terminer l'état charmé."
+        },
+        {
+          "nom": "Sens aiguisés",
+          "description": "Maîtrise de l'Intuition, de la Perception ou de la Survie (au choix)."
+        },
+        {
+          "nom": "Transe",
+          "description": "Pas besoin de dormir ; un repos long te prend 4 heures de méditation consciente."
+        },
+        {
+          "nom": "Lignée elfique",
+          "description": "Ta lignée te donne un tour de magie au niveau 1, puis un sort aux niveaux 3 et 5, lançable une fois par repos long sans emplacement (ou avec un emplacement)."
+        }
+      ],
+      "source": "SRD 5.2",
+      "options": [
+        {
+          "id": "lignee",
+          "nom": "Lignée",
+          "description": "",
+          "choix": [
+            {
+              "id": "haut-elfe",
+              "nom": "Haut-elfe",
+              "description": "Prestidigitation (niv. 1), Détection de la magie (niv. 3), Foulée brumeuse (niv. 5).",
+              "apparence": "haut-elfe"
+            },
+            {
+              "id": "elfe-sylvain",
+              "nom": "Elfe sylvain",
+              "description": "Vitesse 10,5 m ; Druidisme (niv. 1), Grande foulée (niv. 3), Passage sans trace (niv. 5).",
+              "apparence": "elfe-de-la-nuit"
+            },
+            {
+              "id": "drow",
+              "nom": "Drow",
+              "description": "Vision dans le noir 36 m ; Lumières dansantes (niv. 1), Lueurs féeriques (niv. 3), Ténèbres (niv. 5).",
+              "apparence": "elfe-de-la-nuit"
+            }
+          ]
+        },
+        {
+          "id": "caracteristique-sorts",
+          "nom": "Caractéristique des sorts",
+          "description": "Pour les sorts donnés par ce peuple.",
+          "choix": [
+            {
+              "id": "intelligence",
+              "nom": "Intelligence"
+            },
+            {
+              "id": "sagesse",
+              "nom": "Sagesse"
+            },
+            {
+              "id": "charisme",
+              "nom": "Charisme"
+            }
+          ]
+        }
       ]
     },
     {
       "id": "gnome",
       "nom": "Gnome",
-      "factions": ["alliance"],
-      "description": "Inventeurs géniaux de Gnomeregan, les gnomes compensent leur petite taille par une intelligence redoutable.",
+      "factions": [
+        "alliance"
+      ],
+      "description": "Inventeurs ingenieux.",
       "taille": "petite",
-      "vitesse": 7.5,
-      "bonusCaracteristiques": { "intelligence": 2, "dexterite": 1 },
-      "langues": ["Commun", "Gnome"],
+      "vitesse": 9,
+      "bonusCaracteristiques": {},
       "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Ruse gnome", "description": "Avantage aux jets de sauvegarde d'Intelligence, de Sagesse et de Charisme contre la magie." },
-        { "nom": "Artiste de l'évasion", "description": "Une fois par repos court, met fin à l'état entravé par une action bonus." }
+        {
+          "nom": "Vision dans le noir",
+          "description": "Portée de 18 m (60 pieds)."
+        },
+        {
+          "nom": "Ruse gnome",
+          "description": "Avantage aux jets de sauvegarde d'Intelligence, de Sagesse et de Charisme."
+        },
+        {
+          "nom": "Lignée des gnomes des roches",
+          "description": "Tu connais Réparation et Prestidigitation, et tu peux fabriquer de petits mécanismes (jouet, briquet, boîte à musique) avec Prestidigitation."
+        }
       ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "magicien",
-        "occultiste", "moine", "barbare", "barde", "ensorceleur"
-      ]
+      "source": "SRD 5.2"
     },
-    {
-      "id": "draenei",
-      "nom": "Draeneï",
-      "factions": ["alliance"],
-      "description": "Exilés d'Argus guidés par les naaru, les draeneï ont fui la Légion ardente jusqu'à Azeroth.",
-      "bonusCaracteristiques": { "sagesse": 2, "force": 1 },
-      "langues": ["Commun", "Draeneï"],
-      "traits": [
-        { "nom": "Don des naaru", "description": "Une fois par repos long, par une action, rend 1d8 + niveau points de vie à une créature à 1,5 m." },
-        { "nom": "Résistance à l'Ombre", "description": "Résistance aux dégâts nécrotiques." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "paladin", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman",
-        "magicien", "occultiste", "moine", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "worgen",
-      "nom": "Worgen",
-      "factions": ["alliance"],
-      "description": "Frappés par la malédiction de Gilnéas, les worgens ont appris à dompter la bête qui sommeille en eux.",
-      "bonusCaracteristiques": { "dexterite": 2, "force": 1 },
-      "langues": ["Commun", "Gilnéen"],
-      "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Sombre course", "description": "Une fois par repos court, sa vitesse augmente de 6 m jusqu'à la fin du tour." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "magicien",
-        "occultiste", "druide", "barbare", "barde", "ensorceleur"
-      ]
-    },
-
-    // ============================= HORDE =====================================
     {
       "id": "orc",
       "nom": "Orc",
-      "factions": ["horde"],
-      "description": "Libérés de la corruption démoniaque, les orcs ont bâti Orgrimmar et renoué avec leurs traditions chamaniques.",
-      "bonusCaracteristiques": { "force": 2, "constitution": 1 },
-      "langues": ["Orc"],
-      "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Fureur sanguinaire", "description": "Une fois par repos court, ajoute 1d4 aux dégâts de ses attaques pendant 1 minute." },
-        { "nom": "Endurance implacable", "description": "Une fois par repos long, tombe à 1 point de vie au lieu de 0." }
+      "factions": [
+        "horde"
       ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman",
-        "magicien", "occultiste", "moine", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "mort-vivant",
-      "nom": "Mort-vivant",
-      "factions": ["horde"],
-      "description": "Réprouvés libérés du joug du roi-liche, ils ne doivent plus allégeance qu'à eux-mêmes.",
-      "bonusCaracteristiques": { "constitution": 2, "intelligence": 1 },
-      "langues": ["Orc", "Bas-parler"],
+      "description": "Peuple fier et endurant, cœur de la Horde.",
+      "taille": "moyenne",
+      "vitesse": 9,
+      "bonusCaracteristiques": {},
       "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Volonté des Réprouvés", "description": "Avantage aux jets de sauvegarde contre les états charmé et effrayé." },
-        { "nom": "Sans souffle", "description": "N'a pas besoin de respirer." }
+        {
+          "nom": "Poussée d'adrénaline",
+          "description": "Foncer en action bonus ; tu gagnes alors des PV temporaires égaux à ton bonus de maîtrise. Utilisations = bonus de maîtrise, par repos court ou long."
+        },
+        {
+          "nom": "Vision dans le noir",
+          "description": "Portée de 36 m (120 pieds)."
+        },
+        {
+          "nom": "Endurance implacable",
+          "description": "Quand tu tombes à 0 PV sans mourir, tu restes à 1 PV. Une fois par repos long."
+        }
       ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "magicien",
-        "occultiste", "moine", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "tauren",
-      "nom": "Tauren",
-      "factions": ["horde"],
-      "description": "Nomades paisibles de Mulgore, les taurens honorent la Terre-Mère et les esprits des ancêtres.",
-      "bonusCaracteristiques": { "force": 2, "sagesse": 1 },
-      "langues": ["Orc", "Taurahe"],
-      "traits": [
-        { "nom": "Choc martial", "description": "Une fois par repos court, les créatures à 1,5 m réussissent un jet de sauvegarde de Force ou tombent à terre." },
-        { "nom": "Stature imposante", "description": "Compte comme une taille au-dessus pour la charge transportable." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "paladin", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman",
-        "magicien", "occultiste", "moine", "druide", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "troll",
-      "nom": "Troll",
-      "factions": ["horde"],
-      "description": "Les trolls Sombrelance, adeptes du vaudou, ont trouvé refuge au sein de la Horde.",
-      "bonusCaracteristiques": { "dexterite": 2, "constitution": 1 },
-      "langues": ["Orc", "Zandali"],
-      "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Berserker", "description": "Une fois par repos court, gagne une attaque supplémentaire lors de son action Attaquer." },
-        { "nom": "Régénération", "description": "Pendant un repos court, récupère 1 point de vie de plus par dé de vie dépensé." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman", "magicien",
-        "occultiste", "moine", "druide", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "elfe-de-sang",
-      "nom": "Elfe de sang",
-      "factions": ["horde"],
-      "description": "Survivants de Quel'Thalas, les sin'dorei restent avides de la magie qui les nourrit depuis toujours.",
-      "bonusCaracteristiques": { "intelligence": 2, "charisme": 1 },
-      "langues": ["Orc", "Thalassien"],
-      "traits": [
-        { "nom": "Vision dans le noir", "description": "Voit dans la pénombre jusqu'à 18 m." },
-        { "nom": "Torrent arcanique", "description": "Une fois par repos court, une créature à 3 m réussit un jet de sauvegarde de Constitution ou perd sa concentration." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "paladin", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "magicien",
-        "occultiste", "moine", "chasseur-de-demons", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "gobelin",
-      "nom": "Gobelin",
-      "factions": ["horde"],
-      "description": "Marchands rusés et ingénieurs explosifs, les gobelins du cartel Baille-Fonds ne voient qu'une chose : le profit.",
-      "taille": "petite",
-      "vitesse": 7.5,
-      "bonusCaracteristiques": { "intelligence": 2, "dexterite": 1 },
-      "langues": ["Orc", "Gobelin"],
-      "traits": [
-        { "nom": "Saut-fusée", "description": "Une fois par repos court, saute de 6 m dans la direction de son choix par une action bonus." },
-        { "nom": "Sens des affaires", "description": "Maîtrise de la compétence Persuasion lors d'un marchandage." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman",
-        "magicien", "occultiste", "barbare", "barde", "ensorceleur"
-      ]
-    },
-
-    // ======================= LES DEUX FACTIONS ===============================
-    {
-      "id": "pandaren",
-      "nom": "Pandaren",
-      "factions": ["alliance", "horde"],
-      "description": "Venus de la Pandarie, les pandarens cherchent l'équilibre entre la paix intérieure et le goût de l'aventure.",
-      "bonusCaracteristiques": { "sagesse": 2, "constitution": 1 },
-      "langues": ["Commun ou Orc", "Pandaren"],
-      "traits": [
-        { "nom": "Paume vibrante", "description": "Une fois par repos court, une créature touchée réussit un jet de sauvegarde de Constitution ou est neutralisée jusqu'à la fin de son prochain tour." },
-        { "nom": "Épicurien", "description": "Avantage aux jets de sauvegarde contre le poison." }
-      ],
-      "classesAutorisees": [
-        "guerrier", "rodeur", "roublard", "clerc", "chevalier-de-la-mort", "chaman",
-        "magicien", "occultiste", "moine", "barbare", "barde", "ensorceleur"
-      ]
-    },
-    {
-      "id": "dracthyr",
-      "nom": "Dracthyr",
-      "factions": ["alliance", "horde"],
-      "description": "Créés par Néltharion, les dracthyr se sont éveillés aux îles aux Dragons après des millénaires de sommeil.",
-      "bonusCaracteristiques": { "intelligence": 2, "charisme": 1 },
-      "langues": ["Commun ou Orc", "Draconique"],
-      "traits": [
-        { "nom": "Planer", "description": "En chute, descend de 18 m par round sans subir de dégâts et peut avancer de 1,5 m par mètre de chute." },
-        { "nom": "Visage", "description": "Peut prendre à volonté une apparence humanoïde (elfique ou humaine)." }
-      ],
-      "classesAutorisees": [
-        "evocateur", "guerrier", "rodeur", "roublard", "clerc", "magicien",
-        "occultiste", "barbare", "barde", "ensorceleur"
-      ]
+      "source": "SRD 5.2"
     }
   ]
 }

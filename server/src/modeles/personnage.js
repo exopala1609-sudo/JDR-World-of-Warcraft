@@ -8,7 +8,18 @@
 // Le serveur calcule lui-meme le reste (bonus de race, PV max, CA,
 // ressources) d'apres le REFERENTIEL : un joueur ne peut pas s'attribuer
 // 999 PV ou une Force de 30 en trafiquant sa requete.
-import { apercuPersonnage, classeArmureSansArmure, pvMax, ressourcesDeDepart, verifierBase, verifierChoixBonus } from "../../../shared/creation.js";
+import {
+  apercuPersonnage,
+  classeArmureSansArmure,
+  pvMax,
+  raceDisponible,
+  ressourcesDeDepart,
+  restrictionDeLore,
+  verifierBase,
+  verifierChoixBonus,
+  verifierOptions,
+  verifierRepartitionHistorique,
+} from "../../../shared/creation.js";
 import { CARACTERISTIQUES, bonusDeMaitrise, modificateur } from "../../../shared/dnd5e.js";
 import { attaquesEquipees, IDS_EMPLACEMENTS, TAILLE_BARRE } from "../../../shared/equipement.js";
 import { NATURES_ETAT } from "../../../shared/etats.js";
@@ -16,12 +27,12 @@ import { MODES_REPOS, TYPES_RESSOURCE } from "../../../shared/ressources.js";
 import { champsObjet, champsSort, schemaIdCompendium } from "./compendium.js";
 import { ErreurRegle } from "../regles/erreurs.js";
 import { nouvelId, schemaId } from "./identifiants.js";
-import { METHODES_CARACTERISTIQUES, schemaIdReferentiel } from "./referentiel.js";
+import { METHODES_CARACTERISTIQUES, schemaIdReferentiel, TAILLES } from "./referentiel.js";
 import { z } from "./zod.js";
 
 // Version du format des fiches. Si elle change, modeles/migrations.js sait
 // convertir les anciennes fiches : aucune sauvegarde n'est jamais perdue.
-export const VERSION_FICHE = 6;
+export const VERSION_FICHE = 7;
 export const SEXES = /** @type {const} */ (["masculin", "feminin"]);
 export const RANGS = /** @type {const} */ (["normal", "elite", "rare", "boss"]);
 
@@ -109,6 +120,20 @@ export const SchemaEtatActif = z.strictObject({
   posePar: z.string().max(40),
 });
 
+// L'origine d'un heros cree a l'ecran de creation (regles du livre WoW / D&D
+// 2024). null pour un monstre, une fiche creee par le MJ, ou une fiche ancienne.
+export const SchemaOrigine = z.strictObject({
+  historique: schemaIdReferentiel.nullable(),
+  optionsRace: z.record(schemaIdReferentiel, schemaIdReferentiel), // { lignee: "elfe-de-sang" }
+  specialisation: schemaIdReferentiel.nullable(),
+  sousClasse: z.string().max(80).nullable(), // imposee des la creation (Chevalier de la mort...)
+  dons: z.array(schemaIdReferentiel).max(10),
+  taille: z.enum(TAILLES),
+  typeCreature: z.string().max(60),
+  apparence: schemaIdReferentiel, // images a utiliser (portraits, icones)
+  renommee: z.strictObject({ faction: z.string().max(60), valeur: entier(1, 50) }).nullable(),
+});
+
 // --- La fiche complete -------------------------------------------------------
 
 export const SchemaPersonnage = z
@@ -148,6 +173,7 @@ export const SchemaPersonnage = z
     attaquesMonstre: z.array(SchemaAttaqueMonstre).max(10),
     // "gnoll" = jetons/gnoll.png ; "icones/inv_misc_head_gnoll_01" = une icone choisie au selecteur.
     jeton: z.string().regex(/^(icones\/)?[A-Za-z0-9_-]{1,80}$/).nullable(),
+    origine: SchemaOrigine.nullable(),
     creeLe: z.iso.datetime(),
     modifieLe: z.iso.datetime(),
   })
@@ -171,6 +197,13 @@ export const SchemaCreationGuidee = z.strictObject({
   bonusAuChoix: z.array(z.enum(CARACTERISTIQUES)).max(6).default([]),
   portrait: schemaPortrait.nullable().default(null),
   sexe: z.enum(SEXES).nullable().default(null),
+  // Regles du livre (D&D 2024) :
+  historique: schemaIdReferentiel.nullable().default(null),
+  repartition: z.partialRecord(z.enum(CARACTERISTIQUES), entier(1, 2)).default({}), // bonus d'historique
+  options: z.record(schemaIdReferentiel, schemaIdReferentiel).default({}), // { lignee: "elfe-de-sang" }
+  specialisation: schemaIdReferentiel.nullable().default(null),
+  donSupplementaire: schemaIdReferentiel.nullable().default(null), // Humain : un don d'origine en plus
+  ignorerLore: z.boolean().default(false), // possible seulement si le MJ l'autorise a cette table
 });
 
 // --- Creation libre par le MJ (outils du MJ : PNJ, monstres, fiches existantes) -------
@@ -203,7 +236,7 @@ function exigerDansReferentiel(referentiel, { classe, race, faction }) {
   return trouvee;
 }
 
-function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrait, sexe = null, niveau, caracteristiques, classeArmure, pvMaximum, ressources }) {
+function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrait, sexe = null, niveau, caracteristiques, classeArmure, pvMaximum, ressources, origine = null }) {
   const maintenant = new Date().toISOString();
   return SchemaPersonnage.parse({
     versionSchema: VERSION_FICHE,
@@ -230,6 +263,7 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
     repose: false,
     attaquesMonstre: [],
     jeton: null,
+    origine,
     creeLe: maintenant,
     modifieLe: maintenant,
   });
@@ -239,20 +273,58 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
  * Creation guidee (joueur) : applique les regles du referentiel.
  * "portraits" = les fichiers disponibles dans le dossier portraits/.
  */
-export function fabriquerPersonnageGuide(entree, { idTable, proprietaire, referentiel, portraits = [] }) {
+export function fabriquerPersonnageGuide(entree, { idTable, proprietaire, referentiel, portraits = [], loreLibre = false }) {
   const choix = SchemaCreationGuidee.parse(entree);
   const { classe, race, faction } = exigerDansReferentiel(referentiel, choix);
   const regles = referentiel.reglesCreation();
+  const tout = referentiel.lister();
 
-  if (!race.factions.includes(faction.id)) throw new ErreurRegle(`${race.nom} : race indisponible pour la faction ${faction.nom}.`);
-  if (!referentiel.combinaisonPermise(race.id, classe.id)) {
-    throw new ErreurRegle(`${race.nom} : la classe ${classe.nom} n'est pas accessible a cette race.`);
-  }
-  const probleme = verifierBase(choix.methode, choix.caracteristiques, regles) ?? verifierChoixBonus(race, choix.bonusAuChoix);
+  // Lore libre : seulement si le joueur l'a coche ET si le MJ l'autorise a cette table.
+  if (choix.ignorerLore && !loreLibre) throw new ErreurRegle("Le MJ n'autorise pas le lore libre a cette table.");
+  const lore = choix.ignorerLore || !regles.restrictionsRaceClasse;
+
+  if (!raceDisponible(race, faction.id, lore)) throw new ErreurRegle(`${race.nom} : peuple indisponible pour la faction ${faction.nom}.`);
+  const probleme =
+    verifierOptions(race, choix.options, faction.id, lore) ??
+    (lore ? null : restrictionDeLore(classe, race, choix.options)) ??
+    verifierBase(choix.methode, choix.caracteristiques, regles) ??
+    verifierChoixBonus(race, choix.bonusAuChoix);
   if (probleme) throw new ErreurRegle(probleme);
+
+  // Historique : obligatoire des que le referentiel en propose.
+  const historique = choix.historique ? referentiel.obtenirHistorique(choix.historique) : null;
+  if (choix.historique && !historique) throw new ErreurRegle(`Historique inconnu du referentiel : "${choix.historique}".`);
+  if (tout.historiques.length && !historique) throw new ErreurRegle("Choisis un historique.");
+  if (historique) {
+    const erreur = verifierRepartitionHistorique(historique, choix.repartition);
+    if (erreur) throw new ErreurRegle(erreur);
+  } else if (Object.keys(choix.repartition).length) {
+    throw new ErreurRegle("Bonus d'historique sans historique.");
+  }
+
+  // Specialisation : obligatoire si la classe en propose.
+  if (classe.specialisations.length && !classe.specialisations.some((s) => s.id === choix.specialisation)) {
+    throw new ErreurRegle(`${classe.nom} : choisis une specialisation.`);
+  }
+  if (!classe.specialisations.length && choix.specialisation) throw new ErreurRegle(`${classe.nom} n'a pas de specialisation.`);
+
+  // Dons : celui de l'historique, plus un don d'origine au choix pour un Humain.
+  const dons = historique ? [historique.donOrigine] : [];
+  if (race.donOrigineSupplementaire) {
+    const don = choix.donSupplementaire ? referentiel.obtenirDon(choix.donSupplementaire) : null;
+    if (!don) throw new ErreurRegle(`${race.nom} : choisis un don d'origine supplementaire.`);
+    if (don.categorie !== "origine") throw new ErreurRegle(`${don.nom} n'est pas un don d'origine.`);
+    if (don.races && !don.races.includes(race.id)) throw new ErreurRegle(`${don.nom} : reserve a d'autres peuples.`);
+    dons.push(don.id);
+  } else if (choix.donSupplementaire) {
+    throw new ErreurRegle(`${race.nom} n'a pas de don d'origine supplementaire.`);
+  }
   if (choix.portrait !== null && !portraits.includes(choix.portrait)) throw new ErreurRegle("Portrait introuvable dans le dossier portraits.");
 
-  const apercu = apercuPersonnage({ race, classe, base: choix.caracteristiques, bonusAuChoix: choix.bonusAuChoix }, referentiel.lister());
+  const apercu = apercuPersonnage(
+    { race, classe, base: choix.caracteristiques, bonusAuChoix: choix.bonusAuChoix, repartition: choix.repartition, choixOptions: choix.options },
+    tout,
+  );
   return ficheNeuve({
     idTable,
     proprietaire,
@@ -267,6 +339,17 @@ export function fabriquerPersonnageGuide(entree, { idTable, proprietaire, refere
     classeArmure: apercu.classeArmure,
     pvMaximum: apercu.pvMax,
     ressources: apercu.ressources,
+    origine: {
+      historique: historique?.id ?? null,
+      optionsRace: choix.options,
+      specialisation: choix.specialisation,
+      sousClasse: classe.sousClasseCreation ?? null,
+      dons,
+      taille: apercu.taille,
+      typeCreature: apercu.typeCreature,
+      apparence: apercu.apparence,
+      renommee: apercu.renommee,
+    },
   });
 }
 

@@ -9,10 +9,13 @@ import { nouvelId, schemaId } from "./identifiants.js";
 //                        false = seul le MJ le peut (les sorts, attaques et
 //                                repos calcules par le serveur s'appliquent
 //                                toujours normalement).
-export const REGLAGES_PAR_DEFAUT = { joueursModifientPv: false };
+//   loreLibre : true = les joueurs PEUVENT cocher "Ignorer les restrictions
+//               de lore" a la creation (classe ou peuple hors lore).
+export const REGLAGES_PAR_DEFAUT = { joueursModifientPv: false, loreLibre: false };
 
 export const SchemaReglagesTable = z.strictObject({
   joueursModifientPv: z.boolean(),
+  loreLibre: z.boolean().default(false), // absent des tables d'avant l'etape 1
 });
 
 export const SchemaTable = z.strictObject({

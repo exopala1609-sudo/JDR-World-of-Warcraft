@@ -317,6 +317,20 @@ class Jeu {
     return id ? (this.etat.referentiel?.races.find((r) => r.id === id)?.nom ?? id) : "";
   }
 
+  /**
+   * "Elfe (Elfe de sang) Chasseur de demons - Devastation" : le peuple et son
+   * premier choix (lignee, weyrn... sauf la taille), la classe et la specialisation.
+   */
+  descriptionHeros(p: Personnage) {
+    const ref = this.etat.referentiel;
+    const race = ref?.races.find((r) => r.id === p.race);
+    const option = race?.options.find((o) => o.id !== "taille" && p.origine?.optionsRace[o.id]);
+    const choix = option?.choix.find((c) => c.id === p.origine?.optionsRace[option.id]);
+    const classe = ref?.classes.find((c) => c.id === p.classe);
+    const spe = classe?.specialisations.find((s) => s.id === p.origine?.specialisation);
+    return [this.nomRace(p.race), choix ? `(${choix.nom})` : "", this.nomClasse(p.classe), spe ? `- ${spe.nom}` : ""].filter(Boolean).join(" ");
+  }
+
   /** Couleur de mes pings et de mes traces (le MJ : or ; un joueur : la couleur de ses pions). */
   maCouleur() {
     return this.etat.profil ? couleurDe(this.etat.profil) : "#ffd100";

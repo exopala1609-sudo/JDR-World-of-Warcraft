@@ -525,3 +525,42 @@
   color: var(--or);
   box-shadow: 0 0 8px rgba(255, 209, 0, 0.4);
 }
+
+/* --- Etape 1 du livre : choix du peuple, specialisation, historique, lore ------------ */
+.creation__options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+.creation__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  color: var(--or);
+  font-size: 14px;
+}
+.creation__option > span {
+  flex: 0 0 150px;
+}
+.creation__option select {
+  flex: 1;
+  min-width: 0;
+}
+.creation__lore {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--texte-doux);
+  font-size: 13px;
+  cursor: pointer;
+}
+.creation__heroique,
+.creation__resume-spe {
+  color: var(--or);
+}
+.creation__bonus-choix .onglet {
+  padding: 2px 10px;
+}

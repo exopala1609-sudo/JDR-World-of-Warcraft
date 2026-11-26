@@ -78,6 +78,9 @@ const ETAPES = {
   4: (fiche) => ({ ...fiche, versionSchema: 5, repose: fiche.repose ?? false }),
   // Sprint 11 : attaques des monstres, image du pion.
   5: (fiche) => ({ ...fiche, versionSchema: 6, attaquesMonstre: fiche.attaquesMonstre ?? [], jeton: fiche.jeton ?? null }),
+  // Version 6 -> 7 (etape 1 du livre WoW) : l'origine (historique, lignee,
+  // specialisation...). Les fiches d'avant n'en ont pas : null.
+  6: (fiche) => ({ ...fiche, versionSchema: 7, origine: fiche.origine ?? null }),
 };
 
 /**

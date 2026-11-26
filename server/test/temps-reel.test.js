@@ -280,17 +280,25 @@ test("premiere connexion : un joueur sans personnage reste a la porte, puis entr
     const libre = await demander(sylvanas, EVENEMENTS.PERSONNAGE_CREER, { donnees: { nom: "X", classe: "guerrier", caracteristiques: CARAC } });
     assert.deepEqual(libre, { ok: false, erreur: "Cree ton personnage depuis l'ecran de creation." });
 
-    // 2. Choix refuses par le serveur (restriction de race lue dans races.json).
+    // 2. Choix refuses par le serveur (historique manquant, lore libre non autorise par le MJ).
     const choix = {
       nom: "Sylvanas",
       faction: "horde",
-      race: "mort-vivant",
+      race: "orc",
       classe: "rodeur",
+      specialisation: "precision",
+      historique: "criminel",
+      repartition: { dexterite: 2, constitution: 1 },
       methode: "achat-de-points",
-      caracteristiques: { force: 8, dexterite: 15, constitution: 14, intelligence: 10, sagesse: 14, charisme: 8 },
+      caracteristiques: { force: 8, dexterite: 15, constitution: 15, intelligence: 10, sagesse: 12, charisme: 8 },
     };
-    const refus = await demander(sylvanas, EVENEMENTS.CREATION_VALIDER, { donnees: { ...choix, classe: "druide" } });
-    assert.deepEqual(refus, { ok: false, erreur: "Mort-vivant : la classe Druide n'est pas accessible a cette race." });
+    const sansHistorique = await demander(sylvanas, EVENEMENTS.CREATION_VALIDER, { donnees: { ...choix, historique: undefined, repartition: {} } });
+    assert.deepEqual(sansHistorique, { ok: false, erreur: "Choisis un historique." });
+    const loreLibre = await demander(sylvanas, EVENEMENTS.CREATION_VALIDER, { donnees: { ...choix, ignorerLore: true } });
+    assert.deepEqual(loreLibre, { ok: false, erreur: "Le MJ n'autorise pas le lore libre a cette table." });
+    // Le MJ ouvre le lore libre a la table : la case est desormais acceptee.
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { loreLibre: true });
+    choix.ignorerLore = true;
 
     // 3. "Entrer dans le monde" : la table voit arriver le personnage...
     const annonce = attendre(thrall, EVENEMENTS.PERSONNAGE_MAJ, 400, (m) => m.cause.action === "creation");
@@ -300,7 +308,9 @@ test("premiere connexion : un joueur sans personnage reste a la porte, puis entr
     assert.equal((await annonce).personnage.nom, "Sylvanas");
     // ... et le joueur recoit tout ce qu'il faut pour jouer, pion compris.
     const fiche = entree.personnages.find((p) => p.proprietaire === "Sylvanas");
-    assert.deepEqual([fiche.race, fiche.classe, fiche.caracteristiques.constitution], ["mort-vivant", "rodeur", 16]);
+    assert.deepEqual([fiche.race, fiche.classe, fiche.caracteristiques.constitution], ["orc", "rodeur", 16]);
+    assert.deepEqual([fiche.origine.historique, fiche.origine.specialisation], ["criminel", "precision"]);
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { loreLibre: false });
     const pion = entree.scene.pions.find((p) => p.idPersonnage === fiche.id);
     assert.ok(pion, "son pion est pose sur la carte");
     assert.ok(!entree.scene.pions.some((p) => p !== pion && p.x === pion.x && p.y === pion.y), "sur une case libre");

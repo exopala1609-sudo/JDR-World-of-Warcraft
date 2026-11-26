@@ -15,7 +15,9 @@ import { lireJsonCommente, listerFichiersJson } from "../fichiers.js";
 import {
   REGLES_CREATION_PAR_DEFAUT,
   SchemaClasse,
+  SchemaDon,
   SchemaFaction,
+  SchemaHistorique,
   SchemaModeleRessource,
   SchemaRace,
   SchemaReglesCreation,
@@ -26,6 +28,8 @@ const LISTES = {
   factions: SchemaFaction,
   races: SchemaRace,
   classes: SchemaClasse,
+  historiques: SchemaHistorique,
+  dons: SchemaDon,
   ressources: SchemaModeleRessource,
 };
 const SECTIONS = [...Object.keys(LISTES), "creation"];
@@ -59,7 +63,7 @@ export function resumerReferentiel(rapport) {
   const creation = rapport.creationPersonnalisee ? "" : " - regles de creation officielles par defaut";
   return (
     `${rapport.factions} faction(s), ${rapport.races} race(s), ${rapport.classes} classe(s), ` +
-    `${rapport.ressources} ressource(s)${creation}`
+    `${rapport.historiques ?? 0} historique(s), ${rapport.dons ?? 0} don(s), ${rapport.ressources} ressource(s)${creation}`
   );
 }
 
@@ -71,6 +75,8 @@ export function creerReferentiel(dossier) {
       factions: new Map(),
       races: new Map(),
       classes: new Map(),
+      historiques: new Map(),
+      dons: new Map(),
       ressources: new Map(),
       creation: REGLES_CREATION_PAR_DEFAUT,
     };
@@ -156,6 +162,16 @@ export function creerReferentiel(dossier) {
           continue;
         }
       }
+      // Les choix d'options limites a certaines factions : factions connues ?
+      for (const option of race.options) {
+        for (const choix of option.choix) {
+          const absentes = inconnus(choix.factions ?? [], "factions");
+          if (absentes.length) {
+            signaler(fichier, `races (${race.id}) > ${option.id} > ${choix.id}`, `Faction inconnue : ${absentes.join(", ")} (ignoree).`);
+          }
+          if (choix.factions) choix.factions = choix.factions.filter((id) => nouveau.factions.has(id));
+        }
+      }
       if (Array.isArray(race.classesAutorisees)) {
         const absentes = inconnus(race.classesAutorisees, "classes");
         if (absentes.length) {
@@ -177,6 +193,31 @@ export function creerReferentiel(dossier) {
       }
       classe.ressources = classe.ressources.filter((r) => nouveau.ressources.has(r.ressource));
     }
+    for (const classe of nouveau.classes.values()) {
+      const peuples = classe.restrictionLore?.peuples ?? [];
+      const absentes = inconnus(
+        peuples.map((p) => p.race),
+        "races",
+      );
+      if (absentes.length) {
+        signaler(origine.get(`classes:${classe.id}`), `classes (${classe.id}) > restrictionLore`, `Race inconnue : ${absentes.join(", ")} (ignoree).`);
+      }
+      if (classe.restrictionLore) {
+        classe.restrictionLore.peuples = peuples.filter((p) => nouveau.races.has(p.race));
+        if (!classe.restrictionLore.peuples.length) delete classe.restrictionLore;
+      }
+    }
+    for (const historique of nouveau.historiques.values()) {
+      if (!nouveau.dons.has(historique.donOrigine) && !dejaSignales.has(historique.donOrigine)) {
+        signaler(
+          origine.get(`historiques:${historique.id}`),
+          `historiques (${historique.id})`,
+          `Don d'origine inconnu : ${historique.donOrigine} (ajoute-le dans la section "dons").`,
+        );
+      } else if (nouveau.dons.get(historique.donOrigine)?.categorie !== "origine" && nouveau.dons.has(historique.donOrigine)) {
+        signaler(origine.get(`historiques:${historique.id}`), `historiques (${historique.id})`, `${historique.donOrigine} n'est pas un don d'origine.`);
+      }
+    }
     for (const section of ["factions", "races", "classes"]) {
       if (!nouveau[section].size) signaler(null, section, "Aucune entree valide : la creation de personnage est impossible.");
     }
@@ -187,6 +228,8 @@ export function creerReferentiel(dossier) {
       factions: nouveau.factions.size,
       races: nouveau.races.size,
       classes: nouveau.classes.size,
+      historiques: nouveau.historiques.size,
+      dons: nouveau.dons.size,
       ressources: nouveau.ressources.size,
       creationPersonnalisee: fichierCreation !== null,
       erreurs,
@@ -213,6 +256,8 @@ export function creerReferentiel(dossier) {
         classesPermises: classesPermises(r),
       })),
       classes: [...contenu.classes.values()].map((c) => ({ ...c, icone: c.icone ?? `classe-${c.id}` })),
+      historiques: [...contenu.historiques.values()],
+      dons: [...contenu.dons.values()],
       ressources: [...contenu.ressources.values()],
       creation: contenu.creation,
     }),
@@ -221,6 +266,8 @@ export function creerReferentiel(dossier) {
     obtenirRace: (id) => contenu.races.get(id) ?? null,
     obtenirClasse: (id) => contenu.classes.get(id) ?? null,
     obtenirRessource: (id) => contenu.ressources.get(id) ?? null,
+    obtenirHistorique: (id) => contenu.historiques.get(id) ?? null,
+    obtenirDon: (id) => contenu.dons.get(id) ?? null,
     reglesCreation: () => contenu.creation,
 
     /** Cette race peut-elle prendre cette classe ? (les deux doivent exister) */

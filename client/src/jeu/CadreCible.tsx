@@ -45,7 +45,7 @@ export function CadreCible() {
   const sources = [
     pion?.image ? `/medias/${pion.image.split("/").map(encodeURIComponent).join("/")}?remplacement=non` : null,
     personnage && !monstre ? `${personnage.portrait ? `/medias/portraits/${encodeURIComponent(personnage.portrait)}` : urlPortrait(nom)}?remplacement=non` : null,
-    personnage ? textures[rolePortrait(personnage.race, personnage.sexe) ?? "fond-"] : null,
+    personnage ? textures[rolePortrait(personnage.origine?.apparence ?? personnage.race, personnage.sexe) ?? "fond-"] : null,
   ].filter((s): s is string => Boolean(s) && s !== imageAbsente);
   const image = sources[0];
   const initiales = nom

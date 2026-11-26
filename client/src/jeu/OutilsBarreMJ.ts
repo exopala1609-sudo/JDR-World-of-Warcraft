@@ -43,6 +43,19 @@ async function basculerPvJoueurs() {
   }
 }
 
+// Reglage de la table : les joueurs peuvent-ils cocher "Ignorer les restrictions de lore" a la creation ?
+async function basculerLoreLibre() {
+  const permis = !jeu.lire().table?.reglages?.loreLibre;
+  const r = await jeu.demander(EVENEMENTS.TABLE_REGLER, { loreLibre: permis });
+  if (r.ok) {
+    jeu.journaliser(
+      permis
+        ? "Lore libre : a la creation, les joueurs peuvent ignorer les restrictions de lore (ex. un evocateur non dracthyr)."
+        : "Lore respecte : la creation suit les restrictions de lore du livre.",
+    );
+  }
+}
+
 async function recharger() {
   const r = await jeu.demander(EVENEMENTS.REFERENTIEL_RECHARGER);
   await jeu.demander(EVENEMENTS.COMPENDIUM_RECHARGER);
@@ -65,6 +78,13 @@ export const OUTILS_MJ: OutilMJ[] = [
     aide: "Allume : chaque joueur peut modifier lui-meme les PV de son personnage. Eteint : seul le MJ.",
     action: basculerPvJoueurs,
     actif: (e) => Boolean(e.table?.reglages?.joueursModifientPv),
+  },
+  {
+    symbole: "⚑",
+    nom: "Lore libre",
+    aide: "Allume : a la creation, les joueurs peuvent cocher \"Ignorer les restrictions de lore\". Eteint : le lore du livre s'applique.",
+    action: basculerLoreLibre,
+    actif: (e) => Boolean(e.table?.reglages?.loreLibre),
   },
   { symbole: "↻", icone: "outil-recharger", nom: "Recharger", aide: "Relire les fichiers du compendium et du referentiel apres modification.", action: recharger },
 ];

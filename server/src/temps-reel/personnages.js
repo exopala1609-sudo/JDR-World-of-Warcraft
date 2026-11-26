@@ -76,6 +76,7 @@ export function brancher(socket, ctx) {
       proprietaire: pseudo,
       referentiel: ctx.referentiel,
       portraits: listerImages(ctx.config, "portraits"),
+      loreLibre: Boolean(depot.obtenirTable(idTable).reglages?.loreLibre),
     });
     ctx.publierPersonnage(personnage, { action: "creation", par: pseudo }); // la table voit arriver le nouveau
 

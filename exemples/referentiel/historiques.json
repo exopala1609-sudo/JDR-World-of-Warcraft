@@ -1,0 +1,79 @@
+// =============================================================================
+//  HISTORIQUES (D&D 2024) : ils donnent les bonus de caracteristiques.
+//  Le joueur place +2 et +1 (ou +1, +1, +1) parmi les 3 caracteristiques citees.
+//  Les 4 historiques du SRD 5.2 ; ajoute ceux du Manuel des joueurs dans un autre fichier.
+//
+//  Contient du contenu du System Reference Document 5.2 (SRD 5.2) de Wizards of the Coast LLC, disponible sur https://dnd.wizards.com/resources/systems-reference-document, sous licence Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode). Traduction et adaptation libres.
+// =============================================================================
+{
+  "historiques": [
+    {
+      "id": "acolyte",
+      "nom": "Acolyte",
+      "description": "Tu as servi dans un temple.",
+      "caracteristiques": [
+        "intelligence",
+        "sagesse",
+        "charisme"
+      ],
+      "donOrigine": "initie-magie-clerc",
+      "competences": [
+        "Intuition",
+        "Religion"
+      ],
+      "outil": "Matériel de calligraphe",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "criminel",
+      "nom": "Criminel",
+      "description": "Tu as vécu en marge de la loi.",
+      "caracteristiques": [
+        "dexterite",
+        "constitution",
+        "intelligence"
+      ],
+      "donOrigine": "vigilant",
+      "competences": [
+        "Escamotage",
+        "Discrétion"
+      ],
+      "outil": "Outils de voleur",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "sage",
+      "nom": "Sage",
+      "description": "Tu as passé des années à étudier.",
+      "caracteristiques": [
+        "constitution",
+        "intelligence",
+        "sagesse"
+      ],
+      "donOrigine": "initie-magie-magicien",
+      "competences": [
+        "Arcanes",
+        "Histoire"
+      ],
+      "outil": "Matériel de calligraphe",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "soldat",
+      "nom": "Soldat",
+      "description": "Tu as été formé à la guerre.",
+      "caracteristiques": [
+        "force",
+        "dexterite",
+        "constitution"
+      ],
+      "donOrigine": "agresseur-sauvage",
+      "competences": [
+        "Athlétisme",
+        "Intimidation"
+      ],
+      "outil": "Un jeu (au choix)",
+      "source": "SRD 5.2"
+    }
+  ]
+}

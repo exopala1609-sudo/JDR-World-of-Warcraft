@@ -166,6 +166,18 @@ const RACES_WOW: Record<string, string[]> = {
   gobelin: ["Goblin"],
   pandaren: ["Pandaren"],
   dracthyr: ["Dracthyr"],
+  // Peuples et lignees du livre (cle = "apparence" du referentiel).
+  elfe: ["NightElf"],
+  "elfe-du-vide": ["VoidElf"],
+  sacrenuit: ["Nightborne"],
+  "haut-elfe": ["BloodElf"],
+  "draenei-sancteforge": ["LightforgedDraenei", "Draenei"],
+  mecagnome: ["Mechagnome", "Gnome"],
+  "tauren-haut-roc": ["HighmountainTauren", "Tauren"],
+  "troll-zandalari": ["ZandalariTroll", "Troll"],
+  terrestre: ["EarthenDwarf", "Dwarf"],
+  vulperin: ["Vulpera"],
+  haranir: ["Haranir"],
 };
 const ROLES_DU_REFERENTIEL: Record<string, string[]> = {
   "fond-alliance": ["Hurlevents", "Stormwind"],
@@ -556,6 +568,17 @@ const ICONES_DE_RACE: Record<string, string[]> = {
   gobelin: ["Goblin"],
   pandaren: ["Pandaren"],
   dracthyr: ["Dracthyr"],
+  elfe: ["Nightelf", "NightElf"],
+  "elfe-du-vide": ["VoidElf"],
+  sacrenuit: ["Nightborne"],
+  "haut-elfe": ["Bloodelf", "BloodElf"],
+  "draenei-sancteforge": ["LightforgedDraenei"],
+  mecagnome: ["Mechagnome"],
+  "tauren-haut-roc": ["HighmountainTauren"],
+  "troll-zandalari": ["ZandalariTroll"],
+  terrestre: ["EarthenDwarf"],
+  vulperin: ["Vulpera"],
+  haranir: ["Haranir"],
 };
 
 /**

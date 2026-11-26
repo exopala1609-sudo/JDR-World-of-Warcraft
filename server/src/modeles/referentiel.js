@@ -7,8 +7,13 @@
 // AUCUNE classe par son nom.
 //
 // Un fichier du referentiel peut contenir une ou plusieurs de ces sections :
-//   { "factions": [...], "races": [...], "classes": [...],
-//     "ressources": [...], "creation": { ... } }
+//   { "factions": [...], "races": [...], "classes": [...], "historiques": [...],
+//     "dons": [...], "ressources": [...], "creation": { ... } }
+//
+// Le livre D&D World of Warcraft suit les regles de D&D 2024 : les BONUS de
+// caracteristiques viennent de l'HISTORIQUE (pas de la race), et chaque race
+// (ou "peuple") peut demander des CHOIX a la creation (lignee, clan, weyrn,
+// taille...) : ce sont ses "options".
 // Les liens entre sections (la faction d'une race, les ressources d'une
 // classe...) sont verifies a la fin du chargement, dans donnees/referentiel.js.
 import { CARACTERISTIQUES } from "../../../shared/dnd5e.js";
@@ -63,7 +68,49 @@ export const SchemaModeleRessource = z.strictObject({
   description: texte(1000),
 });
 
-// --- Races -----------------------------------------------------------------------
+// --- Races (peuples) ---------------------------------------------------------------
+
+export const TAILLES = /** @type {const} */ (["petite", "moyenne", "grande"]);
+const schemaTaille = z.enum(TAILLES, 'Taille : "petite", "moyenne" ou "grande".');
+
+const schemaTrait = z.strictObject({ nom: schemaNom, description: texte(3000) });
+
+// Renommee de depart aupres d'une faction (chapitre 4 du livre). Pour l'instant
+// un simple texte : la reputation sera geree en jeu a l'etape 3.
+const schemaRenommee = z.strictObject({ faction: schemaNom, valeur: entier(1, 50).default(3) });
+
+// Un choix possible d'une option : une lignee, un clan, un weyrn...
+const schemaChoixOption = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  description: texte(3000),
+  // (facultatif) Factions ou ce choix est possible (ex. Tushui : alliance).
+  // Absent : toutes les factions de la race.
+  factions: z.array(schemaIdReferentiel).min(1).optional(),
+  // (facultatif) Traits ajoutes par ce choix (ex. la lignee des elfes de sang).
+  traits: z.array(schemaTrait).max(10).default([]),
+  // (facultatif) Taille imposee par ce choix (ex. Reprouve "petite").
+  taille: schemaTaille.optional(),
+  // (facultatif) Type de creature impose par ce choix (ex. Mecagnome : Artificiel).
+  typeCreature: schemaNom.optional(),
+  // (facultatif) Images a utiliser (portraits, icones) : l'id d'une "apparence",
+  // ex. "elfe-de-sang" pour un Elfe de la lignee des elfes de sang.
+  apparence: schemaIdReferentiel.optional(),
+  // (facultatif) Renommee de depart ; null = aucune (remplace celle de la race).
+  renommee: schemaRenommee.nullable().optional(),
+});
+
+// Une question posee a la creation (ex. "Lignee", "Weyrn", "Taille").
+const schemaOption = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  description: texte(1000),
+  choix: z
+    .array(schemaChoixOption)
+    .min(1)
+    .max(20)
+    .refine((choix) => new Set(choix.map((c) => c.id)).size === choix.length, "Deux choix portent le meme id."),
+});
 
 const schemaBonusFixes = z
   .partialRecord(schemaCaracteristique, entier(-5, 5))
@@ -87,7 +134,9 @@ export const SchemaRace = z.strictObject({
   factions: z.array(schemaIdReferentiel).min(1, "Indique au moins une faction."),
   description: texte(4000),
   icone: schemaIcone.optional(), // par defaut : "race-<id>"
-  taille: z.enum(["petite", "moyenne", "grande"], 'Taille : "petite", "moyenne" ou "grande".').default("moyenne"),
+  taille: schemaTaille.default("moyenne"),
+  // (facultatif) Type de creature (D&D 2024) : Humanoide, Dragon, Mort-vivant...
+  typeCreature: schemaNom.default("Humanoide"),
   vitesse: z
     .number()
     .min(1.5)
@@ -98,10 +147,19 @@ export const SchemaRace = z.strictObject({
   bonusAuChoix: schemaBonusAuChoix.optional(),
   pvParNiveau: entier(0, 5).default(0),
   langues: z.array(z.string().trim().min(1).max(40)).max(10).default([]),
-  traits: z
-    .array(z.strictObject({ nom: schemaNom, description: texte(2000) }))
-    .max(20)
-    .default([]),
+  traits: z.array(schemaTrait).max(20).default([]),
+  // (facultatif) Choix demandes a la creation : lignee, clan, weyrn, taille...
+  options: z
+    .array(schemaOption)
+    .max(5)
+    .default([])
+    .refine((options) => new Set(options.map((o) => o.id)).size === options.length, "Deux options portent le meme id."),
+  // (facultatif) Renommee de depart (un choix d'option peut la remplacer).
+  renommee: schemaRenommee.nullable().default(null),
+  // (facultatif) true : un don d'origine en plus de celui de l'historique (Humain).
+  donOrigineSupplementaire: z.boolean().default(false),
+  // (facultatif) D'ou viennent les traits, pour memoire (ex. "Manuel des joueurs 2024").
+  source: z.string().trim().max(120).optional(),
   classesAutorisees: z
     .union([z.literal("toutes"), z.array(schemaIdReferentiel).min(1)], 'Ecris "toutes" ou une liste ["guerrier", ...].')
     .default("toutes"),
@@ -120,6 +178,36 @@ export const SchemaClasse = z.strictObject({
   id: schemaIdReferentiel,
   nom: schemaNom,
   equivalentDnd: z.string().trim().max(60).optional(), // pour memoire, ex. "Roublard"
+  // Classe du Manuel des joueurs 2024 a utiliser (le livre WoW s'appuie dessus).
+  classeDnd: z.string().trim().max(60).optional(),
+  // Classe heroique : normalement a partir du niveau 3 (affichee comme telle).
+  heroique: z.boolean().default(false),
+  // Specialisations de WoW (Sang, Givre, Impie...) : un choix a la creation.
+  specialisations: z
+    .array(
+      z.strictObject({
+        id: schemaIdReferentiel,
+        nom: schemaNom,
+        description: texte(1000),
+        sousClasse: z.string().trim().max(80).optional(), // sous-classe conseillee au niveau 3
+      }),
+    )
+    .max(6)
+    .default([]),
+  // (facultatif) Sous-classe imposee des la creation (Chevalier de la mort...).
+  sousClasseCreation: z.string().trim().max(80).optional(),
+  // (facultatif) Type de creature impose par la classe (ex. Mort-vivant).
+  typeCreature: schemaNom.optional(),
+  // (facultatif) Restriction "de lore" : seuls ces peuples (et, si precise, ces
+  // choix d'options) jouent cette classe, sauf si le MJ autorise le lore libre.
+  restrictionLore: z
+    .strictObject({
+      peuples: z
+        .array(z.strictObject({ race: schemaIdReferentiel, choix: z.array(schemaIdReferentiel).min(1).optional() }))
+        .min(1),
+      message: texte(300),
+    })
+    .optional(),
   description: texte(4000),
   icone: schemaIcone.optional(), // par defaut : "classe-<id>"
   couleur: schemaCouleur.default("#ffffff"),
@@ -142,6 +230,37 @@ export const SchemaClasse = z.strictObject({
     )
     .max(10)
     .default([]),
+});
+
+// --- Historiques et dons (D&D 2024) -------------------------------------------------
+
+// Un historique : 3 caracteristiques ou placer +2/+1 (ou +1/+1/+1), un don
+// d'origine, deux competences et un outil.
+export const SchemaHistorique = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  description: texte(2000),
+  caracteristiques: z
+    .array(schemaCaracteristique)
+    .length(3, "Un historique cite exactement 3 caracteristiques.")
+    .refine((c) => new Set(c).size === 3, "Les 3 caracteristiques doivent etre differentes."),
+  donOrigine: schemaIdReferentiel,
+  competences: z.array(z.string().trim().min(1).max(40)).max(4).default([]),
+  outil: z.string().trim().max(80).default(""),
+  equipement: texte(1000),
+  source: z.string().trim().max(120).optional(),
+});
+
+export const CATEGORIES_DON = /** @type {const} */ (["origine", "general", "style-de-combat", "faveur-epique"]);
+
+export const SchemaDon = z.strictObject({
+  id: schemaIdReferentiel,
+  nom: schemaNom,
+  categorie: z.enum(CATEGORIES_DON, 'Categorie : "origine", "general", "style-de-combat" ou "faveur-epique".'),
+  description: texte(3000),
+  // (facultatif) Reserve a certaines races (ex. dons d'origine humains du livre).
+  races: z.array(schemaIdReferentiel).min(1).optional(),
+  source: z.string().trim().max(120).optional(),
 });
 
 // --- Regles de creation (caracteristiques) -------------------------------------------

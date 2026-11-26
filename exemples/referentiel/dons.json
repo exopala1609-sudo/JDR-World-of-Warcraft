@@ -1,0 +1,52 @@
+// =============================================================================
+//  DONS : pour l'instant les dons d'origine (historique, don supplementaire de l'Humain).
+//  "races" (facultatif) : don reserve a ces peuples.
+//
+//  Contient du contenu du System Reference Document 5.2 (SRD 5.2) de Wizards of the Coast LLC, disponible sur https://dnd.wizards.com/resources/systems-reference-document, sous licence Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode). Traduction et adaptation libres.
+// =============================================================================
+{
+  "dons": [
+    {
+      "id": "vigilant",
+      "nom": "Vigilant",
+      "categorie": "origine",
+      "description": "Bonus de maîtrise ajouté à l'initiative ; tu peux échanger ton initiative avec un allié consentant.",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "initie-magie-clerc",
+      "nom": "Initié à la magie (clerc)",
+      "categorie": "origine",
+      "description": "Tu apprends deux tours de magie et un sort de niveau 1 de la liste du clerc. Tu peux lancer ce sort une fois sans emplacement par repos long. Caractéristique : Intelligence, Sagesse ou Charisme (au choix).",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "initie-magie-druide",
+      "nom": "Initié à la magie (druide)",
+      "categorie": "origine",
+      "description": "Tu apprends deux tours de magie et un sort de niveau 1 de la liste du druide. Tu peux lancer ce sort une fois sans emplacement par repos long. Caractéristique : Intelligence, Sagesse ou Charisme (au choix).",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "initie-magie-magicien",
+      "nom": "Initié à la magie (magicien)",
+      "categorie": "origine",
+      "description": "Tu apprends deux tours de magie et un sort de niveau 1 de la liste du magicien. Tu peux lancer ce sort une fois sans emplacement par repos long. Caractéristique : Intelligence, Sagesse ou Charisme (au choix).",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "agresseur-sauvage",
+      "nom": "Agresseur sauvage",
+      "categorie": "origine",
+      "description": "Une fois par tour, quand tu touches avec une arme, tu peux relancer les dés de dégâts de l'arme et garder l'un des deux résultats.",
+      "source": "SRD 5.2"
+    },
+    {
+      "id": "doue",
+      "nom": "Doué",
+      "categorie": "origine",
+      "description": "Maîtrise de trois competences ou outils de ton choix.",
+      "source": "SRD 5.2"
+    }
+  ]
+}

@@ -690,3 +690,30 @@ Leçons, reportées dans le guide :
 - la suppression de la tâche Cloud Sync ;
 - `icones (1)` renommé en `icones` ;
 - le premier résultat d'Hyper Backup.
+
+---
+
+# Suivi — création de personnage, étape 1 : peuples, classes, lore (26 novembre 2026)
+
+Source : livre *D&D World of Warcraft* (chapitres 1 et 2, « Creating a Character »). **Le dépôt étant public, aucun texte du livre n'y est versé** : les fichiers tirés du livre sont remis à l'utilisateur, qui les dépose dans `\\NAS\jdr\referentiel`.
+
+Choix validés par l'utilisateur :
+- traduction avec la nomenclature française officielle de WoW ;
+- la faction (Alliance / Horde) se choisit en premier ; un peuple sans faction propre est proposé des deux côtés ;
+- classes héroïques non grisées, seulement signalées (niveau 3 ou accord du MJ) ;
+- restrictions de lore du livre, levées par le MJ (outil **⚑ Lore libre**) puis case à cocher par le joueur ;
+- spécialisation au choix ;
+- historiques (règles 2024 : +2/+1 ou +1/+1/+1, don d'origine) : 4 historiques du SRD pour l'instant, l'utilisateur donnera les 12 autres ;
+- l'Humain choisit un don d'origine en plus, y compris les 3 dons humains du livre ;
+- ressources du livre : étape à part, après l'étape 5.
+
+Réalisé :
+- référentiel : options de peuple (lignée, nation, taille...), type de créature, renommée de départ, historiques, dons, spécialisations, classe D&D d'origine, restriction de lore ;
+- fiche version 7 : bloc `origine` (historique, options, spécialisation, sous-classe, dons, taille, type, apparence, renommée), migration des anciennes fiches (`origine` vide) ;
+- arbitrage serveur de chaque choix, lore libre seulement si le MJ l'autorise à la table ;
+- exemples publics réécrits : 5 espèces, 4 historiques, 6 dons du SRD 5.2 (mention CC-BY), 13 classes WoW avec leurs règles de base ;
+- tests : 195, tous verts ; essai réel dans le navigateur avec les données du livre (Pandaren Huojin de la Horde, Évocateur humain en lore libre, don humain supplémentaire).
+
+Conséquence à connaître : les anciennes clés `barbare`, `barde`, `ensorceleur` et les peuples provisoires (`elfe-de-sang`, `tauren`... selon le fichier) disparaissent du référentiel d'exemple. Les personnages de test qui les utilisent sont à recréer.
+
+**Reste à vérifier** : les noms marqués « à vérifier » dans les fichiers du livre ; l'affichage avec les vrais portraits et icônes du NAS.

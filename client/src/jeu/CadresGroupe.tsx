@@ -83,7 +83,7 @@ function proprietesCadre(p: Personnage, enLigne: boolean) {
       <>
         <div className="infobulle__titre infobulle__ligne--or">{p.nom}</div>
         <div>
-          Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
+          Niveau {p.niveau} {jeu.descriptionHeros(p)}
         </div>
         <div className="infobulle__ligne--gris">
           Joueur : {p.proprietaire}
@@ -142,7 +142,7 @@ function CadreUnite({ p, principal, enLigne, choisi }: { p: Personnage; principa
   const ressource = ressourcePrincipale(p);
   // UI-Player-Portrait dans le dossier interface/ : le cadre de WoW remplace le cadre dessine.
   const texture = useTexture("cadre-unite");
-  const parDefaut = useTextures()[rolePortrait(p.race, p.sexe) ?? "fond-"] ?? null;
+  const parDefaut = useTextures()[rolePortrait(p.origine?.apparence ?? p.race, p.sexe) ?? "fond-"] ?? null;
   const depot = useDepotSort(p);
   const classes = [
     "cadre-unite",

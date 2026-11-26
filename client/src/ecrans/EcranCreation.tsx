@@ -3,18 +3,25 @@ import {
   apercuPersonnage,
   baseParDefaut,
   caracteristiquesAuChoix,
+  choixPossibles,
+  choixRetenus,
   NOMS_CARACTERISTIQUES,
   pointsDepenses,
+  raceDisponible,
+  repartitionParDefaut,
+  restrictionDeLore,
   scoresAchat,
   verifierBase,
   verifierChoixBonus,
+  verifierOptions,
+  verifierRepartitionHistorique,
 } from "@partage/creation.js";
 import { CARACTERISTIQUES } from "@partage/dnd5e.js";
 import { EVENEMENTS } from "@partage/protocole.js";
 import { useTextures, type RoleTexture } from "@/core/textures";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone } from "@/core/medias";
-import type { Caracteristique, Classe, MethodeCaracteristiques, Race, Referentiel } from "@/core/types";
+import type { Caracteristique, ChoixOption, Classe, Historique, MethodeCaracteristiques, Race, Referentiel } from "@/core/types";
 import { avecInfobulle, CoucheInfobulle } from "@/ui/InfoBulle";
 
 type Base = Record<Caracteristique, number>;
@@ -63,15 +70,29 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   const table = useJeu((e) => e.table);
   const textures = useTextures(); // icones de classe de WoW (dossier interface/), en secours
   const regles = referentiel.creation;
+  // Le MJ autorise-t-il le lore libre a cette table ? (bouton de sa barre d'outils)
+  const loreAutorise = Boolean(table?.reglages?.loreLibre);
 
   // --- Les choix du joueur (etat local de l'ecran) --------------------------------------
+  const [ignorerLore, setIgnorerLore] = useState(false);
+  const lore = (ignorerLore && loreAutorise) || !regles.restrictionsRaceClasse; // true = restrictions levees
   const [idFaction, setIdFaction] = useState(referentiel.factions[0]?.id ?? "");
-  const racesDeLaFaction = referentiel.races.filter((r) => r.factions.includes(idFaction));
+  const racesDeLaFaction = referentiel.races.filter((r) => raceDisponible(r, idFaction, lore));
   const [idRace, setIdRace] = useState(racesDeLaFaction[0]?.id ?? "");
   const race = referentiel.races.find((r) => r.id === idRace) ?? racesDeLaFaction[0];
-  const [idClasse, setIdClasse] = useState(race?.classesPermises[0] ?? "");
-  const [sexe, setSexe] = useState<"masculin" | "feminin">("masculin");
+  const [options, setOptions] = useState<Record<string, string>>(() => (race ? optionsParDefaut(race, idFaction, lore) : {}));
+  // Par defaut, une classe de base (les classes heroiques se prennent normalement au niveau 3).
+  const [idClasse, setIdClasse] = useState((referentiel.classes.find((c) => !c.heroique) ?? referentiel.classes[0])?.id ?? "");
   const classe = referentiel.classes.find((c) => c.id === idClasse);
+  const [idSpecialisation, setIdSpecialisation] = useState<string | null>(classe?.specialisations[0]?.id ?? null);
+  const [sexe, setSexe] = useState<"masculin" | "feminin">("masculin");
+  const [idHistorique, setIdHistorique] = useState<string | null>(referentiel.historiques[0]?.id ?? null);
+  const historique = referentiel.historiques.find((h) => h.id === idHistorique) ?? null;
+  const [repartition, setRepartition] = useState<Partial<Record<Caracteristique, number>>>(() =>
+    repartitionParDefaut(historique, classe?.caracteristiquesPrincipales),
+  );
+  const [repartitionModifiee, setRepartitionModifiee] = useState(false);
+  const [donSupplementaire, setDonSupplementaire] = useState<string | null>(null);
   const [methode, setMethode] = useState<MethodeCaracteristiques>(regles.methodes[0]);
   const [base, setBase] = useState<Base>(() => baseParDefaut(regles.methodes[0], regles, classe?.caracteristiquesPrincipales));
   const [baseModifiee, setBaseModifiee] = useState(false);
@@ -87,26 +108,59 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
     jeu.demander(EVENEMENTS.PORTRAITS_LISTER).then((r) => r.ok && setPortraits(r.fichiers as string[]));
   }, []);
 
+  // Dons d'origine proposes en plus (Humain) : ceux du referentiel, sauf celui de l'historique.
+  const donsSupplementaires = race?.donOrigineSupplementaire
+    ? referentiel.dons.filter((d) => d.categorie === "origine" && (!d.races || d.races.includes(race.id)) && d.id !== historique?.donOrigine)
+    : [];
+  // Un don choisi qui n'est plus proposable (autre race, autre historique) : on le retire.
+  useEffect(() => {
+    if (!donsSupplementaires.length) setDonSupplementaire(null);
+    else if (!donsSupplementaires.some((d) => d.id === donSupplementaire)) setDonSupplementaire(donsSupplementaires[0].id);
+  }, [race?.id, historique?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- Enchainement des choix (comme dans WoW : faction -> race -> classe) ---------------
   const choisirFaction = (id: string) => {
     setIdFaction(id);
-    // Une race des deux camps (Pandaren...) reste choisie ; sinon, la premiere race du camp.
-    if (race?.factions.includes(id)) return;
-    const premiere = referentiel.races.find((r) => r.factions.includes(id));
-    if (premiere) choisirRace(premiere);
+    // Une race des deux camps (Pandaren, Elfe...) reste choisie ; ses choix sont revus.
+    if (race && raceDisponible(race, id, lore)) return setOptions((o) => ajusterOptions(race, o, id, lore));
+    const premiere = referentiel.races.find((r) => raceDisponible(r, id, lore));
+    if (premiere) choisirRace(premiere, id);
   };
-  const choisirRace = (r: Race) => {
+  const choisirRace = (r: Race, faction = idFaction) => {
     setIdRace(r.id);
+    setOptions(optionsParDefaut(r, faction, lore));
     setBonusAuChoix([]);
     setIndexPortrait(0);
-    if (!r.classesPermises.includes(idClasse) && r.classesPermises[0]) choisirClasse(r.classesPermises[0]);
+  };
+  const choisirOption = (idOption: string, idChoix: string) => {
+    setOptions((o) => ({ ...o, [idOption]: idChoix }));
+    setIndexPortrait(0);
   };
   const choisirClasse = (id: string) => {
     setIdClasse(id);
-    // Tant que le joueur n'a rien touche, le tableau standard suit la classe
-    // (meilleures valeurs sur ses caracteristiques principales).
     const nouvelle = referentiel.classes.find((c) => c.id === id);
+    setIdSpecialisation(nouvelle?.specialisations[0]?.id ?? null);
+    // Tant que le joueur n'a rien touche, le tableau standard et les bonus d'historique
+    // suivent la classe (meilleures valeurs sur ses caracteristiques principales).
     if (!baseModifiee && methode === "tableau-standard") setBase(baseParDefaut(methode, regles, nouvelle?.caracteristiquesPrincipales));
+    if (!repartitionModifiee) setRepartition(repartitionParDefaut(historique, nouvelle?.caracteristiquesPrincipales));
+  };
+  const choisirHistorique = (id: string) => {
+    setIdHistorique(id);
+    setRepartitionModifiee(false);
+    setRepartition(repartitionParDefaut(referentiel.historiques.find((h) => h.id === id), classe?.caracteristiquesPrincipales));
+  };
+  const changerRepartition = (r: Partial<Record<Caracteristique, number>>) => {
+    setRepartitionModifiee(true);
+    setRepartition(r);
+  };
+  const changerLore = (actif: boolean) => {
+    setIgnorerLore(actif);
+    // On revient au lore : la race et ses choix doivent redevenir conformes.
+    if (!actif && race && !raceDisponible(race, idFaction, false)) {
+      const premiere = referentiel.races.find((r) => raceDisponible(r, idFaction, false));
+      if (premiere) choisirRace(premiere);
+    } else if (!actif && race) setOptions((o) => ajusterOptions(race, o, idFaction, false));
   };
   const choisirMethode = (m: MethodeCaracteristiques) => {
     setMethode(m);
@@ -128,15 +182,24 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
 
   // --- Apercu calcule (memes fonctions que le serveur) -----------------------------------
   const apercu = useMemo(
-    () => (race && classe ? apercuPersonnage({ race, classe, base, bonusAuChoix }, referentiel) : null),
-    [race, classe, base, bonusAuChoix, referentiel],
+    () => (race && classe ? apercuPersonnage({ race, classe, base, bonusAuChoix, repartition, choixOptions: options }, referentiel) : null),
+    [race, classe, base, bonusAuChoix, repartition, options, referentiel],
   );
-  const portraitsDeLaRace = race ? portraits.filter((f) => f.toLowerCase().startsWith(`${race.id}-`) || f.toLowerCase().startsWith(`${race.id}.`)) : [];
+  const loreClasse = (c: Classe) => (lore || !race ? null : (restrictionDeLore(c, race, options) as string | null));
+  const apparence: string = apercu?.apparence ?? race?.id ?? "";
+  const portraitsDeLaRace = apparence ? portraits.filter((f) => f.toLowerCase().startsWith(`${apparence}-`) || f.toLowerCase().startsWith(`${apparence}.`)) : [];
   const portrait = portraitsDeLaRace.length ? portraitsDeLaRace[indexPortrait % portraitsDeLaRace.length] : null;
   const probleme =
     !race || !classe
       ? "Choisis une race et une classe."
-      : (verifierBase(methode, base, regles) ?? verifierChoixBonus(race, bonusAuChoix) ?? (nom.trim().length < 2 ? "Donne un nom a ton personnage." : null));
+      : (verifierOptions(race, options, idFaction, lore) ??
+        loreClasse(classe) ??
+        (referentiel.historiques.length ? verifierRepartitionHistorique(historique, repartition) : null) ??
+        (classe.specialisations.length && !idSpecialisation ? "Choisis une specialisation." : null) ??
+        (race.donOrigineSupplementaire && !donSupplementaire ? "Choisis ton don d'origine supplementaire." : null) ??
+        verifierBase(methode, base, regles) ??
+        verifierChoixBonus(race, bonusAuChoix) ??
+        (nom.trim().length < 2 ? "Donne un nom a ton personnage." : null));
 
   const entrer = async (e: FormEvent) => {
     e.preventDefault();
@@ -153,6 +216,12 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
       bonusAuChoix,
       portrait,
       sexe,
+      historique: historique?.id ?? null,
+      repartition: historique ? repartition : {},
+      options,
+      specialisation: classe.specialisations.length ? idSpecialisation : null,
+      donSupplementaire: race.donOrigineSupplementaire ? donSupplementaire : null,
+      ignorerLore: ignorerLore && loreAutorise,
     });
     // En cas de succes, le magasin bascule tout seul sur l'ecran de jeu.
     if (!r.ok) {
@@ -164,15 +233,16 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   const faction = referentiel.factions.find((f) => f.id === idFaction);
   // Fond de l'ecran : la capitale de la faction (Hurlevents, Orgrimmar) si elle est dans interface/.
   const fond = textures[`fond-${idFaction}`];
-  // Portrait provisoire de WoW pour la race et le sexe choisis.
-  const portraitWow = race ? textures[`portrait-${race.id}-${sexe}`] : undefined;
+  // Portrait provisoire de WoW pour l'apparence (race ou lignee) et le sexe choisis.
+  const portraitWow = apparence ? (textures[`portrait-${apparence}-${sexe}`] ?? (race ? textures[`portrait-${race.id}-${sexe}`] : undefined)) : undefined;
+  const specialisation = classe?.specialisations.find((s) => s.id === idSpecialisation);
   return (
     <form
       className={`creation${fond ? " creation--fond" : ""}`}
       style={{ "--couleur-faction": faction?.couleur ?? "#ffd100", ...(fond ? { "--fond-faction": `url("${fond}")` } : {}) } as CSSProperties}
       onSubmit={entrer}
     >
-      {/* ===== Gauche : loyaute et race ===== */}
+      {/* ===== Gauche : loyaute, race et ses choix ===== */}
       <section className="creation__colonne cadre">
         <h2 className="creation__titre titre-or">Loyaute</h2>
         <div className="creation__factions">
@@ -195,6 +265,11 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
             </button>
           ))}
         </div>
+        {loreAutorise && regles.restrictionsRaceClasse && (
+          <label className="creation__lore" title="Le MJ autorise a cette table les combinaisons hors lore (ex. un evocateur qui n'est pas dracthyr).">
+            <input type="checkbox" checked={ignorerLore} onChange={(e) => changerLore(e.target.checked)} /> Ignorer les restrictions de lore
+          </label>
+        )}
 
         <h2 className="creation__titre titre-or">Race</h2>
         <div className="grille-choix grille-choix--races">
@@ -237,15 +312,45 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
           ))}
         </div>
 
-        {race && (
+        {race && race.options.length > 0 && (
+          <div className="creation__options">
+            {race.options.map((option) => (
+              <label key={option.id} className="creation__option" title={option.description || undefined}>
+                <span>{option.nom}</span>
+                <select className="champ" value={options[option.id] ?? ""} onChange={(e) => choisirOption(option.id, e.target.value)}>
+                  {choixPossibles(option, idFaction, lore).map((c: ChoixOption) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nom}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ))}
+          </div>
+        )}
+
+        {race && apercu && (
           <div className="creation__description">
             <h3>{race.nom}</h3>
             <p>{race.description}</p>
             <p>
-              <b>Bonus :</b> {BonusTexte(race)} - <b>Vitesse :</b> {race.vitesse.toLocaleString("fr-FR")} m
+              <b>Type :</b> {apercu.typeCreature} - <b>Taille :</b> {apercu.taille} - <b>Vitesse :</b> {race.vitesse.toLocaleString("fr-FR")} m
               {race.pvParNiveau ? ` - +${race.pvParNiveau} PV par niveau` : ""}
+              {BonusTexte(race) ? ` - Bonus : ${BonusTexte(race)}` : ""}
             </p>
-            {race.traits.map((t) => (
+            {apercu.renommee && (
+              <p>
+                <b>Renommee de depart :</b> {apercu.renommee.faction} ({apercu.renommee.valeur})
+              </p>
+            )}
+            {choixRetenus(race, options)
+              .filter((c: ChoixOption) => c.description)
+              .map((c: ChoixOption) => (
+                <p key={c.id}>
+                  <b>{c.nom}.</b> {c.description}
+                </p>
+              ))}
+            {apercu.traits.map((t: { nom: string; description: string }) => (
               <p key={t.nom}>
                 <b>{t.nom}.</b> {t.description}
               </p>
@@ -260,6 +365,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
           <div className="creation__table">{table?.nom}</div>
           <div className="titre-or creation__resume">
             {race?.nom} <span style={{ color: classe?.couleur }}>{classe?.nom}</span>
+            {specialisation ? <span className="creation__resume-spe"> - {specialisation.nom}</span> : null}
           </div>
         </div>
         <div className="creation__portrait">
@@ -269,7 +375,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
             <div className="creation__portrait-vide">
               <img className="creation__portrait-wow" src={portraitWow} alt={`Portrait ${race?.nom}`} />
               <p>
-                Portrait provisoire. Pour le tien : <code>portraits/{race?.id}-1.png</code>...
+                Portrait provisoire. Pour le tien : <code>portraits/{apparence}-1.png</code>...
               </p>
             </div>
           ) : (
@@ -278,7 +384,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
               <p>
                 Aucun portrait pour cette race.
                 <br />
-                Ajoute des images <code>portraits/{race?.id}-1.png</code>, <code>{race?.id}-2.png</code>... dans ton dossier.
+                Ajoute des images <code>portraits/{apparence}-1.png</code>, <code>{apparence}-2.png</code>... dans ton dossier.
               </p>
             </div>
           )}
@@ -295,12 +401,12 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         </div>
       </section>
 
-      {/* ===== Droite : classe et caracteristiques ===== */}
+      {/* ===== Droite : classe, historique et caracteristiques ===== */}
       <section className="creation__colonne cadre">
         <h2 className="creation__titre titre-or">Classe</h2>
         <div className="grille-choix grille-choix--classes">
           {referentiel.classes.map((c) => {
-            const permise = race?.classesPermises.includes(c.id) ?? false;
+            const horsLore = loreClasse(c);
             return (
               <BoutonChoix
                 key={c.id}
@@ -308,9 +414,9 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
                 icone={c.icone}
                 couleur={c.couleur}
                 actif={c.id === classe?.id}
-                interdit={!permise}
-                onClick={() => permise && choisirClasse(c.id)}
-                aide={<AideClasse classe={c} race={race} permise={permise} referentiel={referentiel} />}
+                interdit={Boolean(horsLore)}
+                onClick={() => !horsLore && choisirClasse(c.id)}
+                aide={<AideClasse classe={c} horsLore={horsLore} />}
                 secours={textures[`classe-${c.id}` as RoleTexture]}
               />
             );
@@ -320,8 +426,67 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         {classe && (
           <p className="creation__classe-info">
             <b style={{ color: classe.couleur }}>{classe.nom}</b>
-            {classe.equivalentDnd ? ` (${classe.equivalentDnd} de D&D)` : ""} - de de vie d{classe.deDeVie} - {classe.description}
+            {classe.heroique && <span className="creation__heroique"> - classe heroique</span>}
+            {classe.classeDnd ? ` (${classe.classeDnd} du Manuel des joueurs)` : ""} - de de vie d{classe.deDeVie} - {classe.description}
+            {classe.heroique && " Normalement accessible a partir du niveau 3 : vois avec ton MJ."}
+            {classe.sousClasseCreation ? ` Sous-classe des la creation : ${classe.sousClasseCreation}.` : ""}
           </p>
+        )}
+        {classe && classe.specialisations.length > 0 && (
+          <label className="creation__option">
+            <span>Specialisation</span>
+            <select className="champ" value={idSpecialisation ?? ""} onChange={(e) => setIdSpecialisation(e.target.value)}>
+              {classe.specialisations.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nom}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {specialisation && (
+          <p className="creation__classe-info">
+            {specialisation.description}
+            {specialisation.sousClasse ? ` Sous-classe conseillee au niveau 3 : ${specialisation.sousClasse}.` : ""}
+          </p>
+        )}
+
+        {referentiel.historiques.length > 0 && (
+          <>
+            <h2 className="creation__titre titre-or">Historique</h2>
+            <label className="creation__option">
+              <span>Historique</span>
+              <select className="champ" value={idHistorique ?? ""} onChange={(e) => choisirHistorique(e.target.value)}>
+                {referentiel.historiques.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.nom}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {historique && (
+              <>
+                <p className="creation__classe-info">
+                  {historique.description} Don d'origine : <b>{referentiel.dons.find((d) => d.id === historique.donOrigine)?.nom ?? historique.donOrigine}</b>
+                  {historique.competences.length ? ` - Competences : ${historique.competences.join(", ")}` : ""}
+                  {historique.outil ? ` - Outil : ${historique.outil}` : ""}.
+                </p>
+                <ChoixRepartition historique={historique} repartition={repartition} surChange={changerRepartition} />
+              </>
+            )}
+            {race?.donOrigineSupplementaire && (
+              <label className="creation__option" title={referentiel.dons.find((d) => d.id === donSupplementaire)?.description}>
+                <span>Don d'origine ({race.nom})</span>
+                <select className="champ" value={donSupplementaire ?? ""} onChange={(e) => setDonSupplementaire(e.target.value)}>
+                  {donsSupplementaires.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nom}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </>
         )}
 
         <h2 className="creation__titre titre-or">Caracteristiques</h2>
@@ -347,7 +512,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
               <tr>
                 <th></th>
                 <th>Base</th>
-                <th>Race</th>
+                <th>Bonus</th>
                 <th>Total</th>
                 <th>Mod.</th>
               </tr>
@@ -405,6 +570,21 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   );
 }
 
+/** Les choix d'options par defaut : le premier choix possible de chaque option. */
+function optionsParDefaut(race: Race, idFaction: string, lore: boolean): Record<string, string> {
+  return Object.fromEntries(race.options.map((o) => [o.id, (choixPossibles(o, idFaction, lore)[0] as ChoixOption | undefined)?.id ?? ""]));
+}
+
+/** Garde les choix encore possibles (changement de faction) ; remplace les autres par le premier possible. */
+function ajusterOptions(race: Race, actuels: Record<string, string>, idFaction: string, lore: boolean): Record<string, string> {
+  return Object.fromEntries(
+    race.options.map((o) => {
+      const possibles = choixPossibles(o, idFaction, lore) as ChoixOption[];
+      return [o.id, possibles.some((c) => c.id === actuels[o.id]) ? actuels[o.id] : (possibles[0]?.id ?? "")];
+    }),
+  );
+}
+
 // --- Briques de l'ecran ---------------------------------------------------------------------
 
 /** Image du dossier icones/ ; si elle manque, une pastille avec des initiales. */
@@ -440,35 +620,84 @@ function BonusTexte(race: Race) {
     .filter(([, v]) => v)
     .map(([c, v]) => `${abreviation(c as Caracteristique)} ${signe(v as number)}`);
   if (race.bonusAuChoix) fixes.push(`${race.bonusAuChoix.bonus.map(signe).join(" / ")} au choix`);
-  return fixes.join(", ") || "aucun";
+  return fixes.join(", ");
 }
 
 function AideRace({ race }: { race: Race }) {
   return (
     <>
       <div className="infobulle__titre">{race.nom}</div>
-      <div>Bonus : {BonusTexte(race)}</div>
+      <div>{race.typeCreature}</div>
       <div className="infobulle__ligne--or">{race.description}</div>
     </>
   );
 }
 
-function AideClasse({ classe, race, permise, referentiel }: { classe: Classe; race?: Race; permise: boolean; referentiel: Referentiel }) {
-  // Pourquoi une classe est grisee : les races qui y ont acces (d'apres races.json).
-  const races = referentiel.races.filter((r) => r.classesPermises.includes(classe.id)).map((r) => r.nom);
+function AideClasse({ classe, horsLore }: { classe: Classe; horsLore: string | null }) {
   return (
     <>
       <div className="infobulle__titre" style={{ color: classe.couleur }}>
         {classe.nom}
       </div>
-      <div>De de vie : d{classe.deDeVie}</div>
+      {classe.heroique && <div className="infobulle__ligne--or">Classe heroique (niveau 3 et plus, ou accord du MJ)</div>}
+      <div>
+        De de vie : d{classe.deDeVie}
+        {classe.classeDnd ? ` - ${classe.classeDnd}` : ""}
+      </div>
       <div className="infobulle__ligne--or">{classe.description}</div>
-      {!permise && (
-        <div className="infobulle__ligne--rouge">
-          Indisponible pour : {race?.nom}. Races possibles : {races.join(", ") || "aucune"}.
-        </div>
-      )}
+      {horsLore && <div className="infobulle__ligne--rouge">{horsLore}</div>}
     </>
+  );
+}
+
+/**
+ * Bonus d'historique (D&D 2024) : +2 et +1 sur deux de ses trois
+ * caracteristiques, ou +1 sur les trois.
+ */
+function ChoixRepartition(props: { historique: Historique; repartition: Partial<Record<Caracteristique, number>>; surChange: (r: Partial<Record<Caracteristique, number>>) => void }) {
+  const { historique, repartition, surChange } = props;
+  const trois = historique.caracteristiques;
+  const egal = trois.every((c) => repartition[c] === 1);
+  const plusDeux = trois.find((c) => repartition[c] === 2) ?? trois[0];
+  const plusUn = trois.find((c) => repartition[c] === 1 && c !== plusDeux) ?? trois.find((c) => c !== plusDeux)!;
+  return (
+    <div className="creation__bonus-choix">
+      <button type="button" className={`onglet${!egal ? " onglet--actif" : ""}`} onClick={() => surChange({ [plusDeux]: 2, [plusUn]: 1 })}>
+        +2 / +1
+      </button>
+      <button type="button" className={`onglet${egal ? " onglet--actif" : ""}`} onClick={() => surChange(Object.fromEntries(trois.map((c) => [c, 1])))}>
+        +1 / +1 / +1
+      </button>
+      {!egal && (
+        <>
+          <label>
+            +2 :{" "}
+            <select value={plusDeux} onChange={(e) => {
+              const c = e.target.value as Caracteristique;
+              surChange({ [c]: 2, [c === plusUn ? trois.find((x) => x !== c)! : plusUn]: 1 });
+            }}>
+              {trois.map((c) => (
+                <option key={c} value={c}>
+                  {NOMS_CARACTERISTIQUES[c]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            +1 :{" "}
+            <select value={plusUn} onChange={(e) => surChange({ [plusDeux]: 2, [e.target.value]: 1 })}>
+              {trois
+                .filter((c) => c !== plusDeux)
+                .map((c) => (
+                  <option key={c} value={c}>
+                    {NOMS_CARACTERISTIQUES[c]}
+                  </option>
+                ))}
+            </select>
+          </label>
+        </>
+      )}
+    </div>
   );
 }
 

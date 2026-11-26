@@ -93,7 +93,7 @@ test("une fiche du sprint 1 est convertie au nouveau format, sans perte", () => 
     const relu = creerDepot(dossier);
     assert.equal(relu.charger().migrees, 1);
     const fiche = relu.obtenirPersonnage("p-1111111111");
-    assert.equal(fiche.versionSchema, 6); // 1 -> 2 -> ... -> 6, etape par etape
+    assert.equal(fiche.versionSchema, 7); // 1 -> 2 -> ... -> 7, etape par etape
     assert.deepEqual([fiche.race, fiche.faction, fiche.portrait], [null, null, null]);
     assert.deepEqual([fiche.equipement, fiche.barreActions.length], [{}, 12]);
     assert.equal(fiche.pointsDeVie.actuels, 9);
@@ -102,7 +102,7 @@ test("une fiche du sprint 1 est convertie au nouveau format, sans perte", () => 
       { cle: "rage-barbare", actuel: 1, court: "aucun", long: "remplir" }, // libere le nom "rage" pour la jauge WoW
     );
     assert.equal(fiche.inventaire[0].rarete, "inhabituel");
-    assert.deepEqual([fiche.grimoire, fiche.etats], [[], []]);
+    assert.deepEqual([fiche.grimoire, fiche.etats, fiche.origine], [[], [], null]);
   } finally {
     rmSync(dossier, { recursive: true, force: true });
   }

@@ -6,7 +6,7 @@ export type Table = {
   nom: string;
   // Reglages choisis par le MJ. joueursModifientPv : chaque joueur peut modifier
   // lui-meme les PV de son personnage (sinon, seul le MJ).
-  reglages?: { joueursModifientPv: boolean };
+  reglages?: { joueursModifientPv: boolean; loreLibre?: boolean }; // loreLibre : "Ignorer les restrictions de lore" permis a la creation
 };
 
 export type Ressource = {
@@ -153,6 +153,8 @@ export type Personnage = {
   repose: boolean; // apres un repos long : portrait "repose" facon WoW (Zzz)
   attaquesMonstre: AttaqueMonstre[]; // monstres du bestiaire : leurs attaques
   jeton: string | null; // image du pion (dossier jetons/), sinon le portrait
+  // Heros cree a l'ecran de creation (regles du livre) ; null pour un monstre ou une fiche ancienne.
+  origine?: OriginePersonnage | null;
   sacPrive?: boolean; // fiche d'un autre joueur : le serveur n'envoie pas le contenu de son sac
   niveau: number;
   caracteristiques: Record<string, number>;
@@ -192,6 +194,33 @@ export type Caracteristique = "force" | "dexterite" | "constitution" | "intellig
 
 export type Faction = { id: string; nom: string; description: string; embleme: string; couleur: string };
 
+export type OriginePersonnage = {
+  historique: string | null;
+  optionsRace: Record<string, string>;
+  specialisation: string | null;
+  sousClasse: string | null;
+  dons: string[];
+  taille: string;
+  typeCreature: string;
+  apparence: string; // cle des images (portraits, icones) : ex. "elfe-de-sang"
+  renommee: { faction: string; valeur: number } | null;
+};
+
+export type Trait = { nom: string; description: string };
+export type Renommee = { faction: string; valeur: number };
+export type ChoixOption = {
+  id: string;
+  nom: string;
+  description: string;
+  factions?: string[];
+  traits: Trait[];
+  taille?: string;
+  typeCreature?: string;
+  apparence?: string;
+  renommee?: Renommee | null;
+};
+export type OptionRace = { id: string; nom: string; description: string; choix: ChoixOption[] };
+
 export type Race = {
   id: string;
   nom: string;
@@ -199,19 +228,46 @@ export type Race = {
   description: string;
   icone: string;
   taille: string;
+  typeCreature: string;
+  options: OptionRace[];
+  renommee: Renommee | null;
+  donOrigineSupplementaire: boolean;
+  source?: string;
+  classesAutorisees: "toutes" | string[];
   vitesse: number;
   bonusCaracteristiques: Partial<Record<Caracteristique, number>>;
   bonusAuChoix?: { bonus: number[]; parmi: "toutes" | Caracteristique[] };
   pvParNiveau: number;
   langues: string[];
-  traits: { nom: string; description: string }[];
+  traits: Trait[];
   classesPermises: string[]; // calcule par le serveur (restrictions comprises)
 };
+
+export type Specialisation = { id: string; nom: string; description: string; sousClasse?: string };
+
+export type Historique = {
+  id: string;
+  nom: string;
+  description: string;
+  caracteristiques: Caracteristique[];
+  donOrigine: string;
+  competences: string[];
+  outil: string;
+  equipement: string;
+};
+
+export type Don = { id: string; nom: string; categorie: string; description: string; races?: string[] };
 
 export type Classe = {
   id: string;
   nom: string;
   equivalentDnd?: string;
+  classeDnd?: string; // classe du Manuel des joueurs 2024 utilisee (ex. "Paladin")
+  heroique: boolean; // classe heroique : normalement a partir du niveau 3
+  specialisations: Specialisation[];
+  sousClasseCreation?: string;
+  typeCreature?: string;
+  restrictionLore?: { peuples: { race: string; choix?: string[] }[]; message: string };
   description: string;
   icone: string;
   couleur: string;
@@ -232,6 +288,8 @@ export type Referentiel = {
   factions: Faction[];
   races: Race[];
   classes: Classe[];
+  historiques: Historique[];
+  dons: Don[];
   ressources: ModeleRessource[];
   creation: {
     methodes: MethodeCaracteristiques[];

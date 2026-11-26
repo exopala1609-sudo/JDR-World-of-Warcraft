@@ -5,14 +5,18 @@ données : factions, races, classes, ressources (Mana, Rage...) et méthode de
 caractéristiques. Le code du jeu ne connaît **aucune race ni aucune classe par
 son nom** : tout vient de ces fichiers.
 
-Objectif : à la sortie du livre *D&D World of Warcraft*, tu remplaces les
-données provisoires par les vraies, **au Bloc-notes**, sans toucher au code.
+Le livre *D&D World of Warcraft* est sorti : ses peuples, classes et dons sont
+des données comme les autres. **Le projet étant public, son texte n'est jamais
+mis sur GitHub** : les fichiers tirés du livre vivent seulement dans ton
+dossier `referentiel/` (NAS ou cloud). Les exemples du projet, eux, ne
+reprennent que le contenu libre du SRD 5.2 (voir `exemples/referentiel/LISEZ-MOI.txt`).
 
 ## À quoi il sert
 
 C'est l'écran « Créer un personnage » qui lit le référentiel : il propose les
-factions, les races de chaque faction, les classes (grisées quand la race n'y
-a pas accès) et la méthode de caractéristiques. Le serveur revérifie chaque
+factions, les peuples de chaque faction (et leurs choix : lignée, nation...),
+les classes (grisées quand le lore les réserve à d'autres peuples), la
+spécialisation, l'historique et la méthode de caractéristiques. Le serveur revérifie chaque
 choix avec ces mêmes fichiers. Les portraits et les icônes de l'écran sont
 décrits dans `docs/PERSONNALISER.md`.
 
@@ -28,6 +32,8 @@ modèles du projet (`exemples/referentiel/`), avec un `LISEZ-MOI.txt`.
 | `races.json` | Faction(s), bonus de caractéristiques, vitesse, traits, **classes autorisées** |
 | `classes.json` | Dé de vie, défense sans armure, ressources de départ, couleur |
 | `ressources.json` | Jauges et compteurs : maximum, départ plein/vide, règles de repos |
+| `historiques.json` | Historiques (règles 2024) : caractéristiques, don d'origine, compétences |
+| `dons.json` | Dons : d'origine, généraux... (le texte est affiché, pas appliqué) |
 | `creation.json` | Tableau standard, achat de points, plafond, restrictions on/off |
 
 Ce découpage n'est qu'une convention : le serveur lit **tous** les `.json` du
@@ -99,7 +105,31 @@ s'écrivent `force`, `dexterite`, `constitution`, `intelligence`, `sagesse`,
 | `pvParNiveau` | facultatif. PV en plus par niveau (ex. robustesse naine). Défaut `0` |
 | `langues` | facultatif. Liste de textes |
 | `traits` | facultatif. `[{ "nom": "...", "description": "..." }]`. Affichés, pas appliqués automatiquement |
-| `classesAutorisees` | `"toutes"` ou liste d'`id` de classes |
+| `typeCreature` | facultatif. Défaut `Humanoide` (ex. `Dragon`, `Mort-vivant`) |
+| `options` | facultatif. Choix propres au peuple (lignée, nation, taille...), 5 au plus. Voir ci-dessous |
+| `renommee` | facultatif. Renommée de départ, ex. `{ "faction": "Alliance", "valeur": 3 }` |
+| `donOrigineSupplementaire` | facultatif. `true` : le joueur choisit un don d'origine en plus (Humain) |
+| `source` | facultatif. D'où vient l'entrée, ex. `"SRD 5.2"` ou `"Livre, p. 42"` |
+| `classesAutorisees` | facultatif, ancien format. Préfère `restrictionLore` dans la classe |
+
+Une **option** propose plusieurs choix ; chaque choix peut changer la taille,
+le type de créature, l'image (`apparence`, ex. `"elfe-de-sang"` pour
+`portraits/elfe-de-sang-1.png`), la renommée, ajouter des traits, ou être
+réservé à une faction :
+
+```jsonc
+"options": [
+  { "id": "lignee", "nom": "Lignée", "choix": [
+    { "id": "sang", "nom": "Elfe de sang", "factions": ["horde"], "apparence": "elfe-de-sang",
+      "traits": [{ "nom": "...", "description": "..." }] },
+    { "id": "nuit", "nom": "Elfe de la nuit", "factions": ["alliance"] }
+  ] }
+]
+```
+
+Un peuple sans faction propre (Pandaren, Dracthyr...) liste les deux factions ;
+c'est le choix d'une option (`factions` du choix) qui peut ensuite dépendre
+de la faction choisie.
 
 ### Classe
 
@@ -116,6 +146,46 @@ s'écrivent `force`, `dexterite`, `constitution`, `intelligence`, `sagesse`,
 | `caracteristiqueIncantation` | facultatif. Caractéristique des sorts (attaque de sort, DD), ex. `"intelligence"` pour le Mage. Par défaut : la première caractéristique principale parmi Intelligence, Sagesse, Charisme |
 | `progressionSorts` | facultatif. `"complete"` (par défaut) ou `"demi"` (Paladin, Chasseur : les niveaux de sorts arrivent deux fois moins vite) |
 | `ressources` | facultatif. Ressources de départ, voir ci-dessous |
+| `classeDnd` | facultatif. Classe du Manuel des joueurs utilisée (ex. Chaman → `"Barbare"`) |
+| `heroique` | facultatif. `true` : classe héroïque (niveau 3, ou accord du MJ). Simplement signalé au joueur |
+| `specialisations` | facultatif. `[{ "id", "nom", "description", "sousClasse" }]` : le joueur en choisit une |
+| `sousClasseCreation` | facultatif. Sous-classe obtenue dès le niveau 1 (ex. Chevalier de la mort) |
+| `typeCreature` | facultatif. Remplace celui du peuple (ex. `Mort-vivant` pour le Chevalier de la mort) |
+| `restrictionLore` | facultatif. Peuples autorisés par le lore, voir ci-dessous |
+
+La **restriction de lore** liste les peuples (et, si besoin, les choix
+d'option) qui ont accès à la classe. Le MJ peut la lever pour sa table avec
+l'outil **⚑ Lore libre** : le joueur voit alors une case « Ignorer les
+restrictions de lore ».
+
+```jsonc
+"restrictionLore": {
+  "peuples": [{ "race": "elfe", "choix": ["sang", "nuit"] }, { "race": "dracthyr" }],
+  "message": "Lore : réservé aux elfes de sang et de la nuit."
+}
+```
+
+### Historique
+
+| Champ | Valeurs |
+|---|---|
+| `id`, `nom`, `description` | |
+| `caracteristiques` | les 3 caractéristiques où placer +2/+1 ou +1/+1/+1 |
+| `donOrigine` | `id` d'un don de catégorie `origine` |
+| `competences` | facultatif. Liste de textes |
+| `outil`, `equipement` | facultatif. Textes |
+| `source` | facultatif |
+
+Dès qu'au moins un historique existe, **le joueur doit en choisir un**.
+
+### Don
+
+| Champ | Valeurs |
+|---|---|
+| `id`, `nom`, `description` | |
+| `categorie` | `origine`, `general`, `style-de-combat` ou `faveur-epique` |
+| `races` | facultatif. Réservé à ces peuples (ex. les dons humains du livre) |
+| `source` | facultatif |
 
 Une ressource de départ cite un modèle de `ressources.json`, et peut en changer
 le maximum ou les règles de repos :
@@ -149,7 +219,7 @@ règles **officielles de D&D 5e** s'appliquent.
 | `tableauStandard` | `[15, 14, 13, 12, 10, 8]` (exactement 6 valeurs) |
 | `achatDePoints` | budget `27`, coûts `8`→0 ... `13`→5, `14`→7, `15`→9 (sans trou) |
 | `caracteristiqueMaximale` | `20`, plafond après bonus de race |
-| `restrictionsRaceClasse` | `true`. `false` = toutes les races ont accès à toutes les classes |
+| `restrictionsRaceClasse` | `true`. `false` = plus aucune restriction de lore, pour toutes les tables |
 
 ## Vérifications automatiques
 
@@ -158,6 +228,9 @@ En plus de la forme de chaque entrée, le serveur vérifie les **liens** :
 - une race qui cite une faction inconnue est signalée (et ignorée si elle
   n'a plus aucune faction) ;
 - une classe inconnue dans `classesAutorisees` est signalée et retirée ;
+- un peuple inconnu dans une `restrictionLore` est signalé et retiré ;
+- un historique dont le don d'origine manque, ou n'est pas un don
+  d'origine, est signalé ;
 - une ressource inconnue dans une classe est signalée et retirée ;
 - un dossier sans faction, race ou classe valide est signalé : la création de
   personnage serait impossible.
@@ -171,9 +244,8 @@ ailleurs : corrige la première erreur de la liste, puis revérifie.
   pas (comme les états).
 - Le format couvre tout ce que le serveur **calcule** aujourd'hui : bonus de
   caractéristiques, PV, CA sans armure, vitesse, ressources de départ,
-  restrictions. Si le livre introduit une mécanique nouvelle (maîtrises de
-  jets de sauvegarde, compétences, historiques...), il faudra un ajout de code
-  pour la calculer. Les données existantes, elles, resteront valables.
+  restrictions, bonus d'historique. Les dons, compétences et outils sont
+  enregistrés et affichés, mais leurs effets ne sont pas encore calculés.
 - Les fichiers d'exemple ne sont copiés qu'**une fois**, dans un dossier vide.
   Le jeu n'écrase jamais tes modifications. Les modèles d'origine restent dans
   `exemples/referentiel/` du projet.

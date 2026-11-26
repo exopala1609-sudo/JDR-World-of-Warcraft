@@ -1,250 +1,587 @@
 // =============================================================================
-//  CLASSES : le troisième choix de l'écran de création
-// =============================================================================
+//  CLASSES : les 13 classes de World of Warcraft.
 //
-//  DONNÉES PROVISOIRES, en attendant le livre « D&D World of Warcraft ».
-//  Les 12 classes du Manuel des joueurs portent leur nom WoW quand il existe
-//  (le Roublard devient Voleur...), et 4 classes propres à WoW s'y ajoutent.
-//  L'ordre de la liste est l'ordre d'affichage.
+//  Chaque classe s'appuie sur une classe du Manuel des joueurs 2024 ("classeDnd") :
+//  de de vie, jets de sauvegarde et caracteristiques viennent du SRD 5.2.
+//  Les ressources (Mana, Rage...) restent provisoires jusqu'a l'etape "ressources du livre".
+//  Noms des sous-classes : traduction a verifier (nom anglais entre parentheses).
+//  Ne change jamais un "id" (ex. "roublard" s'affiche "Voleur").
 //
-//  Les champs d'une classe :
-//
-//    "id"            Nom technique : minuscules, chiffres et tirets.
-//                    !! NE LE CHANGE JAMAIS : les fiches de personnage
-//                    !! enregistrent cet id (ex. "roublard" pour le Voleur).
-//                    Pour renommer une classe, change seulement "nom".
-//    "nom"           Nom affiché.
-//    "equivalentDnd" (facultatif) Nom de la classe D&D d'origine, pour mémoire.
-//    "description"   Texte de présentation.
-//    "icone"         (facultatif) Image du dossier icones/, sans extension.
-//                    Par défaut : "classe-" suivi de l'id (ex. classe-paladin.png).
-//    "couleur"       Couleur de la classe (nom, cadre), au format #RRVVBB.
-//    "deDeVie"       6, 8, 10 ou 12. Sert au calcul des points de vie.
-//    "caracteristiquesPrincipales"
-//                    Caractéristiques conseillées au joueur (affichage seulement).
-//    "defenseSansArmure"
-//                    Caractéristiques AJOUTÉES à la classe d'armure sans armure
-//                    (10 + Dextérité + ...). Ex. le Moine : ["sagesse"].
-//    "maitriseSauvegardes"
-//                    (facultatif) Jets de sauvegarde maîtrisés : on y ajoute le
-//                    bonus de maîtrise. Ex. le Guerrier : ["force", "constitution"].
-//    "caracteristiqueIncantation"
-//                    (facultatif) Caractéristique des sorts : jet d'attaque de
-//                    sort et DD de sauvegarde. Ex. "intelligence" pour le Mage.
-//    "progressionSorts"
-//                    (facultatif) "complete" (par défaut : sorts de niveau 2 au
-//                    niveau 3...) ou "demi" (Paladin, Chasseur : deux fois plus lent).
-//                    Elle donne aussi les emplacements de sorts (table D&D 5e).
-//                    "pacte" (Occultiste) : pas de table, seulement les
-//                    emplacements écrits dans ses "ressources".
-//    "ressources"    Ressources reçues à la création (voir ressources.json) :
-//                      { "ressource": "mana" }  -> le modèle tel quel ;
-//                      { "ressource": "emplacements-niveau-1", "max": 1 }
-//                                                -> avec un autre maximum ;
-//                      "max": { "modificateur": "charisme", "minimum": 1 }
-//                                                -> maximum = modificateur de
-//                                                   Charisme, au moins 1 ;
-//                      "reposCourt" / "reposLong" peuvent aussi être changés.
-//
-//  Caractéristiques : force, dexterite, constitution, intelligence, sagesse,
-//  charisme (sans accent, en minuscules).
-//
-//  Les lignes qui commencent par // sont des commentaires : le jeu les ignore.
+//  Contient du contenu du System Reference Document 5.2 (SRD 5.2) de Wizards of the Coast LLC, disponible sur https://dnd.wizards.com/resources/systems-reference-document, sous licence Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/legalcode). Traduction et adaptation libres.
 // =============================================================================
 {
   "classes": [
     {
-      "id": "guerrier",
-      "nom": "Guerrier",
-      "description": "Maître des armes et de l'armure, le guerrier puise sa rage dans la bataille.",
-      "couleur": "#c69b6d",
-      "deDeVie": 10,
-      "caracteristiquesPrincipales": ["force", "constitution"],
-      "maitriseSauvegardes": ["force", "constitution"],
-      "ressources": [{ "ressource": "rage" }, { "ressource": "second-souffle" }]
-    },
-    {
-      "id": "paladin",
-      "nom": "Paladin",
-      "description": "Champion de la Lumière, il protège ses alliés et châtie le mal.",
-      "couleur": "#f48cba",
-      "deDeVie": 10,
-      "caracteristiquesPrincipales": ["force", "charisme"],
-      "maitriseSauvegardes": ["sagesse", "charisme"],
-      "caracteristiqueIncantation": "charisme",
-      "progressionSorts": "demi",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "puissance-sacree" }]
-    },
-    {
-      "id": "rodeur",
-      "nom": "Chasseur",
-      "equivalentDnd": "Rôdeur",
-      "description": "Pisteur infaillible, il combat à distance aux côtés de son fidèle compagnon animal.",
-      "couleur": "#aad372",
-      "deDeVie": 10,
-      "caracteristiquesPrincipales": ["dexterite", "sagesse"],
-      "maitriseSauvegardes": ["force", "dexterite"],
-      "caracteristiqueIncantation": "sagesse",
-      "progressionSorts": "demi",
-      "ressources": [{ "ressource": "focalisation" }]
-    },
-    {
-      "id": "roublard",
-      "nom": "Voleur",
-      "equivalentDnd": "Roublard",
-      "description": "Assassin des ombres, il frappe là où ça fait mal avant de disparaître.",
-      "couleur": "#fff468",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["dexterite"],
-      "maitriseSauvegardes": ["dexterite", "intelligence"],
-      "ressources": [{ "ressource": "energie" }, { "ressource": "points-combo" }]
-    },
-    {
-      "id": "clerc",
-      "nom": "Prêtre",
-      "equivalentDnd": "Clerc",
-      "description": "Serviteur de la Lumière ou de l'Ombre, il soigne ses alliés et tourmente ses ennemis.",
-      "couleur": "#ffffff",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["sagesse"],
-      "maitriseSauvegardes": ["sagesse", "charisme"],
-      "caracteristiqueIncantation": "sagesse",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
-    },
-    {
       "id": "chevalier-de-la-mort",
       "nom": "Chevalier de la mort",
-      "description": "Ancien héros relevé par le roi-liche, il manie la magie des runes et de la glace.",
+      "classeDnd": "Paladin",
+      "description": "Chevalier mort-vivant libéré du Fléau, entre malédictions et magie impie. Classe héroïque.",
       "couleur": "#c41e3a",
       "deDeVie": 10,
-      "caracteristiquesPrincipales": ["force", "constitution"],
-      "maitriseSauvegardes": ["force", "constitution"],
-      "ressources": [{ "ressource": "puissance-runique" }, { "ressource": "runes" }]
-    },
-    {
-      "id": "chaman",
-      "nom": "Chaman",
-      "description": "Intermédiaire entre les mortels et les éléments, il invoque la foudre et les totems.",
-      "couleur": "#0070dd",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["sagesse", "constitution"],
-      "maitriseSauvegardes": ["sagesse", "charisme"],
-      "caracteristiqueIncantation": "sagesse",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
-    },
-    {
-      "id": "magicien",
-      "nom": "Mage",
-      "equivalentDnd": "Magicien",
-      "description": "Érudit des arcanes, il déchaîne le feu, le givre et la magie pure.",
-      "couleur": "#3fc7eb",
-      "deDeVie": 6,
-      "caracteristiquesPrincipales": ["intelligence"],
-      "maitriseSauvegardes": ["intelligence", "sagesse"],
-      "caracteristiqueIncantation": "intelligence",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
-    },
-    {
-      "id": "occultiste",
-      "nom": "Démoniste",
-      "equivalentDnd": "Occultiste",
-      "description": "Il a pactisé avec les démons pour obtenir un pouvoir interdit.",
-      "couleur": "#8788ee",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["charisme"],
-      "maitriseSauvegardes": ["sagesse", "charisme"],
-      "caracteristiqueIncantation": "charisme",
-      // Magie de pacte : ses emplacements ne suivent pas la table D&D (voir ci-dessous).
-      "progressionSorts": "pacte",
+      "caracteristiquesPrincipales": [
+        "force",
+        "charisme"
+      ],
+      "maitriseSauvegardes": [
+        "sagesse",
+        "charisme"
+      ],
+      "defenseSansArmure": [],
+      "heroique": true,
+      "specialisations": [
+        {
+          "id": "sang",
+          "nom": "Sang",
+          "description": "Gardien qui draine la vie de ses ennemis."
+        },
+        {
+          "id": "givre",
+          "nom": "Givre",
+          "description": "Frappes runiques glaciales."
+        },
+        {
+          "id": "impie",
+          "nom": "Impie",
+          "description": "Maladies et serviteurs morts-vivants."
+        }
+      ],
       "ressources": [
-        { "ressource": "mana" },
-        { "ressource": "eclats-ame" },
-        // Particularité de l'Occultiste : 1 seul emplacement, qui revient au repos court.
-        { "ressource": "emplacements-niveau-1", "max": 1, "reposCourt": "remplir" }
-      ]
-    },
-    {
-      "id": "moine",
-      "nom": "Moine",
-      "description": "Maître des arts martiaux pandarens, il canalise son chi pour frapper ou soigner.",
-      "couleur": "#00ff98",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["dexterite", "sagesse"],
-      "maitriseSauvegardes": ["force", "dexterite"],
-      "defenseSansArmure": ["sagesse"],
-      "ressources": [{ "ressource": "energie" }, { "ressource": "chi" }]
-    },
-    {
-      "id": "druide",
-      "nom": "Druide",
-      "description": "Gardien de la nature, il change de forme : ours, félin ou oiseau.",
-      "couleur": "#ff7c0a",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["sagesse"],
-      "maitriseSauvegardes": ["intelligence", "sagesse"],
-      "caracteristiqueIncantation": "sagesse",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+        {
+          "ressource": "puissance-runique"
+        },
+        {
+          "ressource": "runes"
+        }
+      ],
+      "caracteristiqueIncantation": "charisme",
+      "progressionSorts": "demi",
+      "typeCreature": "Mort-vivant"
     },
     {
       "id": "chasseur-de-demons",
       "nom": "Chasseur de démons",
-      "description": "Illidari aux yeux bandés, il a sacrifié sa vue pour traquer la Légion ardente.",
+      "classeDnd": "Rôdeur",
+      "description": "Paria qui retourne la magie gangrenée contre la Légion ardente. Classe héroïque.",
       "couleur": "#a330c9",
       "deDeVie": 10,
-      "caracteristiquesPrincipales": ["dexterite"],
-      "maitriseSauvegardes": ["dexterite", "constitution"],
-      "ressources": [{ "ressource": "fureur" }]
+      "caracteristiquesPrincipales": [
+        "dexterite",
+        "sagesse"
+      ],
+      "maitriseSauvegardes": [
+        "force",
+        "dexterite"
+      ],
+      "defenseSansArmure": [],
+      "heroique": true,
+      "specialisations": [
+        {
+          "id": "devastation",
+          "nom": "Dévastation",
+          "description": "Combattant de mêlée gangrené (Havoc)."
+        },
+        {
+          "id": "vengeance",
+          "nom": "Vengeance",
+          "description": "Défenseur qui embrase ses ennemis."
+        },
+        {
+          "id": "devoreur",
+          "nom": "Dévoreur",
+          "description": "Magie du Vide qui dévore les âmes. (Nom français à vérifier.)"
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "fureur"
+        }
+      ],
+      "caracteristiqueIncantation": "sagesse",
+      "progressionSorts": "demi"
+    },
+    {
+      "id": "druide",
+      "nom": "Druide",
+      "classeDnd": "Druide",
+      "description": "Gardien de l'équilibre de la nature, change-forme.",
+      "couleur": "#ff7c0a",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": [
+        "sagesse"
+      ],
+      "maitriseSauvegardes": [
+        "intelligence",
+        "sagesse"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "equilibre",
+          "nom": "Équilibre",
+          "description": "Magie céleste et naturelle."
+        },
+        {
+          "id": "farouche",
+          "nom": "Farouche",
+          "description": "Prédateur félin."
+        },
+        {
+          "id": "gardien",
+          "nom": "Gardien",
+          "description": "Ours protecteur."
+        },
+        {
+          "id": "restauration",
+          "nom": "Restauration",
+          "description": "Guérisseur de la nature."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "mana"
+        },
+        {
+          "ressource": "emplacements-niveau-1"
+        }
+      ],
+      "caracteristiqueIncantation": "sagesse"
     },
     {
       "id": "evocateur",
       "nom": "Évocateur",
-      "description": "Dracthyr façonné par les Aspects dragons, il manie la magie des vols draconiques.",
+      "classeDnd": "Ensorceleur",
+      "description": "Canalise la magie des cinq vols draconiques. Classe héroïque.",
       "couleur": "#33937f",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["intelligence", "charisme"],
-      "maitriseSauvegardes": ["intelligence", "charisme"],
-      "caracteristiqueIncantation": "intelligence",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "essence" }]
-    },
-
-    // --- Classes de D&D sans équivalent dans World of Warcraft -------------------
-    {
-      "id": "barbare",
-      "nom": "Barbare",
-      "description": "Guerrier sauvage porté par une fureur primitive.",
-      "couleur": "#b35a3a",
-      "deDeVie": 12,
-      "caracteristiquesPrincipales": ["force", "constitution"],
-      "maitriseSauvegardes": ["force", "constitution"],
-      "defenseSansArmure": ["constitution"],
-      "ressources": [{ "ressource": "rage" }, { "ressource": "rage-barbare" }]
-    },
-    {
-      "id": "barde",
-      "nom": "Barde",
-      "description": "Poète et musicien, sa magie naît de ses chants.",
-      "couleur": "#d6a2e8",
-      "deDeVie": 8,
-      "caracteristiquesPrincipales": ["charisme"],
-      "maitriseSauvegardes": ["dexterite", "charisme"],
-      "caracteristiqueIncantation": "charisme",
+      "deDeVie": 6,
+      "caracteristiquesPrincipales": [
+        "charisme"
+      ],
+      "maitriseSauvegardes": [
+        "constitution",
+        "charisme"
+      ],
+      "defenseSansArmure": [],
+      "heroique": true,
+      "specialisations": [
+        {
+          "id": "devastation",
+          "nom": "Dévastation",
+          "description": "Flammes et magie arcanique destructrices."
+        },
+        {
+          "id": "preservation",
+          "nom": "Préservation",
+          "description": "Soins du Rêve d'émeraude et magie du temps."
+        },
+        {
+          "id": "augmentation",
+          "nom": "Augmentation",
+          "description": "Renforce ses alliés."
+        }
+      ],
       "ressources": [
-        { "ressource": "mana" },
-        // Autant d'inspirations que le modificateur de Charisme (au moins 1).
-        { "ressource": "inspiration-bardique", "max": { "modificateur": "charisme", "minimum": 1 } },
-        { "ressource": "emplacements-niveau-1" }
+        {
+          "ressource": "mana"
+        },
+        {
+          "ressource": "essence"
+        }
+      ],
+      "caracteristiqueIncantation": "charisme"
+    },
+    {
+      "id": "rodeur",
+      "nom": "Chasseur",
+      "classeDnd": "Rôdeur",
+      "description": "Maître de la nature sauvage, souvent accompagné d'un familier.",
+      "couleur": "#aad372",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": [
+        "dexterite",
+        "sagesse"
+      ],
+      "maitriseSauvegardes": [
+        "force",
+        "dexterite"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "maitrise-des-betes",
+          "nom": "Maîtrise des bêtes",
+          "description": "Combat avec son familier."
+        },
+        {
+          "id": "precision",
+          "nom": "Précision",
+          "description": "Tireur d'élite."
+        },
+        {
+          "id": "survie",
+          "nom": "Survie",
+          "description": "Armes d'hast, pièges et familier."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "focalisation"
+        }
+      ],
+      "caracteristiqueIncantation": "sagesse",
+      "progressionSorts": "demi"
+    },
+    {
+      "id": "magicien",
+      "nom": "Mage",
+      "classeDnd": "Magicien",
+      "description": "Érudit des arcanes, du feu et du givre.",
+      "couleur": "#3fc7eb",
+      "deDeVie": 6,
+      "caracteristiquesPrincipales": [
+        "intelligence"
+      ],
+      "maitriseSauvegardes": [
+        "intelligence",
+        "sagesse"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "arcanes",
+          "nom": "Arcanes",
+          "description": "Magie arcanique brute."
+        },
+        {
+          "id": "feu",
+          "nom": "Feu",
+          "description": "Flammes dévastatrices."
+        },
+        {
+          "id": "givre",
+          "nom": "Givre",
+          "description": "Glace qui immobilise."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "mana"
+        },
+        {
+          "ressource": "emplacements-niveau-1"
+        }
+      ],
+      "caracteristiqueIncantation": "intelligence"
+    },
+    {
+      "id": "moine",
+      "nom": "Moine",
+      "classeDnd": "Moine",
+      "description": "Maître du combat à mains nues, héritier des monastères de Pandarie.",
+      "couleur": "#00ff98",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": [
+        "dexterite",
+        "sagesse"
+      ],
+      "maitriseSauvegardes": [
+        "force",
+        "dexterite"
+      ],
+      "defenseSansArmure": [
+        "sagesse"
+      ],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "maitre-brasseur",
+          "nom": "Maître brasseur",
+          "description": "Breuvages et esquives titubantes."
+        },
+        {
+          "id": "tisse-brume",
+          "nom": "Tisse-brume",
+          "description": "Brumes guérisseuses."
+        },
+        {
+          "id": "marche-vent",
+          "nom": "Marche-vent",
+          "description": "Déluge de coups."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "energie"
+        },
+        {
+          "ressource": "chi"
+        }
       ]
     },
     {
-      "id": "ensorceleur",
-      "nom": "Ensorceleur",
-      "description": "La magie coule dans ses veines, héritée d'un ancêtre draconique ou d'un don étrange.",
-      "couleur": "#e35d9a",
-      "deDeVie": 6,
-      "caracteristiquesPrincipales": ["charisme"],
-      "maitriseSauvegardes": ["constitution", "charisme"],
+      "id": "paladin",
+      "nom": "Paladin",
+      "classeDnd": "Paladin",
+      "description": "Guerrier en armure lourde béni par la Lumière.",
+      "couleur": "#f48cba",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": [
+        "force",
+        "charisme"
+      ],
+      "maitriseSauvegardes": [
+        "sagesse",
+        "charisme"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "sacre",
+          "nom": "Sacré",
+          "description": "Soigneur en armure."
+        },
+        {
+          "id": "protection",
+          "nom": "Protection",
+          "description": "Bouclier de la Lumière."
+        },
+        {
+          "id": "vindicte",
+          "nom": "Vindicte",
+          "description": "Châtiment des impies."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "mana"
+        },
+        {
+          "ressource": "puissance-sacree"
+        }
+      ],
       "caracteristiqueIncantation": "charisme",
-      "ressources": [{ "ressource": "mana" }, { "ressource": "emplacements-niveau-1" }]
+      "progressionSorts": "demi"
+    },
+    {
+      "id": "clerc",
+      "nom": "Prêtre",
+      "classeDnd": "Clerc",
+      "description": "Serviteur de la Lumière ou de l'Ombre.",
+      "couleur": "#ffffff",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": [
+        "sagesse"
+      ],
+      "maitriseSauvegardes": [
+        "sagesse",
+        "charisme"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "discipline",
+          "nom": "Discipline",
+          "description": "Équilibre de la Lumière et du Vide."
+        },
+        {
+          "id": "sacre",
+          "nom": "Sacré",
+          "description": "Soigneur de la Lumière."
+        },
+        {
+          "id": "ombre",
+          "nom": "Ombre",
+          "description": "Magie du Vide."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "mana"
+        },
+        {
+          "ressource": "emplacements-niveau-1"
+        }
+      ],
+      "caracteristiqueIncantation": "sagesse"
+    },
+    {
+      "id": "roublard",
+      "nom": "Voleur",
+      "classeDnd": "Roublard",
+      "description": "Assassin et maître de la discrétion.",
+      "couleur": "#fff468",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": [
+        "dexterite"
+      ],
+      "maitriseSauvegardes": [
+        "dexterite",
+        "intelligence"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "assassinat",
+          "nom": "Assassinat",
+          "description": "Poisons et dagues."
+        },
+        {
+          "id": "hors-la-loi",
+          "nom": "Hors-la-loi",
+          "description": "Bretteur audacieux."
+        },
+        {
+          "id": "finesse",
+          "nom": "Finesse",
+          "description": "Lames d'ombre."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "energie"
+        },
+        {
+          "ressource": "points-combo"
+        }
+      ]
+    },
+    {
+      "id": "chaman",
+      "nom": "Chaman",
+      "classeDnd": "Barbare",
+      "description": "Combattant qui apaise et déchaîne les éléments, avec ses totems.",
+      "couleur": "#0070dd",
+      "deDeVie": 12,
+      "caracteristiquesPrincipales": [
+        "force"
+      ],
+      "maitriseSauvegardes": [
+        "force",
+        "constitution"
+      ],
+      "defenseSansArmure": [
+        "constitution"
+      ],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "elementaire",
+          "nom": "Élémentaire",
+          "description": "Rage des éléments."
+        },
+        {
+          "id": "amelioration",
+          "nom": "Amélioration",
+          "description": "Armes chargées d'éléments."
+        },
+        {
+          "id": "restauration",
+          "nom": "Restauration",
+          "description": "Guérison par l'eau."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "rage-barbare"
+        }
+      ]
+    },
+    {
+      "id": "occultiste",
+      "nom": "Démoniste",
+      "classeDnd": "Occultiste",
+      "description": "Pactise avec les démons et le Vide.",
+      "couleur": "#8788ee",
+      "deDeVie": 8,
+      "caracteristiquesPrincipales": [
+        "charisme"
+      ],
+      "maitriseSauvegardes": [
+        "sagesse",
+        "charisme"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "affliction",
+          "nom": "Affliction",
+          "description": "Malédictions du Vide."
+        },
+        {
+          "id": "demonologie",
+          "nom": "Démonologie",
+          "description": "Démons invoqués."
+        },
+        {
+          "id": "destruction",
+          "nom": "Destruction",
+          "description": "Feu et chaos."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "mana"
+        },
+        {
+          "ressource": "eclats-ame"
+        },
+        {
+          "ressource": "emplacements-niveau-1",
+          "max": 1,
+          "reposCourt": "remplir"
+        }
+      ],
+      "caracteristiqueIncantation": "charisme",
+      "progressionSorts": "pacte"
+    },
+    {
+      "id": "guerrier",
+      "nom": "Guerrier",
+      "classeDnd": "Guerrier",
+      "description": "Maître des armes et des armures.",
+      "couleur": "#c69b6d",
+      "deDeVie": 10,
+      "caracteristiquesPrincipales": [
+        "force",
+        "dexterite"
+      ],
+      "maitriseSauvegardes": [
+        "force",
+        "constitution"
+      ],
+      "defenseSansArmure": [],
+      "heroique": false,
+      "specialisations": [
+        {
+          "id": "armes",
+          "nom": "Armes",
+          "description": "Armes à deux mains."
+        },
+        {
+          "id": "fureur",
+          "nom": "Fureur",
+          "description": "Une arme dans chaque main."
+        },
+        {
+          "id": "protection",
+          "nom": "Protection",
+          "description": "Bouclier et défense des alliés."
+        }
+      ],
+      "ressources": [
+        {
+          "ressource": "rage"
+        },
+        {
+          "ressource": "second-souffle"
+        }
+      ]
     }
   ]
 }

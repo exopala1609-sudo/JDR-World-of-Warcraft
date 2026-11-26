@@ -78,7 +78,7 @@ function Emplacement({ id, p, modifiable }: { id: string; p: Personnage; modifia
 /** Le portrait du mannequin : portraits/<nom>.png, sinon le portrait provisoire de WoW (race + sexe). */
 function PortraitFiche({ p }: { p: Personnage }) {
   const [absent, setAbsent] = useState(false);
-  const parDefaut = useTextures()[rolePortrait(p.race, p.sexe) ?? "fond-"];
+  const parDefaut = useTextures()[rolePortrait(p.origine?.apparence ?? p.race, p.sexe) ?? "fond-"];
   if (absent && parDefaut) return <img src={parDefaut} alt="" className="mannequin__portrait-wow" />;
   return (
     <img
@@ -213,7 +213,7 @@ export function FichePersonnage({ position }: { position: { x: number; y: number
     <Fenetre titre={p.nom} classe="fiche" positionInitiale={position} surFermer={fermer}>
       <p className="fiche__sous-titre">
         <IconeClasse classe={p.classe} />
-        Niveau {p.niveau} {jeu.nomRace(p.race)} {jeu.nomClasse(p.classe)}
+        Niveau {p.niveau} {jeu.descriptionHeros(p)}
         {p.proprietaire ? ` - ${p.proprietaire}` : ""}
       </p>
       <div className="fiche__corps">

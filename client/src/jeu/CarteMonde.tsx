@@ -98,7 +98,7 @@ export function CarteMonde() {
       // Un heros sans jeton ni portrait : l'icone (ou le portrait) de sa race.
       imagesDeSecours: (pion: { idPersonnage: string; proprietaire: string | null }) => {
         const p = pion.proprietaire ? jeu.lire().personnages[pion.idPersonnage] : undefined;
-        return p ? imagesDeRace(p.race, p.sexe) : [];
+        return p ? imagesDeRace(p.origine?.apparence ?? p.race, p.sexe) : [];
       },
       surInfo: () => {},
       surChangement: () => carte.signalerChangement(),

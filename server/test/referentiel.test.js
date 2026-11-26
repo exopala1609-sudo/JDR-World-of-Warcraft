@@ -63,28 +63,29 @@ test("les exemples du referentiel sont tous valides", () => {
   const rapport = creerReferentiel(EXEMPLES).charger();
   assert.deepEqual(rapport.erreurs, []);
   assert.equal(rapport.factions, 2);
-  assert.equal(rapport.races, 14);
-  assert.equal(rapport.classes, 16);
+  assert.equal(rapport.races, 5); // especes du SRD 5.2 (le livre WoW reste prive)
+  assert.equal(rapport.classes, 13);
+  assert.equal(rapport.historiques, 4);
+  assert.equal(rapport.dons, 6);
   assert.ok(rapport.creationPersonnalisee);
 });
 
-test("les 12 classes deja utilisees par les fiches existent toujours, avec le meme de de vie", () => {
+test("les 13 classes WoW gardent les cles des fiches existantes, avec le de de vie de leur classe D&D", () => {
   const referentiel = creerReferentiel(EXEMPLES);
   referentiel.charger();
-  // Les 12 classes du Manuel, telles que les fiches d'avant le sprint 6 les enregistrent.
-  const CLASSES_DU_MANUEL = {
-    barbare: 12, barde: 8, clerc: 8, druide: 8, ensorceleur: 6, guerrier: 10,
-    magicien: 6, moine: 8, occultiste: 8, paladin: 10, rodeur: 10, roublard: 8,
+  const CLASSES = {
+    "chevalier-de-la-mort": 10, "chasseur-de-demons": 10, druide: 8, evocateur: 6, rodeur: 10, magicien: 6, moine: 8,
+    paladin: 10, clerc: 8, roublard: 8, chaman: 12, occultiste: 8, guerrier: 10,
   };
-  for (const [id, deDeVie] of Object.entries(CLASSES_DU_MANUEL)) {
-    assert.equal(referentiel.obtenirClasse(id)?.deDeVie, deDeVie, `classe ${id}`);
-  }
-  // Les 4 classes propres a WoW
-  for (const id of ["chaman", "chasseur-de-demons", "chevalier-de-la-mort", "evocateur"]) {
-    assert.ok(referentiel.obtenirClasse(id), `classe ${id}`);
+  for (const [id, deDeVie] of Object.entries(CLASSES)) {
+    const classe = referentiel.obtenirClasse(id);
+    assert.equal(classe?.deDeVie, deDeVie, `classe ${id}`);
+    assert.ok(classe.specialisations.length >= 3, `specialisations de ${id}`);
   }
   // Nom WoW, cle D&D conservee
   assert.equal(referentiel.obtenirClasse("roublard").nom, "Voleur");
+  assert.equal(referentiel.obtenirClasse("clerc").nom, "Prêtre");
+  assert.ok(referentiel.obtenirClasse("chevalier-de-la-mort").heroique);
 });
 
 test("les regles de creation d'exemple sont les regles officielles", () => {
@@ -93,17 +94,39 @@ test("les regles de creation d'exemple sont les regles officielles", () => {
   assert.deepEqual(referentiel.reglesCreation(), REGLES_CREATION_PAR_DEFAUT);
 });
 
-test("restrictions race / classe issues des donnees", () => {
-  const referentiel = creerReferentiel(EXEMPLES);
-  referentiel.charger();
-  assert.ok(referentiel.combinaisonPermise("dracthyr", "evocateur"));
-  assert.ok(!referentiel.combinaisonPermise("humain", "evocateur"));
-  assert.ok(referentiel.combinaisonPermise("elfe-de-sang", "chasseur-de-demons"));
-  assert.ok(!referentiel.combinaisonPermise("nain", "chasseur-de-demons"));
-  assert.ok(!referentiel.combinaisonPermise("humain", "classe-inconnue"));
-  assert.ok(!referentiel.combinaisonPermise("race-inconnue", "guerrier"));
-  // Chaque race propose au moins une classe, et l'affichage recoit la liste.
-  for (const race of referentiel.lister().races) assert.ok(race.classesPermises.length > 0, race.id);
+test("restriction de lore : une race inconnue est signalee et ignoree", () => {
+  avecDossier(
+    {
+      "base.json": {
+        ...BASE,
+        classes: [{ ...BASE.classes[1], restrictionLore: { peuples: [{ race: "dracthyr" }, { race: "orc" }], message: "" } }],
+      },
+      "races.json": { races: [{ id: "orc", nom: "Orc", factions: ["horde"] }] },
+    },
+    (dossier) => {
+      const referentiel = creerReferentiel(dossier);
+      const rapport = referentiel.charger();
+      assert.match(JSON.stringify(rapport.erreurs), /Race inconnue : dracthyr/);
+      assert.deepEqual(referentiel.obtenirClasse("mage").restrictionLore.peuples, [{ race: "orc" }]);
+    },
+  );
+});
+
+test("historique : son don d'origine doit exister et etre un don d'origine", () => {
+  avecDossier(
+    {
+      "base.json": BASE,
+      "origines.json": {
+        dons: [{ id: "robuste", nom: "Robuste", categorie: "general" }],
+        historiques: [{ id: "soldat", nom: "Soldat", caracteristiques: ["force", "dexterite", "constitution"], donOrigine: "robuste" }],
+      },
+    },
+    (dossier) => {
+      const referentiel = creerReferentiel(dossier);
+      const rapport = referentiel.charger();
+      assert.match(JSON.stringify(rapport.erreurs), /robuste n.est pas un don d.origine/);
+    },
+  );
 });
 
 test("desactiver les restrictions ouvre toutes les classes a toutes les races", () => {

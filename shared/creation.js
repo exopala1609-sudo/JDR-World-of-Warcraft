@@ -19,7 +19,7 @@ export const NOMS_CARACTERISTIQUES = /** @type {const} */ ({
   charisme: "Charisme",
 });
 
-// --- Caracteristiques de base (avant les bonus de race) -------------------------
+// --- Caracteristiques de base (avant les bonus d'historique) ---------------------
 
 /** Scores autorises par l'achat de points, du plus petit au plus grand (ex. 8 a 15). */
 export function scoresAchat(regles) {
@@ -61,7 +61,7 @@ export function verifierBase(methode, base, regles) {
 
   const scores = scoresAchat(regles);
   if (valeurs.some((v) => v < scores[0] || v > scores.at(-1))) {
-    return `Achat de points : chaque score va de ${scores[0]} a ${scores.at(-1)} avant les bonus de race.`;
+    return `Achat de points : chaque score va de ${scores[0]} a ${scores.at(-1)} avant les bonus.`;
   }
   const depense = pointsDepenses(base, regles);
   if (depense > regles.achatDePoints.budget) {
@@ -105,6 +105,111 @@ export function bonusDeRace(race, choix = []) {
     if (choix[i]) bonus[choix[i]] += valeur;
   });
   return bonus;
+}
+
+// --- Historique (D&D 2024 : c'est LUI qui donne les bonus de caracteristiques) -------
+
+/**
+ * Repartition des bonus d'historique : { force: 2, constitution: 1 } ou
+ * { force: 1, dexterite: 1, constitution: 1 }, uniquement sur les 3
+ * caracteristiques de l'historique. Renvoie un message d'erreur, ou null.
+ * @param {any} historique
+ * @param {Record<string, number>} [repartition]
+ */
+export function verifierRepartitionHistorique(historique, repartition = {}) {
+  if (!historique) return "Choisis un historique.";
+  const places = Object.entries(repartition).filter(([, v]) => v);
+  if (places.some(([c]) => !historique.caracteristiques.includes(c))) {
+    return `${historique.nom} : bonus a placer sur ${historique.caracteristiques.map((c) => NOMS_CARACTERISTIQUES[c]).join(", ")}.`;
+  }
+  const valeurs = places.map(([, v]) => v).sort((a, b) => a - b).join(",");
+  if (valeurs !== "1,2" && valeurs !== "1,1,1") return "Bonus d'historique : +2 et +1 sur deux caracteristiques, ou +1 sur les trois.";
+  return null;
+}
+
+/** Repartition proposee d'office : +2 et +1 sur les caracteristiques de l'historique les plus utiles a la classe. */
+export function repartitionParDefaut(historique, principales = []) {
+  if (!historique) return {};
+  const ordre = [...historique.caracteristiques].sort((a, b) => {
+    const rang = (c) => (principales.includes(c) ? principales.indexOf(c) : 10);
+    return rang(a) - rang(b);
+  });
+  return { [ordre[0]]: 2, [ordre[1]]: 1 };
+}
+
+/** Bonus total : race (anciennes regles, si le referentiel en donne) + historique. */
+export function bonusTotal(race, bonusAuChoix = [], repartition = {}) {
+  const bonus = bonusDeRace(race, bonusAuChoix);
+  for (const [c, v] of Object.entries(repartition)) if (c in bonus && v) bonus[c] += v;
+  return bonus;
+}
+
+// --- Peuples : options (lignee, clan, weyrn...) et restrictions de lore --------------------
+
+/** La race est-elle jouable dans cette faction ? (toujours, en lore libre) */
+export function raceDisponible(race, idFaction, loreLibre = false) {
+  return loreLibre || race.factions.includes(idFaction);
+}
+
+/** Les choix possibles d'une option pour cette faction (tous, en lore libre). */
+export function choixPossibles(option, idFaction, loreLibre = false) {
+  return option.choix.filter((c) => loreLibre || !c.factions || c.factions.includes(idFaction));
+}
+
+/** Les choix retenus par le joueur, dans l'ordre des options de la race (objets complets). */
+export function choixRetenus(race, choixOptions = {}) {
+  return (race.options ?? []).flatMap((option) => option.choix.filter((c) => c.id === choixOptions[option.id]));
+}
+
+/**
+ * Chaque option de la race a-t-elle recu un choix valable pour cette faction ?
+ * @param {any} race
+ * @param {Record<string, string>} [choixOptions] { idOption: idChoix }
+ */
+export function verifierOptions(race, choixOptions = {}, idFaction = "", loreLibre = false) {
+  const options = race.options ?? [];
+  const inconnues = Object.keys(choixOptions).filter((id) => !options.some((o) => o.id === id));
+  if (inconnues.length) return `${race.nom} : option inconnue (${inconnues.join(", ")}).`;
+  for (const option of options) {
+    const id = choixOptions[option.id];
+    if (!id) return `${race.nom} : choisis ${option.nom.toLowerCase()}.`;
+    const choix = option.choix.find((c) => c.id === id);
+    if (!choix) return `${race.nom} : choix inconnu pour ${option.nom.toLowerCase()}.`;
+    if (!choixPossibles(option, idFaction, loreLibre).includes(choix)) return `${choix.nom} : indisponible pour cette faction.`;
+  }
+  return null;
+}
+
+/**
+ * Restriction "de lore" d'une classe (ex. Evocateur : Dracthyr seulement).
+ * Renvoie le message a afficher, ou null si la combinaison est conforme au lore.
+ */
+export function restrictionDeLore(classe, race, choixOptions = {}) {
+  if (race && Array.isArray(race.classesAutorisees) && !race.classesAutorisees.includes(classe.id)) {
+    return `${race.nom} : la classe ${classe.nom} n'est pas prevue par le lore.`;
+  }
+  const regle = classe.restrictionLore;
+  if (!regle || !race) return null;
+  const retenus = Object.values(choixOptions);
+  const conforme = regle.peuples.some((p) => p.race === race.id && (!p.choix || p.choix.some((id) => retenus.includes(id))));
+  return conforme ? null : regle.message || `Lore : ${classe.nom} est reserve a d'autres peuples.`;
+}
+
+/**
+ * Ce que la race et ses options donnent au personnage : taille, type de
+ * creature, apparence (images), traits et renommee de depart.
+ */
+export function detailsOrigine(race, classe, choixOptions = {}) {
+  const retenus = choixRetenus(race, choixOptions);
+  const dernier = (champ) => retenus.reduce((valeur, c) => (c[champ] !== undefined ? c[champ] : valeur), undefined);
+  const renommeeChoix = dernier("renommee");
+  return {
+    taille: dernier("taille") ?? race.taille ?? "moyenne",
+    typeCreature: classe?.typeCreature ?? dernier("typeCreature") ?? race.typeCreature ?? "Humanoide",
+    apparence: dernier("apparence") ?? race.id,
+    traits: [...(race.traits ?? []), ...retenus.flatMap((c) => c.traits ?? [])],
+    renommee: renommeeChoix !== undefined ? renommeeChoix : (race.renommee ?? null),
+  };
 }
 
 /** Scores finaux : base + bonus de race, plafonnes (20 par defaut). */
@@ -163,14 +268,16 @@ export function ressourcesDeDepart(classe, caracteristiques, modeles) {
 
 /**
  * Tout ce que l'ecran affiche et que le serveur enregistre, pour un
- * personnage de niveau 1. "choix" = { race, classe, methode, base, bonusAuChoix }
- * (race et classe : les ENTREES du referentiel, pas leurs identifiants).
- * @param {{ race: any, classe: any, base: Record<string, number>, bonusAuChoix?: string[] }} choix
+ * personnage de niveau 1. "choix" = { race, classe, base, bonusAuChoix,
+ * repartition (bonus d'historique), choixOptions (lignee...) } (race et classe :
+ * les ENTREES du referentiel, pas leurs identifiants).
+ * @param {{ race: any, classe: any, base: Record<string, number>, bonusAuChoix?: string[], repartition?: Record<string, number>, choixOptions?: Record<string, string> }} choix
  * @param {any} referentiel
  */
-export function apercuPersonnage({ race, classe, base, bonusAuChoix = [] }, referentiel) {
+export function apercuPersonnage({ race, classe, base, bonusAuChoix = [], repartition = {}, choixOptions = {} }, referentiel) {
   const modeles = Object.fromEntries(referentiel.ressources.map((r) => [r.id, r]));
-  const bonus = bonusDeRace(race, bonusAuChoix);
+  const bonus = bonusTotal(race, bonusAuChoix, repartition);
+  const origine = detailsOrigine(race, classe, choixOptions);
   const caracteristiques = caracteristiquesFinales(base, bonus, referentiel.creation);
   const pv = pvMax(classe.deDeVie, 1, caracteristiques.constitution, race.pvParNiveau ?? 0);
   return {
@@ -181,5 +288,6 @@ export function apercuPersonnage({ race, classe, base, bonusAuChoix = [] }, refe
     classeArmure: classeArmureSansArmure(classe, caracteristiques),
     vitesse: race.vitesse ?? 9,
     ressources: ressourcesDeDepart(classe, caracteristiques, modeles),
+    ...origine,
   };
 }

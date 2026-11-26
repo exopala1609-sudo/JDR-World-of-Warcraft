@@ -5,8 +5,10 @@
 Ce dossier contient les règles que l'écran « Créer un personnage » utilise :
 
   factions.json     Alliance, Horde...
-  races.json        Les peuples : faction, bonus, traits, classes autorisées
-  classes.json      Les classes : dé de vie, ressources de départ, couleur
+  races.json        Les peuples : faction, traits, choix (lignée, taille...)
+  classes.json      Les classes : dé de vie, spécialisations, lore, ressources
+  historiques.json  Les historiques : bonus de caractéristiques, don d'origine
+  dons.json         Les dons (d'origine, généraux...)
   ressources.json   Les jauges et compteurs : Mana, Rage, Énergie...
   creation.json     Tableau standard et achat de points
 
@@ -42,12 +44,23 @@ Si tu fais une erreur, le jeu t'indique le fichier, la ligne et la raison.
 L'entrée fautive est ignorée, le reste continue de fonctionner.
 
 
---- Novembre : le livre officiel --------------------------------------------
+--- Le livre officiel et ces exemples ----------------------------------------
 
-Toutes les données fournies ici sont PROVISOIRES (bonus, traits, restrictions
-inventés d'après le jeu vidéo). Remplace-les par celles du livre, fichier
-par fichier. Les modèles d'origine restent disponibles dans le projet, dans
-le dossier exemples/referentiel.
+Ces exemples ne contiennent que du contenu LIBRE : 5 espèces, 4 historiques
+et quelques dons du SRD 5.2 de Wizards of the Coast, plus les 13 classes WoW
+décrites avec leurs règles de base. Les traits du livre « D&D World of
+Warcraft » n'y figurent pas : ils sont protégés et le projet est public.
+
+Les fichiers tirés du livre se mettent ICI, dans ce dossier (NAS ou cloud),
+jamais dans le dossier du projet. Ils remplacent les exemples.
 
 Ce dossier n'est rempli automatiquement qu'une seule fois (quand il est vide).
 Le jeu n'écrase donc jamais tes modifications.
+
+
+--- Mention obligatoire (licence CC-BY 4.0) ---------------------------------
+
+This work includes material from the System Reference Document 5.2 ("SRD 5.2")
+by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document. The
+SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International
+License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
