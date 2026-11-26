@@ -6,6 +6,8 @@ import {
   choixPossibles,
   choixRetenus,
   detailsOrigine,
+  methodesDeLaTable,
+  valeursARepartir,
   NOMS_CARACTERISTIQUES,
   pointsDepenses,
   raceDisponible,
@@ -22,7 +24,7 @@ import { EVENEMENTS } from "@partage/protocole.js";
 import { useTextures, type RoleTexture } from "@/core/textures";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone } from "@/core/medias";
-import type { Caracteristique, ChoixOption, Classe, Historique, MethodeCaracteristiques, Race, Referentiel } from "@/core/types";
+import type { Caracteristique, ChoixOption, Classe, Historique, MethodeCaracteristiques, Race, Referentiel, Table, TirageCreation } from "@/core/types";
 import { avecInfobulle, CoucheInfobulle } from "@/ui/InfoBulle";
 
 type Base = Record<Caracteristique, number>;
@@ -73,6 +75,13 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   const regles = referentiel.creation;
   // Le MJ autorise-t-il le lore libre a cette table ? (bouton de sa barre d'outils)
   const loreAutorise = Boolean(table?.reglages?.loreLibre);
+  // Les methodes de caracteristiques que le MJ permet a cette table.
+  const methodes = methodesDeLaTable(regles, table?.reglages) as MethodeCaracteristiques[];
+  // Mon tirage aux des, garde par le serveur (le meilleur, apres une relance).
+  const monPseudo = useJeu((e) => e.profil?.pseudo ?? "");
+  const monTirage = Object.values(table?.tirages ?? {}).find((t) => t.pseudo.toLocaleLowerCase("fr") === monPseudo.toLocaleLowerCase("fr")) ?? null;
+  const valeursTirage = monTirage ? monTirage.tirages[monTirage.retenu] : null;
+  const cleTirage = valeursTirage?.join(",") ?? "";
 
   // --- Les choix du joueur (etat local de l'ecran) --------------------------------------
   const [ignorerLore, setIgnorerLore] = useState(false);
@@ -99,8 +108,8 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   );
   const [repartitionModifiee, setRepartitionModifiee] = useState(false);
   const [donSupplementaire, setDonSupplementaire] = useState<string | null>(null);
-  const [methode, setMethode] = useState<MethodeCaracteristiques>(regles.methodes[0]);
-  const [base, setBase] = useState<Base>(() => baseParDefaut(regles.methodes[0], regles, classe?.caracteristiquesPrincipales));
+  const [methode, setMethode] = useState<MethodeCaracteristiques>(methodes[0]);
+  const [base, setBase] = useState<Base>(() => baseParDefaut(methodes[0], regles, classe?.caracteristiquesPrincipales, valeursTirage));
   const [baseModifiee, setBaseModifiee] = useState(false);
   const [bonusAuChoix, setBonusAuChoix] = useState<Caracteristique[]>([]);
   const [nom, setNom] = useState("");
@@ -148,7 +157,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
     setIdSpecialisation(nouvelle?.specialisations[0]?.id ?? null);
     // Tant que le joueur n'a rien touche, le tableau standard et les bonus d'historique
     // suivent la classe (meilleures valeurs sur ses caracteristiques principales).
-    if (!baseModifiee && methode === "tableau-standard") setBase(baseParDefaut(methode, regles, nouvelle?.caracteristiquesPrincipales));
+    if (!baseModifiee && methode !== "achat-de-points") setBase(baseParDefaut(methode, regles, nouvelle?.caracteristiquesPrincipales, valeursTirage));
     if (!repartitionModifiee) setRepartition(repartitionParDefaut(historique, nouvelle?.caracteristiquesPrincipales));
   };
   const choisirHistorique = (id: string) => {
@@ -171,14 +180,31 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
   const choisirMethode = (m: MethodeCaracteristiques) => {
     setMethode(m);
     setBaseModifiee(false);
-    setBase(baseParDefaut(m, regles, classe?.caracteristiquesPrincipales));
+    setBase(baseParDefaut(m, regles, classe?.caracteristiquesPrincipales, valeursTirage));
+  };
+  // Le MJ retire la methode en cours : on passe a une methode permise.
+  useEffect(() => {
+    if (!methodes.includes(methode)) choisirMethode(methodes[0]);
+  }, [methodes.join(","), methode]);
+  // Nouveau tirage (ou relance gardee) : les valeurs sont replacees.
+  useEffect(() => {
+    if (methode === "tirage-4d6") choisirMethode("tirage-4d6");
+  }, [cleTirage]);
+  const [tirageEnCours, setTirageEnCours] = useState(false);
+  const tirerDes = async () => {
+    setTirageEnCours(true);
+    setErreur("");
+    const r = await jeu.demander(EVENEMENTS.CREATION_TIRER, {});
+    if (r.ok && r.table) jeu.modifier({ table: r.table as Table });
+    if (!r.ok) setErreur(r.erreur ?? "Refus du serveur.");
+    setTirageEnCours(false);
   };
   const changerScore = (c: Caracteristique, valeur: number) => {
     setBaseModifiee(true);
     setBase((actuelle) => {
       const suite = { ...actuelle, [c]: valeur };
-      // Tableau standard : chaque valeur ne sert qu'une fois, on ECHANGE avec la caracteristique qui l'avait.
-      if (methode === "tableau-standard") {
+      // Tableau standard ou tirage : chaque valeur ne sert qu'une fois, on ECHANGE avec la caracteristique qui l'avait.
+      if (methode !== "achat-de-points") {
         const autre = CARACS.find((x) => x !== c && actuelle[x] === valeur);
         if (autre) suite[autre] = actuelle[c];
       }
@@ -203,7 +229,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         (referentiel.historiques.length ? verifierRepartitionHistorique(historique, repartition) : null) ??
         (classe.specialisations.length && !idSpecialisation ? "Choisis une specialisation." : null) ??
         (race.donOrigineSupplementaire && !donSupplementaire ? "Choisis ton don d'origine supplementaire." : null) ??
-        verifierBase(methode, base, regles) ??
+        verifierBase(methode, base, regles, { methodes, valeursTirage }) ??
         verifierChoixBonus(race, bonusAuChoix) ??
         (nom.trim().length < 2 ? "Donne un nom a ton personnage." : null));
 
@@ -499,15 +525,16 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
         )}
 
         <h2 className="creation__titre titre-or">Caracteristiques</h2>
-        {regles.methodes.length > 1 && (
+        {methodes.length > 1 && (
           <div className="creation__methodes">
-            {regles.methodes.map((m) => (
+            {methodes.map((m) => (
               <button key={m} type="button" className={`onglet${m === methode ? " onglet--actif" : ""}`} onClick={() => choisirMethode(m)}>
-                {m === "tableau-standard" ? "Tableau standard" : "Achat de points"}
+                {NOMS_METHODES[m]}
               </button>
             ))}
           </div>
         )}
+        {methode === "tirage-4d6" && <PanneauTirage tirage={monTirage} enCours={tirageEnCours} surTirer={tirerDes} />}
         {methode === "achat-de-points" && (
           <div className={`creation__points${pointsDepenses(base, regles) > regles.achatDePoints.budget ? " creation__points--depasse" : ""}`}>
             Points depenses : {pointsDepenses(base, regles)} / {regles.achatDePoints.budget}
@@ -531,7 +558,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
                 <tr key={c} className={classe?.caracteristiquesPrincipales.includes(c) ? "caracs__principale" : undefined}>
                   <th>{NOMS_CARACTERISTIQUES[c]}</th>
                   <td>
-                    <ScoreDeBase carac={c} methode={methode} base={base} regles={regles} surChange={(v) => changerScore(c, v)} />
+                    <ScoreDeBase carac={c} methode={methode} base={base} regles={regles} valeursTirage={valeursTirage} surChange={(v) => changerScore(c, v)} />
                   </td>
                   <td className="caracs__bonus">{apercu.bonus[c] ? signe(apercu.bonus[c]) : ""}</td>
                   <td className="caracs__total">{apercu.caracteristiques[c]}</td>
@@ -711,14 +738,64 @@ function ChoixRepartition(props: { historique: Historique; repartition: Partial<
   );
 }
 
+const NOMS_METHODES: Record<MethodeCaracteristiques, string> = {
+  "tableau-standard": "Tableau standard",
+  "achat-de-points": "Achat de points",
+  "tirage-4d6": "Des (4d6)",
+};
+
+/** Le tirage aux des : le bouton, puis les scores obtenus (vus par toute la table). */
+function PanneauTirage({ tirage, enCours, surTirer }: { tirage: TirageCreation | null; enCours: boolean; surTirer: () => void }) {
+  const total = (v: number[]) => v.reduce((a, b) => a + b, 0);
+  if (!tirage) {
+    return (
+      <div className="creation__tirage">
+        <p>Six fois 4d6 : on garde les 3 meilleurs des. Toute la table verra ton resultat, et tu ne pourras relancer qu'avec l'accord du MJ.</p>
+        <button type="button" className="bouton" disabled={enCours} onClick={surTirer}>
+          Lancer les des
+        </button>
+      </div>
+    );
+  }
+  const garde = tirage.tirages[tirage.retenu];
+  const autres = tirage.tirages.filter((_, i) => i !== tirage.retenu);
+  return (
+    <div className="creation__tirage">
+      <p>
+        Ton tirage : <b>{[...garde].sort((a, b) => b - a).join(", ")}</b> (total {total(garde)}). Repartis ces valeurs ci-dessous.
+      </p>
+      {autres.length > 0 && (
+        <p className="creation__tirage-ancien">
+          {autres.length === 1 ? "Autre tirage (moins bon)" : "Autres tirages (moins bons)"} : {autres.map((v) => `${[...v].sort((a, b) => b - a).join(", ")} (total ${total(v)})`).join(" ; ")}
+        </p>
+      )}
+      {tirage.relanceAutorisee ? (
+        <button type="button" className="bouton" disabled={enCours} onClick={surTirer}>
+          Relancer (le meilleur des deux tirages sera garde)
+        </button>
+      ) : (
+        <p className="creation__tirage-ancien">Une relance ? Seul le MJ peut l'autoriser.</p>
+      )}
+    </div>
+  );
+}
+
 /** Le score de BASE d'une caracteristique : liste du tableau standard, ou boutons - / + (achat). */
-function ScoreDeBase(props: { carac: Caracteristique; methode: MethodeCaracteristiques; base: Base; regles: Referentiel["creation"]; surChange: (v: number) => void }) {
-  const { carac, methode, base, regles, surChange } = props;
+function ScoreDeBase(props: {
+  carac: Caracteristique;
+  methode: MethodeCaracteristiques;
+  base: Base;
+  regles: Referentiel["creation"];
+  valeursTirage: number[] | null;
+  surChange: (v: number) => void;
+}) {
+  const { carac, methode, base, regles, valeursTirage, surChange } = props;
   const valeur = base[carac];
-  if (methode === "tableau-standard") {
+  if (methode === "tirage-4d6" && !valeursTirage) return <span className="caracs__attente">-</span>;
+  if (methode !== "achat-de-points") {
     return (
       <select className="caracs__liste" value={valeur} onChange={(e) => surChange(Number(e.target.value))}>
-        {[...regles.tableauStandard]
+        {[...(valeursARepartir(methode, regles, valeursTirage) as number[])]
           .sort((a, b) => b - a)
           .map((v, i) => (
             <option key={`${v}-${i}`} value={v}>

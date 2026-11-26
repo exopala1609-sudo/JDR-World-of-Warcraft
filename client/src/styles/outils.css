@@ -1119,3 +1119,42 @@
   color: var(--texte-gris);
   font-size: 12px;
 }
+
+/* --- Fenetre "Creation" du MJ (methodes, tirages aux des) ---------------------------- */
+.creation-mj {
+  width: 520px;
+}
+.creation-mj__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--metal-sombre);
+  font-family: var(--police-lecture);
+  font-size: 16px;
+}
+.creation-mj__section:last-child {
+  border-bottom: 0;
+}
+.creation-mj__titre {
+  margin: 0;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 16px;
+  font-weight: normal;
+}
+.creation-mj__case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.creation-mj__tirage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.creation-mj__vide {
+  color: var(--texte-doux);
+}

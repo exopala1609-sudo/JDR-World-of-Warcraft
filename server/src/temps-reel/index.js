@@ -52,6 +52,9 @@ export const salleTable = (idTable) => `table:${idTable}`;
 export const salleMJ = (idTable) => `table:${idTable}:mj`;
 export const salleJoueurs = (idTable) => `table:${idTable}:joueurs`;
 export const salleDuJoueur = (idTable, pseudo) => `table:${idTable}:joueur:${normaliserPseudo(pseudo)}`;
+// Les joueurs a la porte (ecran de creation) : ils ne voient pas la table,
+// mais recoivent ses reglages (methodes permises, lore libre, tirages).
+export const salleCreation = (idTable) => `table:${idTable}:creation`;
 
 /**
  * Ce que les AUTRES joueurs voient d'un heros : tout (caracteristiques, PV,
@@ -143,6 +146,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
     /** Quitte les salons de la table courante (ou la porte de l'ecran de creation). */
     async quitterTable(socket) {
       const ancienne = socket.data.idTable;
+      if (socket.data.idTableCreation) socket.leave(salleCreation(socket.data.idTableCreation));
       socket.data.idTable = null;
       socket.data.idTableCreation = null;
       if (!ancienne) return;
@@ -159,6 +163,7 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
      * de ce qu'il a le droit de voir.
      */
     async entrerDansLaTable(socket, idTable) {
+      if (socket.data.idTableCreation) socket.leave(salleCreation(socket.data.idTableCreation));
       socket.data.idTable = idTable;
       socket.data.idTableCreation = null;
       socket.join(salleTable(idTable));
@@ -366,6 +371,11 @@ export function installerTempsReel(serveurHttp, { depot, sessions, compendium: b
       const scene = depot.obtenirScene(idTable);
       io.to(salleMJ(idTable)).emit(EVENEMENTS.SCENE_ETAT, { scene: ctx.vueDeLaScene(scene, true), cause });
       ctx.envoyerSceneAuxJoueurs(idTable, scene, cause);
+    },
+
+    /** La table a change : tous ceux qui y sont, et ceux qui creent leur personnage a sa porte. */
+    publierTable(table) {
+      io.to([salleTable(table.id), salleCreation(table.id)]).emit(EVENEMENTS.TABLE_MAJ, { table });
     },
 
     async diffuserPresence(idTable) {

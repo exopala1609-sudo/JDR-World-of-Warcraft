@@ -2,10 +2,10 @@
 import { EVENEMENTS } from "../../../shared/protocole.js";
 import { normaliserPseudo } from "../auth/sessions.js";
 import { schemaId } from "../modeles/identifiants.js";
-import { fabriquerTable, SchemaCreationTable, SchemaReglagesTable } from "../modeles/table.js";
+import { fabriquerTable, SchemaChangementReglages, SchemaCreationTable } from "../modeles/table.js";
 import { z } from "../modeles/zod.js";
 import { ErreurRegle } from "../regles/erreurs.js";
-import { salleTable } from "./index.js";
+import { salleCreation, salleTable } from "./index.js";
 
 const Rejoindre = z.strictObject({ idTable: schemaId("t") });
 
@@ -33,12 +33,17 @@ export function brancher(socket, ctx) {
   });
 
   // Reglages de la table ou l'on joue (ex. : les joueurs modifient-ils leurs PV ?).
-  ctx.guichet(socket, EVENEMENTS.TABLE_REGLER, SchemaReglagesTable.partial(), (changements) => {
+  ctx.guichet(socket, EVENEMENTS.TABLE_REGLER, SchemaChangementReglages, (changements) => {
     ctx.exigerMJ(socket, "regler la table");
     const idTable = ctx.exigerTable(socket);
+    if (changements.methodes) {
+      const possibles = ctx.referentiel.reglesCreation().methodes;
+      const refusees = changements.methodes.filter((m) => !possibles.includes(m));
+      if (refusees.length) throw new ErreurRegle(`Methode absente du referentiel (creation.json) : ${refusees.join(", ")}.`);
+    }
     const actuelle = depot.obtenirTable(idTable);
     const table = depot.enregistrerTable({ ...actuelle, reglages: { ...actuelle.reglages, ...changements } });
-    io.to(salleTable(idTable)).emit(EVENEMENTS.TABLE_MAJ, { table });
+    ctx.publierTable(table); // aussi aux joueurs qui creent leur personnage
     return { table };
   });
 
@@ -57,6 +62,7 @@ export function brancher(socket, ctx) {
 
     if (!ctx.estMJ(socket) && !ctx.personnageDuJoueur(socket, idTable)) {
       socket.data.idTableCreation = idTable; // la seule table ou il pourra creer
+      socket.join(salleCreation(idTable)); // il recoit les reglages de la table (methodes, lore...)
       return { table, creationRequise: true };
     }
     return ctx.entrerDansLaTable(socket, idTable);

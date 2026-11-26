@@ -12,6 +12,7 @@ import { Bestiaire } from "./Bestiaire";
 import { FenetreAttaques } from "./FenetreAttaques";
 import { FenetreCarte } from "./FenetreCarte";
 import { FenetreCompendium } from "./FenetreCompendium";
+import { FenetreCreationMJ } from "./FenetreCreationMJ";
 import { MenuMJ } from "./MenuMJ";
 
 export default function OutilsMJ() {
@@ -35,6 +36,7 @@ export default function OutilsMJ() {
           {fenetres.compendium && <FenetreCompendium position={{ x: 520, y: 160 }} />}
           {fenetres.carteMJ && <FenetreCarte position={{ x: largeur - 1000, y: 110 }} />}
           {fenetres.attaques && <FenetreAttaques position={{ x: 470, y: 130 }} />}
+          {fenetres.creationMJ && <FenetreCreationMJ position={{ x: 560, y: 160 }} />}
         </>,
         couches.fenetres,
       )}

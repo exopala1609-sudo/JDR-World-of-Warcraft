@@ -265,14 +265,15 @@ export const SchemaDon = z.strictObject({
 
 // --- Regles de creation (caracteristiques) -------------------------------------------
 
-export const METHODES_CARACTERISTIQUES = /** @type {const} */ (["tableau-standard", "achat-de-points"]);
+// "tirage-4d6" : six fois 4d6, on garde les 3 meilleurs (le serveur lance).
+export const METHODES_CARACTERISTIQUES = /** @type {const} */ (["tableau-standard", "achat-de-points", "tirage-4d6"]);
 
 // Valeurs officielles de D&D 5e : elles s'appliquent si le fichier ne dit rien.
 export const SchemaReglesCreation = z.strictObject({
   methodes: z
-    .array(z.enum(METHODES_CARACTERISTIQUES, 'Methode : "tableau-standard" ou "achat-de-points".'))
+    .array(z.enum(METHODES_CARACTERISTIQUES, 'Methode : "tableau-standard", "achat-de-points" ou "tirage-4d6".'))
     .min(1)
-    .default(["tableau-standard", "achat-de-points"]),
+    .default(["tableau-standard", "achat-de-points", "tirage-4d6"]),
   tableauStandard: z
     .array(entier(1, 20))
     .length(6, "Le tableau standard doit contenir exactement 6 valeurs.")

@@ -272,8 +272,14 @@ function ficheNeuve({ idTable, proprietaire, nom, classe, race, faction, portrai
 /**
  * Creation guidee (joueur) : applique les regles du referentiel.
  * "portraits" = les fichiers disponibles dans le dossier portraits/.
+ * "methodes" = les methodes de caracteristiques permises a la table (par defaut :
+ * toutes celles du referentiel) ; "valeursTirage" = le tirage aux des du joueur,
+ * garde par le serveur.
  */
-export function fabriquerPersonnageGuide(entree, { idTable, proprietaire, referentiel, portraits = [], loreLibre = false }) {
+export function fabriquerPersonnageGuide(
+  entree,
+  { idTable, proprietaire, referentiel, portraits = [], loreLibre = false, methodes = null, valeursTirage = null },
+) {
   const choix = SchemaCreationGuidee.parse(entree);
   const { classe, race, faction } = exigerDansReferentiel(referentiel, choix);
   const regles = referentiel.reglesCreation();
@@ -287,7 +293,7 @@ export function fabriquerPersonnageGuide(entree, { idTable, proprietaire, refere
   const probleme =
     verifierOptions(race, choix.options, faction.id, lore) ??
     (lore ? null : restrictionDeLore(classe, race, choix.options)) ??
-    verifierBase(choix.methode, choix.caracteristiques, regles) ??
+    verifierBase(choix.methode, choix.caracteristiques, regles, { methodes: methodes ?? regles.methodes, valeursTirage }) ??
     verifierChoixBonus(race, choix.bonusAuChoix);
   if (probleme) throw new ErreurRegle(probleme);
 

@@ -22,6 +22,8 @@ export const EVENEMENTS = /** @type {const} */ ({
 
   // Personnages
   CREATION_VALIDER: "creation:valider", // joueur : "Entrer dans le monde" (ecran de creation)
+  CREATION_TIRER: "creation:tirer", // joueur : tirer ses caracteristiques aux des (4d6, 3 meilleurs)
+  CREATION_AUTORISER_RELANCE: "creation:autoriserRelance", // MJ : un joueur peut relancer ses des
   PERSONNAGE_CREER: "personnage:creer", // MJ : creation libre (PNJ, monstres)
   PERSONNAGE_SUPPRIMER: "personnage:supprimer",
   PERSONNAGE_MODIFIER_PV: "personnage:modifierPv",
@@ -148,6 +150,7 @@ export const EVENEMENTS = /** @type {const} */ ({
   REFERENTIEL_MAJ: "referentiel:maj", // tous : le referentiel a ete recharge
   COMPENDIUM_MAJ: "compendium:maj", // MJ : le compendium a ete recharge
   DES_RESULTAT: "des:resultat",
+  CREATION_TIRAGE: "creation:tirage", // toute la table : un joueur a tire ses caracteristiques
   SCENE_ETAT: "scene:etat", // photo complete de la scene (filtree pour les joueurs)
   SCENE_GRILLE_MAJ: "scene:grilleMaj",
   PION_POSITION: "pion:position", // un pion bouge (en cours ou final)

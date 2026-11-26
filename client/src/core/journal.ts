@@ -1,7 +1,7 @@
 // Traduit les "causes" envoyees par le serveur en phrases pour la fenetre de
 // discussion (comme les messages systeme de WoW).
 import { RARETES } from "@partage/raretes.js";
-import type { Personnage } from "./types";
+import type { AnnonceTirage, Personnage } from "./types";
 
 const signe = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 const nomRarete = (cle: string) => (RARETES as Record<string, { nom: string }>)[cle]?.nom ?? cle;
@@ -95,6 +95,15 @@ export function decrireDes(r: any): string {
     })
     .join(" ");
   return `${r.secret ? "(Secret) " : ""}${r.par} obtient ${r.total}${r.raison ? ` - ${r.raison}` : ""} [${r.formule} : ${detail}]`;
+}
+
+/** "Thrall tire ses caracteristiques (4d6, 3 meilleurs) : 15, 14, 12, 11, 10, 8 (total 70)." */
+export function decrireTirage(t: AnnonceTirage): string {
+  const trie = (v: number[]) => [...v].sort((a, b) => b - a).join(", ");
+  const valeurs = `${trie(t.valeurs)} (total ${t.total})`;
+  if (!t.relance) return `${t.pseudo} tire ses caracteristiques (4d6, 3 meilleurs des) : ${valeurs}.`;
+  const garde = t.garde === "nouveau" ? "ce nouveau tirage est garde" : `le tirage precedent (${trie(t.retenu)}) est garde`;
+  return `${t.pseudo} relance ses caracteristiques : ${valeurs} - ${garde}.`;
 }
 
 export { signe };

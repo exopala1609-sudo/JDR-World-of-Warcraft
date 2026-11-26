@@ -10,10 +10,13 @@
 // =============================================================================
 {
   "creation": {
-    // Méthodes proposées au joueur. Retire-en une pour l'interdire.
+    // Méthodes possibles. Retire-en une pour l'interdire partout. À chaque
+    // table, le MJ choisit en plus lesquelles il permet (outil « Création »).
     //   "tableau-standard" : il répartit les valeurs ci-dessous ;
-    //   "achat-de-points"  : il dépense un budget de points.
-    "methodes": ["tableau-standard", "achat-de-points"],
+    //   "achat-de-points"  : il dépense un budget de points ;
+    //   "tirage-4d6"       : le serveur lance six fois 4d6 (on garde les
+    //                        3 meilleurs dés), le joueur répartit ses résultats.
+    "methodes": ["tableau-standard", "achat-de-points", "tirage-4d6"],
 
     // Le tableau standard : exactement 6 valeurs, une par caractéristique.
     "tableauStandard": [15, 14, 13, 12, 10, 8],

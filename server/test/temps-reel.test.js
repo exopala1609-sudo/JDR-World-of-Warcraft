@@ -326,6 +326,76 @@ test("premiere connexion : un joueur sans personnage reste a la porte, puis entr
   }
 });
 
+test("tirage aux des : vu par toute la table, une fois, puis relance sur accord du MJ (le meilleur est garde)", async () => {
+  const baine = await connecter(sessions, { role: "joueur", pseudo: "Baine" });
+  try {
+    const idTable = depot.listerTables()[0].id;
+    assert.equal((await demander(baine, EVENEMENTS.TABLE_REJOINDRE, { idTable })).creationRequise, true);
+
+    // Changer un reglage ne remet pas les autres a zero.
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { loreLibre: true });
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { joueursModifientPv: false });
+    assert.equal(depot.obtenirTable(idTable).reglages.loreLibre, true);
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { loreLibre: false });
+
+    // Le MJ choisit les methodes de la table ; le joueur a la porte le sait tout de suite.
+    const reglageRecu = attendre(baine, EVENEMENTS.TABLE_MAJ, 400, (m) => m.table.reglages.methodes !== null);
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { methodes: ["tableau-standard"] });
+    assert.deepEqual((await reglageRecu).table.reglages.methodes, ["tableau-standard"]);
+    assert.match((await demander(baine, EVENEMENTS.CREATION_TIRER, {})).erreur, /pas permis le tirage/);
+    assert.equal((await demander(mj, EVENEMENTS.TABLE_REGLER, { methodes: [] })).ok, false); // au moins une
+    await demander(mj, EVENEMENTS.TABLE_REGLER, { methodes: null }); // toutes
+
+    // Premier tirage : six scores de 3 a 18, annonces a toute la table.
+    const chezThrall = attendre(thrall, EVENEMENTS.CREATION_TIRAGE);
+    const premier = await demander(baine, EVENEMENTS.CREATION_TIRER, {});
+    assert.equal(premier.ok, true);
+    assert.equal(premier.tirage.valeurs.length, 6);
+    assert.ok(premier.tirage.valeurs.every((v) => v >= 3 && v <= 18));
+    assert.ok(premier.tirage.des.every((d) => d.length === 4));
+    assert.deepEqual((await chezThrall).valeurs, premier.tirage.valeurs);
+
+    // Recharger la page ne permet pas de relancer.
+    assert.match((await demander(baine, EVENEMENTS.CREATION_TIRER, {})).erreur, /demande au MJ/);
+    assert.equal((await demander(thrall, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Baine" })).ok, false);
+    assert.equal((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "baine" })).ok, true);
+    assert.match((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Baine" })).erreur, /deja une relance/);
+    assert.match((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Inconnu" })).erreur, /pas encore tire/);
+
+    // Relance : le meilleur des deux tirages est garde.
+    const second = await demander(baine, EVENEMENTS.CREATION_TIRER, {});
+    assert.equal(second.tirage.relance, true);
+    const somme = (v) => v.reduce((a, b) => a + b, 0);
+    assert.equal(somme(second.tirage.retenu), Math.max(somme(premier.tirage.valeurs), somme(second.tirage.valeurs)));
+    assert.match((await demander(baine, EVENEMENTS.CREATION_TIRER, {})).erreur, /demande au MJ/);
+
+    // A la validation, il faut repartir exactement les valeurs gardees.
+    const retenu = [...second.tirage.retenu].sort((a, b) => b - a);
+    const caracteristiques = { force: retenu[0], constitution: retenu[1], dexterite: retenu[2], sagesse: retenu[3], intelligence: retenu[4], charisme: retenu[5] };
+    const choix = {
+      nom: "Baine",
+      faction: "horde",
+      race: "orc",
+      classe: "guerrier",
+      specialisation: "armes",
+      historique: "soldat",
+      repartition: { force: 2, constitution: 1 },
+      methode: "tirage-4d6",
+      caracteristiques: { ...caracteristiques, charisme: 18, force: 18 },
+    };
+    if (retenu[0] !== 18 || retenu[5] !== 18) {
+      assert.match((await demander(baine, EVENEMENTS.CREATION_VALIDER, { donnees: choix })).erreur, /valeurs de ton tirage/);
+    }
+    const entree = await demander(baine, EVENEMENTS.CREATION_VALIDER, { donnees: { ...choix, caracteristiques } });
+    assert.equal(entree.ok, true);
+    const fiche = entree.personnages.find((p) => p.proprietaire === "Baine");
+    assert.equal(fiche.caracteristiques.force, Math.min(20, retenu[0] + 2));
+    assert.equal(depot.obtenirTable(idTable).tirages.baine, undefined); // le tirage a servi
+  } finally {
+    baine.close();
+  }
+});
+
 test("l'ecran de creation est reserve aux joueurs", async () => {
   const r = await demander(mj, EVENEMENTS.CREATION_VALIDER, { donnees: {} });
   assert.deepEqual(r, { ok: false, erreur: "Le MJ cree ses personnages depuis les outils du MJ." });

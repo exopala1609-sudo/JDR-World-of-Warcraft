@@ -11,6 +11,10 @@ import { poserEtat, retirerEtat } from "../regles/etats.js";
 import { appliquerPointsDeVie, texteDeCombat } from "../regles/points-de-vie.js";
 import { modifierRessource } from "../regles/ressources.js";
 import { caseLibreProche, placerPion } from "../regles/scene.js";
+import { appliquerTirage, autoriserRelance, tirerCaracteristiques, totalTirage, valeursRetenues } from "../regles/tirage.js";
+import { normaliserPseudo } from "../auth/sessions.js";
+import { methodesDeLaTable } from "../../../shared/creation.js";
+import { salleCreation, salleTable } from "./index.js";
 
 const idPersonnage = schemaId("p");
 const cleRessource = z.string().regex(/^[a-z0-9-]{1,40}$/);
@@ -40,6 +44,7 @@ const Demandes = {
     rounds: z.int().min(1).max(100).nullable().optional(),
   }),
   retirerEtat: z.strictObject({ idPersonnage, idEtat: schemaId("e") }),
+  autoriserRelance: z.strictObject({ pseudo: z.string().trim().min(1).max(24) }),
 };
 
 export function brancher(socket, ctx) {
@@ -71,14 +76,22 @@ export function brancher(socket, ctx) {
     // Deux onglets ouverts, deux clics : un seul personnage par joueur et par table.
     if (ctx.personnageDuJoueur(socket, idTable)) throw new ErreurRegle("Tu as deja un personnage a cette table.");
 
+    const table = depot.obtenirTable(idTable);
     const personnage = fabriquerPersonnageGuide(donnees, {
       idTable,
       proprietaire: pseudo,
       referentiel: ctx.referentiel,
       portraits: listerImages(ctx.config, "portraits"),
-      loreLibre: Boolean(depot.obtenirTable(idTable).reglages?.loreLibre),
+      loreLibre: Boolean(table.reglages?.loreLibre),
+      methodes: methodesDeLaTable(ctx.referentiel.reglesCreation(), table.reglages),
+      valeursTirage: valeursRetenues(table.tirages?.[normaliserPseudo(pseudo)]),
     });
     ctx.publierPersonnage(personnage, { action: "creation", par: pseudo }); // la table voit arriver le nouveau
+    // Le tirage a servi : on le retire de la table.
+    if (table.tirages?.[normaliserPseudo(pseudo)]) {
+      const { [normaliserPseudo(pseudo)]: _utilise, ...autres } = table.tirages;
+      ctx.publierTable(depot.enregistrerTable({ ...table, tirages: autres }));
+    }
 
     // Son pion apparait sur la carte, sur une case libre pres des autres heros.
     const scene = depot.obtenirScene(idTable);
@@ -90,6 +103,52 @@ export function brancher(socket, ctx) {
     ctx.publierScene(idTable, { action: "pion-place", par: pseudo, nom: personnage.nom });
 
     return ctx.entrerDansLaTable(socket, idTable);
+  });
+
+  // Tirer ses caracteristiques aux des (4d6, on garde les 3 meilleurs), depuis
+  // l'ecran de creation. Une seule fois ; ensuite, seulement si le MJ autorise
+  // une relance, et le joueur garde le meilleur des deux tirages.
+  ctx.guichet(socket, EVENEMENTS.CREATION_TIRER, null, () => {
+    if (ctx.estMJ(socket)) throw new ErreurRegle("Le MJ n'a pas de caracteristiques a tirer.");
+    const idTable = socket.data.idTableCreation;
+    const table = idTable ? depot.obtenirTable(idTable) : null;
+    if (!table) throw new ErreurRegle("Choisis d'abord une table.");
+    if (ctx.personnageDuJoueur(socket, idTable)) throw new ErreurRegle("Tu as deja un personnage a cette table.");
+    if (!methodesDeLaTable(ctx.referentiel.reglesCreation(), table.reglages).includes("tirage-4d6")) {
+      throw new ErreurRegle("Le MJ n'a pas permis le tirage aux des a cette table.");
+    }
+
+    const cle = normaliserPseudo(pseudo);
+    const ancienne = table.tirages?.[cle] ?? null;
+    const tirage = tirerCaracteristiques();
+    const { entree, garde } = appliquerTirage(ancienne, tirage.valeurs, pseudo);
+    const nouvelle = depot.enregistrerTable({ ...table, tirages: { ...(table.tirages ?? {}), [cle]: entree } });
+
+    // Toute la table voit les des (et le joueur lui-meme, a la porte).
+    const annonce = {
+      pseudo,
+      valeurs: tirage.valeurs,
+      des: tirage.des,
+      total: totalTirage(tirage.valeurs),
+      relance: Boolean(ancienne),
+      garde,
+      retenu: valeursRetenues(entree),
+    };
+    io.to([salleTable(idTable), salleCreation(idTable)]).emit(EVENEMENTS.CREATION_TIRAGE, annonce);
+    ctx.publierTable(nouvelle);
+    return { tirage: annonce, table: nouvelle };
+  });
+
+  // Le MJ autorise un joueur a relancer ses des de creation.
+  ctx.guichet(socket, EVENEMENTS.CREATION_AUTORISER_RELANCE, Demandes.autoriserRelance, ({ pseudo: cible }) => {
+    ctx.exigerMJ(socket, "autoriser une relance");
+    const idTable = ctx.exigerTable(socket);
+    const table = depot.obtenirTable(idTable);
+    const cle = normaliserPseudo(cible);
+    const entree = autoriserRelance(table.tirages?.[cle] ?? null);
+    const nouvelle = depot.enregistrerTable({ ...table, tirages: { ...table.tirages, [cle]: entree } });
+    ctx.publierTable(nouvelle);
+    return { table: nouvelle };
   });
 
   // Creation libre, reservee au MJ (PNJ, monstres, ou fiche attribuee a un joueur).

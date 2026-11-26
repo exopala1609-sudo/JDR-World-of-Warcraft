@@ -33,23 +33,65 @@ export function pointsDepenses(base, regles) {
   return CARACTERISTIQUES.reduce((total, c) => total + (regles.achatDePoints.couts[base[c]] ?? 0), 0);
 }
 
-/** Point de depart d'une methode : ce que l'ecran propose avant tout choix. */
-export function baseParDefaut(methode, regles, principales = []) {
-  if (methode === "achat-de-points") {
-    const minimum = scoresAchat(regles)[0];
+/**
+ * Les valeurs a repartir : tableau standard, ou tirage aux des du joueur.
+ * @param {string} methode
+ * @param {any} regles
+ * @param {number[] | null} [valeursTirage]
+ */
+export function valeursARepartir(methode, regles, valeursTirage = null) {
+  return methode === "tirage-4d6" ? (valeursTirage ?? []) : regles.tableauStandard;
+}
+
+/**
+ * Point de depart d'une methode : ce que l'ecran propose avant tout choix.
+ * "valeursTirage" : les 6 scores tires aux des (methode "tirage-4d6").
+ * @param {string} methode
+ * @param {any} regles
+ * @param {string[]} [principales]
+ * @param {number[] | null} [valeursTirage]
+ * @returns {Record<"force" | "dexterite" | "constitution" | "intelligence" | "sagesse" | "charisme", number>}
+ */
+export function baseParDefaut(methode, regles, principales = [], valeursTirage = null) {
+  if (methode === "achat-de-points" || (methode === "tirage-4d6" && !valeursTirage)) {
+    const minimum = methode === "achat-de-points" ? scoresAchat(regles)[0] : 10; // 10 : en attendant les des
     return Object.fromEntries(CARACTERISTIQUES.map((c) => [c, minimum]));
   }
-  // Tableau standard : les meilleures valeurs vont aux caracteristiques principales de la classe.
+  // Valeurs a repartir : les meilleures vont aux caracteristiques principales de la classe.
   const ordre = [...principales, ...CARACTERISTIQUES.filter((c) => !principales.includes(c))];
-  const valeurs = [...regles.tableauStandard].sort((a, b) => b - a);
+  const valeurs = [...valeursARepartir(methode, regles, valeursTirage)].sort((a, b) => b - a);
   return Object.fromEntries(ordre.map((c, i) => [c, valeurs[i]]));
 }
 
-/** La repartition respecte-t-elle la methode choisie ? */
-export function verifierBase(methode, base, regles) {
+/** Les methodes proposees a une table : celles du referentiel, filtrees par le MJ. */
+export function methodesDeLaTable(regles, reglagesTable) {
+  const choisies = reglagesTable?.methodes;
+  const permises = choisies ? regles.methodes.filter((m) => choisies.includes(m)) : regles.methodes;
+  return permises.length ? permises : regles.methodes;
+}
+
+/**
+ * La repartition respecte-t-elle la methode choisie ?
+ * "methodes" : celles permises a la table ; "valeursTirage" : le tirage du joueur.
+ * @param {string} methode
+ * @param {any} base
+ * @param {any} regles
+ * @param {{ methodes?: string[], valeursTirage?: number[] | null }} [options]
+ */
+export function verifierBase(methode, base, regles, { methodes = regles.methodes, valeursTirage = null } = {}) {
   if (!regles.methodes.includes(methode)) return "Cette methode de caracteristiques n'est pas autorisee.";
+  if (!methodes.includes(methode)) return "Le MJ n'a pas permis cette methode de caracteristiques a cette table.";
   const valeurs = CARACTERISTIQUES.map((c) => base[c]);
   if (valeurs.some((v) => !Number.isInteger(v))) return "Chaque caracteristique doit recevoir une valeur.";
+
+  if (methode === "tirage-4d6") {
+    if (!valeursTirage) return "Lance d'abord les des.";
+    const attendu = [...valeursTirage].sort((a, b) => a - b).join(",");
+    if ([...valeurs].sort((a, b) => a - b).join(",") !== attendu) {
+      return `Repartis exactement les valeurs de ton tirage (${[...valeursTirage].sort((a, b) => b - a).join(", ")}).`;
+    }
+    return null;
+  }
 
   if (methode === "tableau-standard") {
     const attendu = [...regles.tableauStandard].sort((a, b) => a - b).join(",");

@@ -6,7 +6,29 @@ export type Table = {
   nom: string;
   // Reglages choisis par le MJ. joueursModifientPv : chaque joueur peut modifier
   // lui-meme les PV de son personnage (sinon, seul le MJ).
-  reglages?: { joueursModifientPv: boolean; loreLibre?: boolean }; // loreLibre : "Ignorer les restrictions de lore" permis a la creation
+  // loreLibre : "Ignorer les restrictions de lore" permis a la creation ;
+  // methodes : methodes de caracteristiques permises (null = toutes celles du referentiel).
+  reglages?: { joueursModifientPv: boolean; loreLibre?: boolean; methodes?: MethodeCaracteristiques[] | null };
+  tirages?: Record<string, TirageCreation>; // tirages aux des des joueurs en creation (cle : pseudo en minuscules)
+};
+
+/** Le tirage aux des d'un joueur en creation, garde par le serveur. */
+export type TirageCreation = {
+  pseudo: string;
+  tirages: number[][]; // chaque tirage : 6 scores
+  retenu: number; // index du tirage garde (le meilleur total)
+  relanceAutorisee: boolean;
+};
+
+/** Annonce d'un tirage, vue par toute la table. */
+export type AnnonceTirage = {
+  pseudo: string;
+  valeurs: number[];
+  des: number[][];
+  total: number;
+  relance: boolean;
+  garde: "nouveau" | "ancien";
+  retenu: number[];
 };
 
 export type Ressource = {
@@ -282,7 +304,7 @@ export type Classe = {
 
 export type ModeleRessource = { id: string; nom: string; type: "jauge" | "compteur"; max: number; couleur?: string; description: string };
 
-export type MethodeCaracteristiques = "tableau-standard" | "achat-de-points";
+export type MethodeCaracteristiques = "tableau-standard" | "achat-de-points" | "tirage-4d6";
 
 export type Referentiel = {
   factions: Faction[];

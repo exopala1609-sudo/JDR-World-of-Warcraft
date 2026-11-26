@@ -717,3 +717,22 @@ Réalisé :
 Conséquence à connaître : les anciennes clés `barbare`, `barde`, `ensorceleur` et les peuples provisoires (`elfe-de-sang`, `tauren`... selon le fichier) disparaissent du référentiel d'exemple. Les personnages de test qui les utilisent sont à recréer.
 
 **Reste à vérifier** : les noms marqués « à vérifier » dans les fichiers du livre ; l'affichage avec les vrais portraits et icônes du NAS.
+
+---
+
+# Suivi — création de personnage, étape 2 : caractéristiques aux dés (26 novembre 2026)
+
+Choix validés par l'utilisateur :
+- méthode du Manuel des joueurs : six fois 4d6, on garde les 3 meilleurs dés ;
+- le joueur place ses six valeurs librement ;
+- toute la table voit les dés (message dans la discussion) ;
+- relance seulement si le MJ l'autorise ; le joueur garde le meilleur des deux tirages (total le plus haut) ;
+- le MJ choisit, pour sa table, les méthodes permises (tableau standard, achat de points, dés).
+
+Réalisé :
+- `server/src/regles/tirage.js` : règle pure, testée (`server/test/tirage.test.js`) ;
+- le tirage est lancé et gardé par le serveur, dans la table (`tirages`) : recharger la page ne permet pas de relancer ; il est retiré quand le personnage est créé ;
+- nouvelle fenêtre MJ **⚅ Création** : cases des méthodes permises, liste des tirages en cours, bouton « Autoriser une relance » ;
+- les joueurs à l'écran de création reçoivent désormais en direct les réglages de la table (méthodes, lore libre) ;
+- correction d'un défaut de l'étape 1 : changer un réglage de table (ex. « PV par les joueurs ») remettait les autres (ex. « Lore libre ») à leur valeur par défaut ;
+- tests : 200, tous verts ; essai réel dans le navigateur (tirage, relance autorisée par le MJ, meilleur tirage gardé, retrait de la méthode par le MJ, création).

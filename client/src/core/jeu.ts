@@ -14,9 +14,9 @@ import { io, type Socket } from "socket.io-client";
 import { useSyncExternalStore } from "react";
 import { couleurDe } from "@partage/couleurs.js";
 import { EVENEMENTS, ROLES } from "@partage/protocole.js";
-import type { ButinOuvert, Combat, Compendium, Jet, LigneJournal, MessageChat, Note, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
+import type { AnnonceTirage, ButinOuvert, Combat, Compendium, Jet, LigneJournal, MessageChat, Note, Objet, OutilCarte, Personnage, Profil, Quete, Raccourci, Referentiel, Scene, Table, Trace } from "./types";
 import { audio } from "./audio";
-import { decrireCause, decrireCombat, decrireDes, decrireJet } from "./journal";
+import { decrireCause, decrireCombat, decrireDes, decrireJet, decrireTirage } from "./journal";
 
 export type Avantage = "normal" | "avantage" | "desavantage";
 
@@ -48,6 +48,7 @@ export type EtatJeu = {
     carteMJ: boolean;
     carnet: boolean;
     attaques: boolean; // MJ : les attaques d'un monstre (voir "attaquant")
+    creationMJ: boolean; // MJ : methodes de creation et tirages aux des
   };
   attaquant: string | null; // MJ : le monstre dont la fenetre des attaques est ouverte
   notes: Note[] | null; // MON carnet de notes (charge a l'ouverture)
@@ -79,6 +80,7 @@ export const FENETRES_FERMEES: EtatJeu["fenetres"] = {
   carteMJ: false,
   carnet: false,
   attaques: false,
+  creationMJ: false,
 };
 
 const ETAT_INITIAL: EtatJeu = {
@@ -607,6 +609,7 @@ class Jeu {
     socket.on(EVENEMENTS.SON_JOUER, ({ son }: { son: string }) => audio.jouer(son));
     socket.on(EVENEMENTS.JOUEUR_EXPULSE, ({ message }: { message: string }) => this.deconnecter(message));
     socket.on(EVENEMENTS.DES_RESULTAT, (resultat) => this.journaliser(decrireDes(resultat), "des"));
+    socket.on(EVENEMENTS.CREATION_TIRAGE, (t: AnnonceTirage) => this.journaliser(decrireTirage(t), "des"));
 
     // La carte : l'etat complet passe par le magasin, le reste va direct au moteur.
     socket.on(EVENEMENTS.SCENE_ETAT, ({ scene }) => this.modifier({ scene }));

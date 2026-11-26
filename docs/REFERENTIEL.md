@@ -215,10 +215,17 @@ règles **officielles de D&D 5e** s'appliquent.
 
 | Champ | Défaut (officiel) |
 |---|---|
-| `methodes` | `["tableau-standard", "achat-de-points"]` |
+| `methodes` | `["tableau-standard", "achat-de-points", "tirage-4d6"]`. À chaque table, le MJ choisit en plus lesquelles il permet (outil **⚅ Création**) |
 | `tableauStandard` | `[15, 14, 13, 12, 10, 8]` (exactement 6 valeurs) |
 | `achatDePoints` | budget `27`, coûts `8`→0 ... `13`→5, `14`→7, `15`→9 (sans trou) |
 | `caracteristiqueMaximale` | `20`, plafond après bonus de race |
+
+**Tirage aux dés (`tirage-4d6`)** : le serveur lance six fois 4d6 et garde
+les 3 meilleurs dés ; toute la table voit le résultat dans la discussion. Le
+joueur répartit ses six valeurs comme il veut. Il ne peut pas relancer en
+rechargeant la page : seul le MJ peut autoriser une relance (fenêtre
+**⚅ Création**), et le joueur garde alors le meilleur des deux tirages (le
+total le plus haut).
 | `restrictionsRaceClasse` | `true`. `false` = plus aucune restriction de lore, pour toutes les tables |
 
 ## Vérifications automatiques

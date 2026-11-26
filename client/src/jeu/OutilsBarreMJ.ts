@@ -86,5 +86,12 @@ export const OUTILS_MJ: OutilMJ[] = [
     action: basculerLoreLibre,
     actif: (e) => Boolean(e.table?.reglages?.loreLibre),
   },
+  {
+    symbole: "⚅",
+    nom: "Creation",
+    aide: "Methodes de caracteristiques permises a la table, et relances des tirages aux des des joueurs.",
+    action: () => basculer("creationMJ"),
+    actif: (e) => e.fenetres.creationMJ,
+  },
   { symbole: "↻", icone: "outil-recharger", nom: "Recharger", aide: "Relire les fichiers du compendium et du referentiel apres modification.", action: recharger },
 ];
