@@ -240,7 +240,7 @@ Quand l'etape 7 fonctionne, passe a la seconde partie : l'acces a distance.
 
 # Seconde partie — Acces a distance (adresse fixe)
 
-But : tes joueurs ouvrent `https://table.exopala.com` depuis chez eux. Rien
+But : tes joueurs ouvrent `https://table.exopala.org` depuis chez eux. Rien
 n'est ouvert sur ta box : c'est le NAS qui appelle Cloudflare (le « tunnel »),
 jamais l'inverse. Devant la table, Cloudflare demande a chaque visiteur son
 adresse e-mail et lui envoie un code : seules les adresses que tu as listees
@@ -267,7 +267,7 @@ protegee.
 2. **Application name** : `Table JDR`. **Session duration** : `1 month` (un
    joueur ne retape le code qu'une fois par mois sur le meme navigateur).
 3. **Public hostname** (ou **Application domain**) : sous-domaine `table`,
-   domaine `exopala.com`, chemin vide.
+   domaine `exopala.org`, chemin vide.
 4. **Policies** > **Add a policy** : nom `Joueurs`, action **Allow**,
    regle **Include** > **Emails** : ajoute ton adresse et celle de chaque
    joueur (une par ligne).
@@ -283,7 +283,7 @@ des e-mails de la politique `Joueurs`.
 1. **Networks** > **Tunnels** > clique sur ton tunnel.
 2. Onglet **Published application routes** (ancien nom : *Public hostname*) >
    **Add a published application route**.
-3. Sous-domaine `table`, domaine `exopala.com`, chemin vide ;
+3. Sous-domaine `table`, domaine `exopala.org`, chemin vide ;
    service **HTTP**, URL `localhost:3000`. Enregistre.
 
 Le tunnel apparaitra « Down » ou « Inactive » tant que le NAS ne l'a pas
@@ -302,8 +302,8 @@ ouvert : normal.
 3. Il te demande le **jeton du tunnel** : colle-le (clic droit dans
    PowerShell), Entree. Il ne s'affiche pas. Le script verifie qu'il est bien
    forme.
-4. Il propose l'adresse `https://table.exopala.com` : appuie sur **Entree**
-   pour l'accepter.
+4. Il demande l'adresse : tape `https://table.exopala.org` (exactement le nom
+   de la route de l'etape 11), puis Entree.
 5. Il relance la table et attend le tunnel (jusqu'a 2 minutes la premiere
    fois : il telecharge l'outil Cloudflare). Il doit finir par
    `[ OK ] Tunnel actif`.
@@ -311,19 +311,19 @@ ouvert : normal.
 
 A partir de maintenant, la table n'ecoute plus ton reseau local :
 `http://ADRESSE-DU-NAS:3000` ne repond plus, c'est voulu. Toi aussi, tu passes
-par `https://table.exopala.com`.
+par `https://table.exopala.org`.
 
 ## Etape 13 — Essai depuis l'exterieur (5 min)
 
 1. Sur ton telephone, **coupe le Wi-Fi** (pour etre vraiment « dehors »), et
-   ouvre `https://table.exopala.com`.
+   ouvre `https://table.exopala.org`.
 2. Cloudflare demande ton e-mail : tape-le, recois le code, entre-le.
 3. L'ecran de connexion de la table s'affiche : connecte-toi.
 4. Essaie avec une adresse e-mail **non listee** : Cloudflare doit refuser.
 
 ## Ce que tu envoies a tes joueurs
 
-> La table est ici : https://table.exopala.com
+> La table est ici : https://table.exopala.org
 > 1. Entre ton adresse e-mail (celle que je t'ai demandee), puis le code recu par e-mail.
 > 2. Choisis ton pseudo et ton mot de passe a ta premiere connexion : ils te seront redemandes ensuite.
 > Mot de passe oublie : previens-moi.

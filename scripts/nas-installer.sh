@@ -64,7 +64,7 @@ VTT_MOTDEPASSE_MJ=$MDP_MJ
 VTT_HOTE=0.0.0.0
 # Etape "acces a distance" :
 # VTT_TUNNEL_JETON=
-# VTT_ADRESSE_PUBLIQUE=https://table.exopala.com
+# VTT_ADRESSE_PUBLIQUE=https://table.exopala.org
 FIN
   echo "  [ OK ] Configuration enregistree (fichier .env)."
 else

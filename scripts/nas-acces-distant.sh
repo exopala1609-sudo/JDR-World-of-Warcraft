@@ -73,9 +73,11 @@ if ! printf "%s" "$JETON" | "$NODE" -e '
 fi
 echo "  [ OK ] Jeton reconnu"
 
-printf "  Adresse de la table [https://table.exopala.com] : "
+echo "  Adresse de la table, telle que configuree dans Cloudflare (route du tunnel),"
+echo "  par exemple https://table.exopala.org"
+printf "  Adresse : "
 read -r ADRESSE
-[ -n "$ADRESSE" ] || ADRESSE="https://table.exopala.com"
+ADRESSE="$(printf "%s" "$ADRESSE" | tr -d ' \r' | sed 's|/*$||')"
 case "$ADRESSE" in
   https://*) ;;
   *) echo "  !! L'adresse doit commencer par https://"; exit 1 ;;
