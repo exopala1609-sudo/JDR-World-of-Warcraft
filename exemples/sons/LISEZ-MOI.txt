@@ -1,0 +1,25 @@
+==============================================================================
+  DOSSIER sons/ : les effets sonores de la table
+==============================================================================
+
+Depose ici des fichiers audio (.ogg, .mp3, .wav, .m4a ou .webm). Le jeu les
+cherche par leur NOM, sans tenir compte de l'extension :
+
+  murmure          un murmure (message prive) arrive       (le "tintement" du MP)
+  quete-nouvelle   le MJ donne une nouvelle quete
+  quete-terminee   le MJ marque une quete "terminee"       (la fanfare)
+  combat           debut d'un combat (jet d'initiative)    (gong / tambours)
+
+Exemple : murmure.ogg, quete-terminee.mp3, combat.wav
+
+Tant qu'un fichier manque, le navigateur joue un petit son de remplacement
+fabrique par lui-meme : rien ne casse. Des que tu deposes le vrai fichier,
+il est utilise (recharge la page, F5, chez chaque joueur).
+
+TES PROPRES SONS (soundboard du MJ) : depose n'importe quel fichier, par
+exemple rugissement-dragon.ogg ; il apparait dans la liste des sons de la page
+Outils du MJ (/test/) et dans le menu MJ : un clic le fait entendre a toute la
+table. Nom de fichier : minuscules, chiffres et tirets.
+
+Conseil : des sons COURTS (1 a 3 secondes) et pas trop forts. Chaque joueur
+regle son volume avec le bouton haut-parleur, en bas a droite de l'ecran.

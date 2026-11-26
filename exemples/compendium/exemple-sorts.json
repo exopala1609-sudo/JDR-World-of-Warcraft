@@ -1,0 +1,93 @@
+{
+  "sorts": [
+    {
+      "id": "trait-de-feu",
+      "nom": "Trait de feu",
+      "niveau": 0,
+      "ecole": "evocation",
+      "portee": "36 metres",
+      "composantes": "V, S",
+      "description": "Donnee de test. Un trait de feu frappe une creature ou un objet a portee.",
+      "degats": {
+        "formule": "1d10",
+        "type": "feu"
+      },
+      "resolution": "attaque"
+    },
+    {
+      "id": "projectile-magique",
+      "nom": "Projectile magique",
+      "niveau": 1,
+      "ecole": "evocation",
+      "portee": "36 metres",
+      "composantes": "V, S",
+      "description": "Donnee de test. Trois fleches de force touchent automatiquement leurs cibles.",
+      "degats": {
+        "formule": "3d4+3",
+        "type": "force"
+      },
+      "cout": {
+        "ressource": "mana",
+        "quantite": 10
+      },
+      "resolution": "automatique",
+      "parNiveauSuperieur": "1d4+1"
+    },
+    {
+      "id": "soins",
+      "nom": "Soins",
+      "niveau": 1,
+      "ecole": "evocation",
+      "portee": "Contact",
+      "composantes": "V, S",
+      "description": "Donnee de test. La creature touchee recupere 1d8 + le modificateur d'incantation points de vie.",
+      "soins": "1d8",
+      "cout": {
+        "ressource": "mana",
+        "quantite": 15
+      },
+      "parNiveauSuperieur": "1d8"
+    },
+    {
+      "id": "boule-de-feu",
+      "nom": "Boule de feu",
+      "niveau": 3,
+      "ecole": "evocation",
+      "icone": "spell_fire_fireball02",
+      "portee": "45 metres",
+      "composantes": "V, S, M (une boulette de guano de chauve-souris et de soufre)",
+      "description": "Donnee de test. Une explosion de flammes de 6 metres de rayon.",
+      "degats": {
+        "formule": "8d6",
+        "type": "feu"
+      },
+      "cout": {
+        "ressource": "mana",
+        "quantite": 40
+      },
+      "resolution": "sauvegarde",
+      "sauvegarde": "dexterite",
+      "parNiveauSuperieur": "1d6"
+    },
+    {
+      "id": "rayon-de-lune",
+      "nom": "Rayon de lune",
+      "niveau": 2,
+      "ecole": "evocation",
+      "icone": "spell_nature_moonglow",
+      "incantation": "1 action",
+      "portee": "36 metres",
+      "composantes": "V, S, M (quelques graines de lunaire)",
+      "duree": "Jusqu'a 1 minute",
+      "concentration": true,
+      "description": "Donnee de test. Un rayon de lumiere argentee brule les creatures dans un cylindre de 1,50 m de rayon.",
+      "degats": {
+        "formule": "2d10",
+        "type": "radiant"
+      },
+      "parNiveauSuperieur": "1d10",
+      "resolution": "sauvegarde",
+      "sauvegarde": "constitution"
+    }
+  ]
+}

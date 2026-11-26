@@ -1,0 +1,257 @@
+/* =============================================================================
+   BRIQUES : les elements reutilises partout (cadres, boutons, barres,
+   fenetres, infobulles). Chacune n'utilise que les variables du theme.
+   ============================================================================= */
+
+/* --- Cadre sombre a bordure metallique (le cadre "par defaut" de WoW) ------- */
+.cadre {
+  position: relative;
+  background: var(--texture-anthracite);
+  border-radius: 6px;
+  box-shadow: var(--bordure-metal);
+}
+/* Rivets dans les quatre coins, dessines avec des degrades. */
+.cadre::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 6px 6px, var(--metal-reflet) 0 2px, var(--metal-sombre) 3px, transparent 4px),
+    radial-gradient(circle at calc(100% - 6px) 6px, var(--metal-reflet) 0 2px, var(--metal-sombre) 3px, transparent 4px),
+    radial-gradient(circle at 6px calc(100% - 6px), var(--metal-reflet) 0 2px, var(--metal-sombre) 3px, transparent 4px),
+    radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), var(--metal-reflet) 0 2px, var(--metal-sombre) 3px, transparent 4px);
+}
+
+/* Variante parchemin (fenetres de texte : compendium, descriptions). */
+.cadre--parchemin {
+  background: var(--texture-parchemin);
+  color: var(--encre);
+  font-family: var(--police-texte);
+}
+
+/* --- Titres -------------------------------------------------------------------- */
+.titre-or {
+  margin: 0;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-weight: normal;
+  text-shadow: var(--ombre-texte);
+  letter-spacing: 0.5px;
+}
+
+/* --- Bouton rouge et or (UIPanelButton) ----------------------------------------- */
+.bouton {
+  padding: 7px 22px;
+  border: 1px solid #000;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #b0271a 0%, #7d1409 48%, #5c0c04 52%, #7a1509 100%);
+  box-shadow:
+    inset 0 0 0 1px var(--or-bordure),
+    inset 0 1px 0 1px rgba(255, 220, 150, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.7);
+  color: var(--or);
+  font-family: var(--police-ui);
+  text-shadow: var(--ombre-texte);
+  cursor: pointer;
+}
+.bouton:hover {
+  filter: brightness(1.25);
+}
+.bouton:active {
+  transform: translateY(1px);
+  filter: brightness(0.9);
+}
+.bouton:disabled {
+  filter: grayscale(1) brightness(0.6);
+  cursor: default;
+}
+
+/* Bouton de fermeture rond (le "X" rouge des fenetres de WoW). */
+.bouton-fermer {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #e04a2a, #8a1206 60%, #3c0602);
+  box-shadow: 0 0 0 2px var(--or-bordure), 0 0 0 3px #000;
+  color: var(--or-pale);
+  font-family: var(--police-chiffres);
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 28px;
+  cursor: pointer;
+}
+.bouton-fermer:hover {
+  filter: brightness(1.3);
+}
+
+/* --- Champs de saisie ------------------------------------------------------------ */
+.champ {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--metal-sombre);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.75);
+  box-shadow: var(--relief-creux);
+  color: var(--texte);
+  outline: none;
+}
+.champ:focus {
+  border-color: var(--or-bordure);
+}
+
+/* --- Barre de vie / de ressource ------------------------------------------------------ */
+.barre {
+  position: relative;
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid #000;
+  background: rgba(0, 0, 0, 0.7);
+  box-shadow: var(--relief-creux);
+}
+.barre__remplissage {
+  height: 100%;
+  /* Reflet en haut, ombre en bas : l'effet "tube" des barres de WoW. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 45%, rgba(0, 0, 0, 0.35)),
+    var(--couleur-barre);
+  transition: width 0.35s ease-out; /* la barre glisse quand les PV changent */
+}
+.barre__texte {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--police-chiffres);
+  font-size: 13px;
+  text-shadow: var(--ombre-texte);
+}
+
+/* --- Fenetre (sacs, fiche...) ------------------------------------------------------------ */
+.fenetre {
+  position: absolute;
+  pointer-events: auto; /* la fenetre capte ses propres clics */
+  display: flex;
+  flex-direction: column;
+}
+.fenetre__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px 10px 18px;
+  cursor: grab; /* on deplace la fenetre en tirant sa barre de titre */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent);
+  border-bottom: 1px solid var(--metal-sombre);
+}
+.fenetre__entete:active {
+  cursor: grabbing;
+}
+.fenetre__titre {
+  font-size: 20px;
+}
+.fenetre__corps {
+  padding: 14px;
+}
+
+/* --- Case (objet, sort, equipement) ------------------------------------------------------ */
+.case {
+  position: relative;
+  width: var(--taille-case, var(--case-sac));
+  height: var(--taille-case, var(--case-sac));
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at center, rgba(60, 60, 70, 0.55), rgba(0, 0, 0, 0.9)),
+    var(--anthracite-950);
+  box-shadow:
+    var(--relief-creux),
+    0 0 0 1px var(--metal-sombre);
+}
+.case img {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  border-radius: 3px;
+  object-fit: cover;
+}
+/* Bordure de rarete : la couleur vient de l'attribut data-rarete. */
+.case[data-rarete] {
+  box-shadow:
+    inset 0 0 0 2px var(--couleur-rarete),
+    inset 0 0 10px color-mix(in srgb, var(--couleur-rarete) 45%, transparent),
+    0 0 0 1px #000;
+}
+.case[data-rarete] img {
+  inset: 4px;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+}
+[data-rarete="mediocre"] { --couleur-rarete: var(--rarete-mediocre); }
+[data-rarete="classique"] { --couleur-rarete: var(--rarete-classique); }
+[data-rarete="inhabituel"] { --couleur-rarete: var(--rarete-inhabituel); }
+[data-rarete="rare"] { --couleur-rarete: var(--rarete-rare); }
+[data-rarete="epique"] { --couleur-rarete: var(--rarete-epique); }
+[data-rarete="legendaire"] { --couleur-rarete: var(--rarete-legendaire); }
+.texte-rarete {
+  color: var(--couleur-rarete);
+}
+.case:hover {
+  filter: brightness(1.25);
+}
+.case__quantite {
+  position: absolute;
+  right: 4px;
+  bottom: 2px;
+  font-family: var(--police-chiffres);
+  font-size: 14px;
+  text-shadow: var(--ombre-texte);
+}
+
+/* --- Infobulle (tooltip) : fond bleu nuit, liseré argent ----------------------------- */
+.infobulle {
+  position: absolute;
+  z-index: var(--z-infobulle);
+  /* Largeur de son contenu (340 px au plus), meme pres du bord droit : sinon
+     le navigateur la comprime a la place restante avant de la decaler a gauche. */
+  width: max-content;
+  max-width: 340px;
+  padding: 10px 12px;
+  pointer-events: none; /* elle ne doit jamais "voler" la souris */
+  border-radius: 5px;
+  background: linear-gradient(180deg, rgba(8, 10, 28, 0.96), rgba(2, 3, 12, 0.96));
+  box-shadow:
+    0 0 0 1px #000,
+    0 0 0 2px #8b93a8,
+    0 0 0 3px #000,
+    0 6px 16px rgba(0, 0, 0, 0.8);
+  font-family: var(--police-ui);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.infobulle__titre {
+  font-size: 16px;
+}
+.infobulle__ligne--gris {
+  color: var(--texte-doux);
+}
+.infobulle__ligne--vert {
+  color: var(--texte-vert);
+}
+.infobulle__ligne--or {
+  color: var(--or);
+}
+.infobulle__ligne--rouge {
+  color: var(--texte-rouge);
+}
+.infobulle__ligne--bleu {
+  color: #6fb8ff; /* l'etat "Repose" de WoW */
+}
+/* "1 action ............ 36 m" : deux infos aux deux bords (incantation / portee) */
+.infobulle__deux-colonnes {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}

@@ -1,0 +1,28 @@
+==============================================================================
+  DOSSIER polices/ : les vraies polices de World of Warcraft
+==============================================================================
+
+Depose ici les fichiers de police. Le jeu essaie ces noms, dans l'ordre :
+
+  LifeCraft (toute l'interface : titres, noms, boutons, fiches) :
+      LifeCraft_Font.ttf, LifeCraft.ttf
+
+  Morpheus (textes narratifs : quetes, grimoire, carnet, descriptions) :
+      MORPHEUS.TTF   (nom du dossier Fonts de WoW)
+      Morpheus.woff2, Morpheus.otf, Morpheus.ttf
+
+  Skurri (chiffres des degats et des soins : carte, fenetre des des) :
+      skurri.ttf, SKURRI.TTF
+
+  Arial Narrow (facultatif : chiffres des barres de vie) :
+      ARIALN.TTF, ArialNarrow.ttf
+
+Respecte exactement ces noms (majuscules comprises) : ton cloud peut etre lu
+depuis un PC sous un autre systeme.
+
+Tant qu'un fichier manque, le navigateur utilise une police de substitution
+installee sur Windows (Palatino Linotype, Book Antiqua...). Apres avoir depose
+une police : recharge la page (Ctrl + F5) chez chaque joueur.
+
+Rappel : ces polices appartiennent a leurs editeurs. Elles restent dans TON
+cloud et ne sont jamais publiees sur GitHub.

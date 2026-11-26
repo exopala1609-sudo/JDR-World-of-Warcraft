@@ -1,0 +1,194 @@
+// =============================================================================
+//  RESSOURCES : les jauges et compteurs des personnages (Mana, Rage...)
+// =============================================================================
+//
+//  DONNÉES PROVISOIRES, en attendant le livre « D&D World of Warcraft ».
+//  Remplace-les librement : le jeu ne connaît aucune ressource par son nom.
+//
+//  Chaque ressource décrite ici est un MODÈLE. Les classes (classes.json)
+//  s'en servent pour donner leurs ressources de départ à un nouveau personnage.
+//
+//  Les champs d'une ressource :
+//
+//    "id"          Nom technique : minuscules, chiffres et tirets.
+//                  NE LE CHANGE PLUS une fois des personnages créés.
+//    "nom"         Nom affiché dans le jeu.
+//    "type"        "jauge"    = une barre qui se remplit (Mana, Rage...) ;
+//                  "compteur" = quelques cases (Points de combo, Éclats d'âme...).
+//    "max"         Valeur maximale (de 0 à 999).
+//    "depart"      "plein" (par défaut) ou "vide" : valeur au moment où le
+//                  personnage reçoit la ressource. La Rage démarre vide.
+//    "reposCourt"  Ce qui se passe au repos court, puis au repos long :
+//    "reposLong"     "remplir"  -> remonte au maximum ;
+//                    "vider"    -> retombe à 0 ;
+//                    "moitie"   -> récupère la moitié du maximum ;
+//                    "aucun"    -> ne change pas ;
+//                    { "ajouter": 2 } -> récupère 2 points.
+//    "couleur"     (facultatif) Couleur de la barre, au format #RRVVBB.
+//    "description" (facultatif) Texte d'aide.
+//
+//  Les lignes qui commencent par // sont des commentaires : le jeu les ignore.
+//  Après une modification : « Recharger le référentiel » dans les outils du MJ,
+//  ou tape « npm run verifier-referentiel » pour vérifier tes fichiers.
+// =============================================================================
+{
+  "ressources": [
+    // --- Jauges façon World of Warcraft ---------------------------------------
+    {
+      "id": "mana",
+      "nom": "Mana",
+      "type": "jauge",
+      "max": 100,
+      "reposCourt": "moitie",
+      "reposLong": "remplir",
+      "couleur": "#0050ff",
+      "description": "L'énergie magique des lanceurs de sorts."
+    },
+    {
+      "id": "rage",
+      "nom": "Rage",
+      "type": "jauge",
+      "max": 100,
+      "depart": "vide",
+      "reposCourt": "vider",
+      "reposLong": "vider",
+      "couleur": "#e60000",
+      "description": "Monte en combat, quand on frappe ou qu'on est frappé."
+    },
+    {
+      "id": "energie",
+      "nom": "Énergie",
+      "type": "jauge",
+      "max": 100,
+      "reposCourt": "remplir",
+      "reposLong": "remplir",
+      "couleur": "#ffe600"
+    },
+    {
+      "id": "focalisation",
+      "nom": "Focalisation",
+      "type": "jauge",
+      "max": 100,
+      "reposCourt": "remplir",
+      "reposLong": "remplir",
+      "couleur": "#ff8040"
+    },
+    {
+      "id": "puissance-runique",
+      "nom": "Puissance runique",
+      "type": "jauge",
+      "max": 100,
+      "depart": "vide",
+      "reposCourt": "vider",
+      "reposLong": "vider",
+      "couleur": "#00d1ff"
+    },
+    {
+      "id": "fureur",
+      "nom": "Fureur",
+      "type": "jauge",
+      "max": 100,
+      "depart": "vide",
+      "reposCourt": "vider",
+      "reposLong": "vider",
+      "couleur": "#c942fd"
+    },
+
+    // --- Compteurs façon World of Warcraft ------------------------------------
+    {
+      "id": "eclats-ame",
+      "nom": "Éclats d'âme",
+      "type": "compteur",
+      "max": 5,
+      "reposCourt": "aucun",
+      "reposLong": "remplir",
+      "couleur": "#9b52c6"
+    },
+    {
+      "id": "points-combo",
+      "nom": "Points de combo",
+      "type": "compteur",
+      "max": 5,
+      "depart": "vide",
+      "reposCourt": "vider",
+      "reposLong": "vider",
+      "couleur": "#fff569"
+    },
+    {
+      "id": "puissance-sacree",
+      "nom": "Puissance sacrée",
+      "type": "compteur",
+      "max": 5,
+      "depart": "vide",
+      "reposCourt": "vider",
+      "reposLong": "vider",
+      "couleur": "#f2e699"
+    },
+    {
+      "id": "chi",
+      "nom": "Chi",
+      "type": "compteur",
+      "max": 5,
+      "reposCourt": "remplir",
+      "reposLong": "remplir",
+      "couleur": "#b5ffeb"
+    },
+    {
+      "id": "runes",
+      "nom": "Runes",
+      "type": "compteur",
+      "max": 6,
+      "reposCourt": "remplir",
+      "reposLong": "remplir",
+      "couleur": "#8fa3b8"
+    },
+    {
+      "id": "essence",
+      "nom": "Essence",
+      "type": "compteur",
+      "max": 5,
+      "reposCourt": "remplir",
+      "reposLong": "remplir",
+      "couleur": "#3fb8a6"
+    },
+
+    // --- Ressources de classe de D&D 5e (niveau 1) ------------------------------
+    {
+      "id": "rage-barbare",
+      "nom": "Rages (utilisations)",
+      "type": "compteur",
+      "max": 2,
+      "reposCourt": "aucun",
+      "reposLong": "remplir",
+      "couleur": "#b3261e",
+      "description": "Nombre de fois où le Barbare peut entrer en rage avant un repos long."
+    },
+    {
+      "id": "second-souffle",
+      "nom": "Second souffle",
+      "type": "compteur",
+      "max": 1,
+      "reposCourt": "remplir",
+      "reposLong": "remplir",
+      "couleur": "#c69b6d"
+    },
+    {
+      "id": "inspiration-bardique",
+      "nom": "Inspiration bardique",
+      "type": "compteur",
+      "max": 1,
+      "reposCourt": "aucun",
+      "reposLong": "remplir",
+      "couleur": "#d6a2e8"
+    },
+    {
+      "id": "emplacements-niveau-1",
+      "nom": "Emplacements de sort (niv. 1)",
+      "type": "compteur",
+      "max": 2,
+      "reposCourt": "aucun",
+      "reposLong": "remplir",
+      "couleur": "#6a8fd8"
+    }
+  ]
+}

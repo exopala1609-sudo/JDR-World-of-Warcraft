@@ -1,0 +1,53 @@
+=============================================================================
+  LE RÉFÉRENTIEL : les règles de création de personnage
+=============================================================================
+
+Ce dossier contient les règles que l'écran « Créer un personnage » utilise :
+
+  factions.json     Alliance, Horde...
+  races.json        Les peuples : faction, bonus, traits, classes autorisées
+  classes.json      Les classes : dé de vie, ressources de départ, couleur
+  ressources.json   Les jauges et compteurs : Mana, Rage, Énergie...
+  creation.json     Tableau standard et achat de points
+
+Le jeu ne connaît AUCUNE race ni AUCUNE classe par son nom : tout vient de
+ces fichiers. Tu peux donc les modifier sans toucher au code du jeu.
+
+
+--- Ouvrir et modifier un fichier -------------------------------------------
+
+  1. Clic droit sur le fichier > Ouvrir avec > Bloc-notes.
+  2. Modifie, puis enregistre (Ctrl + S).
+  3. Vérifie ton travail : dans l'Invite de commandes, depuis le dossier du
+     projet, tape :   npm run verifier-referentiel
+     Le serveur n'a pas besoin d'être lancé.
+  4. Si la partie est en cours : outils du MJ > « Recharger le référentiel ».
+     Inutile de redémarrer le serveur.
+
+Chaque fichier explique ses champs dans les lignes qui commencent par //.
+Ce sont des commentaires : le jeu les ignore.
+
+
+--- Les 4 règles d'or -------------------------------------------------------
+
+  1. Ne change JAMAIS un "id" une fois des personnages créés : les fiches
+     l'enregistrent. Pour renommer, change seulement "nom".
+  2. Les textes s'écrivent entre guillemets droits "comme ceci", jamais
+     entre guillemets courbes “comme ceci”.
+  3. Une virgule sépare deux éléments d'une liste.
+  4. Avant toute grosse modification, copie le fichier (ex. races-avant.txt).
+     Attention : une copie en .json serait lue elle aussi, en double.
+
+Si tu fais une erreur, le jeu t'indique le fichier, la ligne et la raison.
+L'entrée fautive est ignorée, le reste continue de fonctionner.
+
+
+--- Novembre : le livre officiel --------------------------------------------
+
+Toutes les données fournies ici sont PROVISOIRES (bonus, traits, restrictions
+inventés d'après le jeu vidéo). Remplace-les par celles du livre, fichier
+par fichier. Les modèles d'origine restent disponibles dans le projet, dans
+le dossier exemples/referentiel.
+
+Ce dossier n'est rempli automatiquement qu'une seule fois (quand il est vide).
+Le jeu n'écrase donc jamais tes modifications.

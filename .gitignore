@@ -1,0 +1,34 @@
+# Dependances
+node_modules/
+
+# Build du client
+client/dist/
+
+# Configuration propre a chaque poste (chemins du dossier cloud, mot de passe)
+.env
+
+# Donnees de jeu locales (quand VTT_ASSETS pointe dans le projet)
+donnees-mj/
+
+# Images du jeu (icones, textures, polices...) posees par erreur dans le
+# projet : elles ne doivent JAMAIS partir sur GitHub.
+/ICONS/
+/Icons/
+/icones/
+/interface/
+/polices/
+*.blp
+
+# Divers
+.DS_Store
+*.log
+
+# Cache de compilation TypeScript
+*.tsbuildinfo
+vtt.log
+vtt.ancien.log
+
+# NAS : outils telecharges, journaux, pause pendant une mise a jour
+.outils/
+vtt-nas.log
+.maintenance

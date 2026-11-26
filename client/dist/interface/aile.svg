@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 170 128">
+  <!-- Aile stylisee (dessin original, libre de droits) : remplacable par ton
+       image icones/ui-griffon-gauche.png et icones/ui-griffon-droite.png -->
+  <defs>
+    <linearGradient id="or" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff2b8"/>
+      <stop offset="0.35" stop-color="#d9a93a"/>
+      <stop offset="0.7" stop-color="#8a5f14"/>
+      <stop offset="1" stop-color="#4a3108"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9e3d0"/>
+      <stop offset="0.5" stop-color="#7d7667"/>
+      <stop offset="1" stop-color="#2e2a24"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#or)" stroke="#2a1a05" stroke-width="2" stroke-linejoin="round">
+    <path d="M150 98 C 120 70, 90 40, 40 6 C 70 36, 96 62, 124 96 Z"/>
+    <path d="M148 100 C 110 82, 66 62, 12 34 C 52 64, 96 86, 140 104 Z"/>
+    <path d="M146 104 C 106 96, 58 90, 6 70 C 50 94, 100 106, 140 110 Z"/>
+    <path d="M144 108 C 108 108, 64 112, 18 104 C 60 118, 104 120, 142 114 Z"/>
+    <path d="M150 98 C 146 70, 140 46, 124 20 C 150 40, 162 70, 160 100 Z"/>
+  </g>
+  <path d="M112 106 H168 V126 H104 Z" fill="url(#metal)" stroke="#000" stroke-width="2"/>
+  <circle cx="150" cy="100" r="9" fill="url(#metal)" stroke="#000" stroke-width="2"/>
+</svg>

@@ -1,0 +1,17 @@
+{
+  "name": "vtt-serveur",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "dependencies": {
+    "cloudflared": "^0.7.3",
+    "express": "^4.21.2",
+    "image-size": "^2.0.4",
+    "socket.io": "^4.8.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.1"
+  }
+}

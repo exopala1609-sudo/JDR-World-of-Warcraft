@@ -1,0 +1,464 @@
+/* =============================================================================
+   LIVRES : le grimoire (touche P) et le journal de quetes (touche L).
+   Deux fenetres "parchemin" posees dans la couche .fenetres (voir hud.css).
+   ============================================================================= */
+
+/* --- Grimoire : un livre ouvert, deux pages ---------------------------------------- */
+.grimoire {
+  width: 900px;
+}
+.grimoire__bandeau {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  margin-bottom: 12px;
+  color: var(--or);
+  font-size: 14px;
+  text-shadow: var(--ombre-texte);
+}
+.grimoire__bandeau span + span::before {
+  content: "\2666"; /* petit losange entre les informations */
+  margin-right: 28px;
+  color: var(--or-bordure-sombre);
+}
+
+.livre {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 560px;
+  padding: 10px;
+  border-radius: 6px;
+  /* La couverture de cuir sombre qui depasse autour des pages */
+  background: var(--texture-bruit), linear-gradient(180deg, #4a2414, #2a1209);
+  box-shadow:
+    0 0 0 1px #000,
+    0 0 0 3px var(--or-bordure-sombre),
+    inset 0 0 18px rgba(0, 0, 0, 0.9);
+  perspective: 1800px; /* la profondeur de la page qui tourne */
+}
+.livre__page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 26px 30px 40px;
+  background: var(--texture-parchemin);
+  color: var(--encre);
+  font-family: var(--police-texte);
+}
+/* Le creux de la reliure : une ombre de chaque cote du milieu du livre. */
+.livre__page--gauche {
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset -26px 0 30px -18px rgba(70, 40, 10, 0.75);
+}
+.livre__page--droite {
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 26px 0 30px -18px rgba(70, 40, 10, 0.75);
+}
+.livre__folio {
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  color: rgba(46, 31, 14, 0.6);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* La feuille qui tourne : une page de parchemin vierge qui pivote autour de
+   la reliure (rotateY). Le nouveau contenu est deja dessine dessous : la
+   feuille le "decouvre" en passant d'un cote a l'autre. */
+.livre__feuille {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  width: calc(50% - 10px);
+  background: var(--texture-parchemin);
+  pointer-events: none;
+  animation: 0.55s cubic-bezier(0.45, 0.05, 0.4, 1) both;
+}
+.livre__feuille--suivante {
+  left: 50%;
+  transform-origin: left center;
+  animation-name: tourner-suivante;
+}
+.livre__feuille--precedente {
+  right: 50%;
+  transform-origin: right center;
+  animation-name: tourner-precedente;
+}
+@keyframes tourner-suivante {
+  from {
+    transform: rotateY(0deg);
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(0.7);
+  }
+  to {
+    transform: rotateY(-180deg);
+    filter: brightness(1);
+  }
+}
+@keyframes tourner-precedente {
+  from {
+    transform: rotateY(0deg);
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(0.7);
+  }
+  to {
+    transform: rotateY(180deg);
+    filter: brightness(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .livre__feuille {
+    animation-duration: 0.01s;
+  }
+}
+
+/* Une entree : l'icone carree, puis le nom et le rang */
+.sort {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+}
+.sort__icone {
+  --taille-case: 58px;
+  cursor: pointer;
+}
+.sort__texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.sort__nom {
+  overflow: hidden;
+  font-size: 19px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sort__rang {
+  color: #5c4421;
+  font-family: var(--police-ui);
+  font-size: 13px;
+}
+/* Sort trop puissant pour le niveau du personnage : grise, comme dans WoW. */
+.sort--verrouille .sort__icone img {
+  filter: grayscale(1) brightness(0.55);
+}
+.sort--verrouille .sort__nom,
+.sort--verrouille .sort__rang {
+  color: rgba(46, 31, 14, 0.45);
+}
+.grimoire__vide {
+  margin: 40px 0 0;
+  color: #5c4421;
+  font-size: 17px;
+  text-align: center;
+}
+.grimoire__pied {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+  color: var(--or);
+  text-shadow: var(--ombre-texte);
+}
+/* Fleches rondes pour tourner les pages */
+.bouton-page {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f0c54a, #9a6b10 60%, #3f2a05);
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 0 3px var(--or-bordure-sombre);
+  color: #1b1103;
+  font-family: var(--police-chiffres);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.bouton-page:hover {
+  filter: brightness(1.2);
+}
+.bouton-page:disabled {
+  filter: grayscale(1) brightness(0.5);
+  cursor: default;
+}
+
+/* --- Journal de quetes --------------------------------------------------------------- */
+.quetes {
+  width: 860px;
+}
+.quetes__corps {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 12px;
+  height: 540px;
+}
+/* A gauche : la liste, titres jaunes sur fond sombre (comme dans WoW) */
+.quetes__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  box-shadow: var(--relief-creux);
+}
+.quetes__entree {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 15px;
+  text-align: left;
+  text-shadow: var(--ombre-texte);
+  cursor: pointer;
+}
+.quetes__entree:hover {
+  background: rgba(255, 209, 0, 0.12);
+}
+.quetes__entree--choisie {
+  background: linear-gradient(90deg, rgba(255, 209, 0, 0.3), rgba(255, 209, 0, 0.05));
+  color: #fff;
+}
+.quetes__entree--terminee,
+.quetes__entree--echouee {
+  color: var(--texte-gris);
+}
+.quetes__entree-statut {
+  flex: none;
+  font-size: 13px;
+}
+.quetes__entree--terminee .quetes__entree-statut {
+  color: var(--texte-vert);
+}
+.quetes__entree--echouee .quetes__entree-statut {
+  color: var(--texte-rouge);
+}
+.quetes__vide {
+  margin: 16px 8px;
+  color: var(--texte-doux);
+}
+.quetes__nouvelle {
+  margin-top: auto;
+}
+
+/* A droite : le parchemin, titres jaunes (contour noir) et texte noir */
+.quetes__parchemin {
+  overflow-y: auto;
+  padding: 22px 28px;
+  border-radius: 4px;
+  background: var(--texture-parchemin);
+  box-shadow: inset 0 0 26px rgba(95, 62, 20, 0.6);
+  color: #000;
+  font-family: var(--police-texte);
+}
+.quetes__titre {
+  margin: 0 0 6px;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 24px;
+  font-weight: normal;
+  text-shadow: var(--ombre-texte);
+}
+.quetes__rubrique {
+  margin: 18px 0 4px;
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 18px;
+  font-weight: normal;
+  text-shadow: var(--ombre-texte);
+}
+.quetes__texte {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  white-space: pre-line; /* les retours a la ligne du MJ sont gardes */
+}
+.quetes__texte--vide {
+  margin-top: 40px;
+  color: #5c4421;
+  text-align: center;
+}
+.quetes__statut {
+  margin: 0;
+  font-family: var(--police-ui);
+  font-size: 14px;
+}
+.quetes__statut--terminee {
+  color: #0d6b00;
+}
+.quetes__statut--echouee {
+  color: #9a0000;
+}
+.quetes__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+.quetes__formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.quetes__formulaire label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--police-ui);
+  font-size: 14px;
+}
+.quetes__astuce {
+  margin: 0;
+  color: #5c4421;
+  font-size: 14px;
+}
+/* Champ de saisie "a l'encre" sur le parchemin */
+.champ-parchemin {
+  padding: 6px 8px;
+  border: 1px solid var(--parchemin-sombre);
+  border-radius: 3px;
+  background: rgba(255, 250, 235, 0.55);
+  color: #000;
+  font-family: var(--police-texte);
+  font-size: 16px;
+  resize: vertical;
+  outline: none;
+}
+.champ-parchemin:focus {
+  border-color: #6e5518;
+  box-shadow: 0 0 0 2px rgba(201, 164, 65, 0.45);
+}
+
+/* Bouton secondaire (Annuler, Masquer, Retirer) : gris plutot que rouge */
+.bouton--discret {
+  background: linear-gradient(180deg, #4a4a52 0%, #2c2c33 48%, #1c1c22 52%, #2a2a31 100%);
+}
+
+/* --- Carnet de notes prive (touche N) : un livret de cuir ---------------------------- */
+.carnet {
+  width: 900px;
+}
+.carnet__prive {
+  margin: 0 0 8px;
+  color: var(--texte-doux);
+  font-size: 13px;
+  text-align: center;
+}
+.carnet__livre {
+  height: 540px;
+  background: var(--texture-bruit), linear-gradient(180deg, #3b2a17, #1d1309); /* cuir brun, plus sombre que le grimoire */
+}
+.carnet__sommaire {
+  gap: 4px;
+  overflow-y: auto;
+}
+.carnet__nouvelle,
+.carnet__entree {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  border: 0;
+  border-bottom: 1px dashed rgba(92, 68, 33, 0.4);
+  background: none;
+  color: var(--encre);
+  font-family: var(--police-texte);
+  text-align: left;
+  cursor: pointer;
+}
+.carnet__nouvelle {
+  color: #6b1b0d;
+  font-family: var(--police-ui);
+  font-size: 15px;
+}
+.carnet__entree:hover,
+.carnet__nouvelle:hover {
+  background: rgba(255, 250, 235, 0.35);
+}
+.carnet__entree--ouverte {
+  background: rgba(255, 250, 235, 0.55);
+  box-shadow: inset 3px 0 0 #6b1b0d;
+}
+.carnet__entree-titre {
+  font-size: 17px;
+}
+.carnet__entree-date {
+  color: #5c4421;
+  font-size: 12px;
+}
+.carnet__vide {
+  color: #5c4421;
+}
+.carnet__page-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.carnet__titre,
+.carnet__texte {
+  border: 0;
+  background: transparent;
+  color: #000;
+  font-family: var(--police-texte);
+  outline: none;
+}
+.carnet__titre {
+  padding: 2px 0 6px;
+  border-bottom: 1px solid rgba(92, 68, 33, 0.5);
+  color: #6b1b0d;
+  font-size: 22px;
+}
+.carnet__texte {
+  flex: 1;
+  resize: none;
+  font-size: 17px;
+  line-height: 1.5;
+  /* Lignes de cahier */
+  background-image: repeating-linear-gradient(transparent 0 24.5px, rgba(92, 68, 33, 0.18) 24.5px 25.5px);
+  background-attachment: local;
+}
+.carnet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.carnet__etat {
+  color: #5c4421;
+  font-size: 12px;
+}
+/* Le marque-page du grimoire vers le carnet */
+.grimoire__signet {
+  margin-left: 12px;
+  padding: 2px 10px;
+  border: 1px solid var(--or-bordure-sombre);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #6b1b0d, #3c0a03);
+  color: var(--or);
+  font-family: var(--police-ui);
+  font-size: 13px;
+  cursor: pointer;
+}
+.grimoire__signet:hover {
+  filter: brightness(1.3);
+}
