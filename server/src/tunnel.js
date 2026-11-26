@@ -80,8 +80,13 @@ export async function ouvrirTunnelPermanent(jeton) {
   let arret = false;
   let delaiRelance = 5_000;
 
+  // Le jeton passe par une variable d'environnement (TUNNEL_TOKEN, lue par
+  // cloudflared), PAS par la ligne de commande : sur le NAS, la liste des
+  // programmes en cours (et leurs arguments) est visible des autres comptes.
+  process.env.TUNNEL_TOKEN = jeton;
   const lancer = () => {
-    tunnel = Tunnel.withToken(jeton);
+    // --no-autoupdate : l'outil ne se remplace pas tout seul en pleine partie.
+    tunnel = new Tunnel(["tunnel", "--no-autoupdate", "run"]);
     tunnel.on("error", (erreur) => console.warn(`  [tunnel] ${erreur.message}`));
     tunnel.once("connected", () => {
       delaiRelance = 5_000;

@@ -639,3 +639,33 @@ Le lot 8 ne dépend pas du NAS : il peut passer avant les lots 5 à 7 si tu pré
 - une tâche « au démarrage » peut tourner en permanence ;
 - mémoire réellement utilisée ;
 - chemin `/volume1`.
+
+---
+
+# Suivi — lot 5 installé, lot 6 préparé (26 novembre 2026)
+
+**Lot 5** installé par l'utilisateur sur le vrai NAS : la table s'affiche sur le réseau local ; mémoire à 50 % (contre 49 % avant la table), processeur à 1 %.
+
+Leçons de l'installation réelle :
+- Git Server doit être **démarré**.
+- Le dossier partagé doit exister **avant** le `git clone` : un `sudo git clone` crée sinon un dossier ordinaire, inaccessible à l'utilisateur de la table.
+- L'utilisateur a été créé en `VTT`, et les majuscules comptent.
+- Une tâche Cloud Sync **bidirectionnelle** Google Drive ↔ `jdr`, venue de l'ancien guide, était active : suppression conseillée, remplacée par Hyper Backup.
+- Le dossier `icones` était arrivé sous le nom `icones (1)`.
+
+**Lot 6 — accès à distance**, préparé et publié :
+- `scripts/nas-acces-distant.sh` :
+  - demande le jeton (masqué) et vérifie qu'il est bien formé ;
+  - demande l'adresse ;
+  - écrit `.env` (droits 600) et passe `VTT_HOTE=127.0.0.1` ;
+  - relance la table et attend le tunnel ;
+  - l'option `retirer` permet de revenir en arrière.
+- Le jeton est passé à `cloudflared` par variable d'environnement (`TUNNEL_TOKEN`), plus par la ligne de commande où il était visible des autres comptes du NAS. Vérifié en lisant les arguments du processus. Ajout de `--no-autoupdate`.
+- Guide, seconde partie (étapes 10 à 13) : filtre Cloudflare Access par e-mail **avant** d'ouvrir la route, route du tunnel, activation, essai en 4G.
+- Vérifié sur le faux NAS :
+  - jeton mal copié refusé ;
+  - configuration écrite ;
+  - réseau local fermé ;
+  - le tunnel réessaie de plus en plus espacé avec un jeton invalide.
+
+Le vrai tunnel n'a pas pu être essayé ici (pas de vrai jeton).

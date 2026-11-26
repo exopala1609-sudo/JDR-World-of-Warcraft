@@ -234,8 +234,108 @@ jours, et pas seulement le dernier etat.
 
 ## Et ensuite ?
 
-Quand l'etape 7 fonctionne, envoie-moi :
-- les messages de l'installation (etape 5) ;
-- le pourcentage de memoire (etape 7.5).
+Quand l'etape 7 fonctionne, passe a la seconde partie : l'acces a distance.
 
-Puis on passera a l'**acces a distance** avec ton nom de domaine.
+---
+
+# Seconde partie — Acces a distance (adresse fixe)
+
+But : tes joueurs ouvrent `https://table.exopala.com` depuis chez eux. Rien
+n'est ouvert sur ta box : c'est le NAS qui appelle Cloudflare (le « tunnel »),
+jamais l'inverse. Devant la table, Cloudflare demande a chaque visiteur son
+adresse e-mail et lui envoie un code : seules les adresses que tu as listees
+peuvent meme voir l'ecran de connexion.
+
+```
+Joueur --https--> Cloudflare (filtre e-mail) <--tunnel-- NAS --> table (127.0.0.1:3000)
+```
+
+Duree : environ 30 minutes. Dans ce qui suit, adapte `/volume1/VTT/table` si
+ton dossier partage porte un autre nom.
+
+Note : les menus de Cloudflare changent souvent de nom. Si un intitule ne
+correspond pas, fais une capture et demande avant de cliquer ailleurs.
+
+## Etape 10 — Le filtre par e-mail, AVANT d'ouvrir la porte (10 min)
+
+On installe le filtre d'abord : quand le tunnel s'ouvrira, la table sera deja
+protegee.
+
+1. Sur https://one.dash.cloudflare.com (Zero Trust), va dans **Access** (ou
+   **Access controls**) > **Applications** > **Add an application** >
+   **Self-hosted**.
+2. **Application name** : `Table JDR`. **Session duration** : `1 month` (un
+   joueur ne retape le code qu'une fois par mois sur le meme navigateur).
+3. **Public hostname** (ou **Application domain**) : sous-domaine `table`,
+   domaine `exopala.com`, chemin vide.
+4. **Policies** > **Add a policy** : nom `Joueurs`, action **Allow**,
+   regle **Include** > **Emails** : ajoute ton adresse et celle de chaque
+   joueur (une par ligne).
+5. **Login methods** : garde **One-time PIN** (un code envoye par e-mail ; pas
+   besoin de compte chez Cloudflare pour tes joueurs).
+6. Enregistre.
+
+Pour ajouter ou retirer un joueur plus tard : meme endroit, modifie la liste
+des e-mails de la politique `Joueurs`.
+
+## Etape 11 — La route du tunnel (5 min)
+
+1. **Networks** > **Tunnels** > clique sur ton tunnel.
+2. Onglet **Published application routes** (ancien nom : *Public hostname*) >
+   **Add a published application route**.
+3. Sous-domaine `table`, domaine `exopala.com`, chemin vide ;
+   service **HTTP**, URL `localhost:3000`. Enregistre.
+
+Le tunnel apparaitra « Down » ou « Inactive » tant que le NAS ne l'a pas
+ouvert : normal.
+
+## Etape 12 — Activer le tunnel sur le NAS (10 min)
+
+1. **Planificateur de taches** > `Mettre a jour la table` > **Executer** (pour
+   recevoir le script de cette etape). Attends une minute.
+2. Active SSH (**Terminal et SNMP**), connecte-toi comme a l'etape 5, puis :
+
+   ```
+   sudo -u VTT sh /volume1/VTT/table/scripts/nas-acces-distant.sh
+   ```
+
+3. Il te demande le **jeton du tunnel** : colle-le (clic droit dans
+   PowerShell), Entree. Il ne s'affiche pas. Le script verifie qu'il est bien
+   forme.
+4. Il propose l'adresse `https://table.exopala.com` : appuie sur **Entree**
+   pour l'accepter.
+5. Il relance la table et attend le tunnel (jusqu'a 2 minutes la premiere
+   fois : il telecharge l'outil Cloudflare). Il doit finir par
+   `[ OK ] Tunnel actif`.
+6. `exit`, puis desactive SSH dans DSM.
+
+A partir de maintenant, la table n'ecoute plus ton reseau local :
+`http://ADRESSE-DU-NAS:3000` ne repond plus, c'est voulu. Toi aussi, tu passes
+par `https://table.exopala.com`.
+
+## Etape 13 — Essai depuis l'exterieur (5 min)
+
+1. Sur ton telephone, **coupe le Wi-Fi** (pour etre vraiment « dehors »), et
+   ouvre `https://table.exopala.com`.
+2. Cloudflare demande ton e-mail : tape-le, recois le code, entre-le.
+3. L'ecran de connexion de la table s'affiche : connecte-toi.
+4. Essaie avec une adresse e-mail **non listee** : Cloudflare doit refuser.
+
+## Ce que tu envoies a tes joueurs
+
+> La table est ici : https://table.exopala.com
+> 1. Entre ton adresse e-mail (celle que je t'ai demandee), puis le code recu par e-mail.
+> 2. Choisis ton pseudo et ton mot de passe a ta premiere connexion : ils te seront redemandes ensuite.
+> Mot de passe oublie : previens-moi.
+
+## Revenir en arriere
+
+Pour couper l'acces a distance et revenir au reseau local seul (SSH) :
+
+```
+sudo -u VTT sh /volume1/VTT/table/scripts/nas-acces-distant.sh retirer
+```
+
+Si le jeton fuit un jour (copie dans un message, par exemple) : dans
+Cloudflare, sur la page du tunnel, **Refresh token** (ou supprime le tunnel et
+recrees-en un), puis relance l'etape 12 avec le nouveau jeton.
