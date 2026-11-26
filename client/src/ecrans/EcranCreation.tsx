@@ -24,7 +24,8 @@ import { EVENEMENTS } from "@partage/protocole.js";
 import { useTextures, type RoleTexture } from "@/core/textures";
 import { jeu, useJeu } from "@/core/jeu";
 import { urlIcone } from "@/core/medias";
-import type { Caracteristique, ChoixOption, Classe, Historique, MethodeCaracteristiques, Race, Referentiel, Table, TirageCreation } from "@/core/types";
+import type { AnnonceTirage, Caracteristique, ChoixOption, Classe, Historique, MethodeCaracteristiques, Race, Referentiel, Table, TirageCreation } from "@/core/types";
+import { AnimationTirage } from "./AnimationTirage";
 import { avecInfobulle, CoucheInfobulle } from "@/ui/InfoBulle";
 
 type Base = Record<Caracteristique, number>;
@@ -191,11 +192,13 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
     if (methode === "tirage-4d6") choisirMethode("tirage-4d6");
   }, [cleTirage]);
   const [tirageEnCours, setTirageEnCours] = useState(false);
+  const [animation, setAnimation] = useState<AnnonceTirage | null>(null); // le tirage qui roule a l'ecran
   const tirerDes = async () => {
     setTirageEnCours(true);
     setErreur("");
     const r = await jeu.demander(EVENEMENTS.CREATION_TIRER, {});
     if (r.ok && r.table) jeu.modifier({ table: r.table as Table });
+    if (r.ok && r.tirage) setAnimation(r.tirage as AnnonceTirage);
     if (!r.ok) setErreur(r.erreur ?? "Refus du serveur.");
     setTirageEnCours(false);
   };
@@ -603,6 +606,7 @@ function Creation({ referentiel }: { referentiel: Referentiel }) {
           <div className="creation__erreur">{erreur || (nom.trim().length >= 2 ? (probleme ?? "") : "")}</div>
         </div>
       </footer>
+      {animation && <AnimationTirage annonce={animation} surFin={() => setAnimation(null)} />}
     </form>
   );
 }
@@ -750,7 +754,7 @@ function PanneauTirage({ tirage, enCours, surTirer }: { tirage: TirageCreation |
   if (!tirage) {
     return (
       <div className="creation__tirage">
-        <p>Six fois 4d6 : on garde les 3 meilleurs des. Toute la table verra ton resultat, et tu ne pourras relancer qu'avec l'accord du MJ.</p>
+        <p>Six fois 4d6 : on garde les 3 meilleurs des. Toute la table verra ton resultat. Tu as 2 relances ; au-dela, il faut l'accord du MJ. Ton meilleur tirage est toujours garde.</p>
         <button type="button" className="bouton" disabled={enCours} onClick={surTirer}>
           Lancer les des
         </button>
@@ -769,12 +773,12 @@ function PanneauTirage({ tirage, enCours, surTirer }: { tirage: TirageCreation |
           {autres.length === 1 ? "Autre tirage (moins bon)" : "Autres tirages (moins bons)"} : {autres.map((v) => `${[...v].sort((a, b) => b - a).join(", ")} (total ${total(v)})`).join(" ; ")}
         </p>
       )}
-      {tirage.relanceAutorisee ? (
+      {tirage.relancesRestantes > 0 ? (
         <button type="button" className="bouton" disabled={enCours} onClick={surTirer}>
-          Relancer (le meilleur des deux tirages sera garde)
+          Relancer ({tirage.relancesRestantes} restante{tirage.relancesRestantes > 1 ? "s" : ""} ; ton meilleur tirage est garde)
         </button>
       ) : (
-        <p className="creation__tirage-ancien">Une relance ? Seul le MJ peut l'autoriser.</p>
+        <p className="creation__tirage-ancien">Plus de relance. Pour en avoir une autre, demande au MJ.</p>
       )}
     </div>
   );

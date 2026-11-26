@@ -222,10 +222,10 @@ règles **officielles de D&D 5e** s'appliquent.
 
 **Tirage aux dés (`tirage-4d6`)** : le serveur lance six fois 4d6 et garde
 les 3 meilleurs dés ; toute la table voit le résultat dans la discussion. Le
-joueur répartit ses six valeurs comme il veut. Il ne peut pas relancer en
-rechargeant la page : seul le MJ peut autoriser une relance (fenêtre
-**⚅ Création**), et le joueur garde alors le meilleur des deux tirages (le
-total le plus haut).
+joueur répartit ses six valeurs comme il veut. Il a **2 relances**
+offertes ; au-delà, le MJ en accorde d'autres (fenêtre **⚅ Création**).
+Recharger la page ne donne pas de relance. Le joueur garde toujours son
+**meilleur** tirage (le total le plus haut).
 | `restrictionsRaceClasse` | `true`. `false` = plus aucune restriction de lore, pour toutes les tables |
 
 ## Vérifications automatiques

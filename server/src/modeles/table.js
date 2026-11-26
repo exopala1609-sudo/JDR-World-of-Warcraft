@@ -31,12 +31,13 @@ export const SchemaChangementReglages = z.strictObject({
 });
 
 // Le tirage aux des d'un joueur en cours de creation (cle : pseudo en minuscules).
-// "retenu" = l'index du tirage garde (le meilleur, apres une relance).
+// "retenu" = l'index du tirage garde (le meilleur) ; "relancesRestantes" : 2
+// offertes au depart, plus celles accordees par le MJ.
 export const SchemaTirage = z.strictObject({
   pseudo: z.string().trim().min(1).max(24),
   tirages: z.array(z.array(z.number().int().min(3).max(18)).length(6)).min(1).max(20),
   retenu: z.number().int().min(0),
-  relanceAutorisee: z.boolean(),
+  relancesRestantes: z.number().int().min(0).max(20),
 });
 
 export const SchemaTable = z.strictObject({

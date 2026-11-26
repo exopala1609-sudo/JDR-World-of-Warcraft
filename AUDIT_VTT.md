@@ -726,7 +726,8 @@ Choix validés par l'utilisateur :
 - méthode du Manuel des joueurs : six fois 4d6, on garde les 3 meilleurs dés ;
 - le joueur place ses six valeurs librement ;
 - toute la table voit les dés (message dans la discussion) ;
-- relance seulement si le MJ l'autorise ; le joueur garde le meilleur des deux tirages (total le plus haut) ;
+- 2 relances offertes, d'autres sur accord du MJ ; le joueur garde toujours son meilleur tirage (total le plus haut) ;
+- même animation de dés que la table (six lignes de 4d6 qui roulent, dé écarté grisé) ;
 - le MJ choisit, pour sa table, les méthodes permises (tableau standard, achat de points, dés).
 
 Réalisé :

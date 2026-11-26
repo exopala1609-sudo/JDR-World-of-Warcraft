@@ -326,7 +326,7 @@ test("premiere connexion : un joueur sans personnage reste a la porte, puis entr
   }
 });
 
-test("tirage aux des : vu par toute la table, une fois, puis relance sur accord du MJ (le meilleur est garde)", async () => {
+test("tirage aux des : vu par toute la table, 2 relances offertes puis sur accord du MJ (le meilleur est garde)", async () => {
   const baine = await connecter(sessions, { role: "joueur", pseudo: "Baine" });
   try {
     const idTable = depot.listerTables()[0].id;
@@ -355,22 +355,26 @@ test("tirage aux des : vu par toute la table, une fois, puis relance sur accord 
     assert.ok(premier.tirage.des.every((d) => d.length === 4));
     assert.deepEqual((await chezThrall).valeurs, premier.tirage.valeurs);
 
-    // Recharger la page ne permet pas de relancer.
-    assert.match((await demander(baine, EVENEMENTS.CREATION_TIRER, {})).erreur, /demande au MJ/);
-    assert.equal((await demander(thrall, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Baine" })).ok, false);
-    assert.equal((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "baine" })).ok, true);
-    assert.match((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Baine" })).erreur, /deja une relance/);
-    assert.match((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Inconnu" })).erreur, /pas encore tire/);
-
-    // Relance : le meilleur des deux tirages est garde.
+    // Deux relances offertes ; recharger la page n'en donne pas d'autres.
+    const somme = (v) => v.reduce((a, b) => a + b, 0);
     const second = await demander(baine, EVENEMENTS.CREATION_TIRER, {});
     assert.equal(second.tirage.relance, true);
-    const somme = (v) => v.reduce((a, b) => a + b, 0);
-    assert.equal(somme(second.tirage.retenu), Math.max(somme(premier.tirage.valeurs), somme(second.tirage.valeurs)));
+    const troisieme = await demander(baine, EVENEMENTS.CREATION_TIRER, {});
+    assert.equal(troisieme.table.tirages.baine.relancesRestantes, 0);
+    const meilleur = Math.max(...[premier, second, troisieme].map((r) => somme(r.tirage.valeurs)));
+    assert.equal(somme(troisieme.tirage.retenu), meilleur);
+    assert.match((await demander(baine, EVENEMENTS.CREATION_TIRER, {})).erreur, /demande au MJ/);
+
+    // Le MJ (et lui seul) en accorde une de plus.
+    assert.equal((await demander(thrall, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Baine" })).ok, false);
+    assert.equal((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "baine" })).ok, true);
+    assert.match((await demander(mj, EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo: "Inconnu" })).erreur, /pas encore tire/);
+    const quatrieme = await demander(baine, EVENEMENTS.CREATION_TIRER, {});
+    assert.equal(somme(quatrieme.tirage.retenu), Math.max(meilleur, somme(quatrieme.tirage.valeurs)));
     assert.match((await demander(baine, EVENEMENTS.CREATION_TIRER, {})).erreur, /demande au MJ/);
 
     // A la validation, il faut repartir exactement les valeurs gardees.
-    const retenu = [...second.tirage.retenu].sort((a, b) => b - a);
+    const retenu = [...quatrieme.tirage.retenu].sort((a, b) => b - a);
     const caracteristiques = { force: retenu[0], constitution: retenu[1], dexterite: retenu[2], sagesse: retenu[3], intelligence: retenu[4], charisme: retenu[5] };
     const choix = {
       nom: "Baine",

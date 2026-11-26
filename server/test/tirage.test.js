@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { methodesDeLaTable, verifierBase } from "../../shared/creation.js";
-import { appliquerTirage, autoriserRelance, FORMULE_TIRAGE, tirerCaracteristiques, totalTirage, valeursRetenues } from "../src/regles/tirage.js";
+import { appliquerTirage, autoriserRelance, FORMULE_TIRAGE, RELANCES_OFFERTES, tirerCaracteristiques, totalTirage, valeursRetenues } from "../src/regles/tirage.js";
 import { ErreurRegle } from "../src/regles/erreurs.js";
 import { referentielExemple } from "./aides.js";
 
@@ -22,25 +22,27 @@ test("tirage : six lancers de 4d6 en gardant les 3 meilleurs", () => {
   for (let i = 0; i < 50; i++) assert.ok(tirerCaracteristiques().valeurs.every((v) => v >= 3 && v <= 18));
 });
 
-test("tirage : une seule fois, puis relance seulement sur accord du MJ, le meilleur total est garde", () => {
+test("tirage : 2 relances offertes, d'autres sur accord du MJ, le meilleur total est toujours garde", () => {
   const bon = [15, 14, 13, 12, 10, 8];
   const mauvais = [9, 9, 8, 8, 7, 6];
   let { entree, garde } = appliquerTirage(null, bon, "Thrall");
   assert.equal(garde, "nouveau");
   assert.deepEqual(valeursRetenues(entree), bon);
+  assert.equal(entree.relancesRestantes, RELANCES_OFFERTES);
+
+  ({ entree, garde } = appliquerTirage(entree, mauvais, "Thrall"));
+  assert.equal(garde, "ancien"); // 72 contre 47 : on garde le premier
+  ({ entree, garde } = appliquerTirage(entree, mauvais, "Thrall"));
+  assert.deepEqual(valeursRetenues(entree), bon);
+  assert.equal(entree.relancesRestantes, 0);
   assert.throws(() => appliquerTirage(entree, mauvais, "Thrall"), (e) => e instanceof ErreurRegle && /demande au MJ/.test(e.message));
 
   entree = autoriserRelance(entree);
-  assert.throws(() => autoriserRelance(entree), /deja une relance/);
-  ({ entree, garde } = appliquerTirage(entree, mauvais, "Thrall"));
-  assert.equal(garde, "ancien"); // 72 contre 47 : on garde le premier
-  assert.deepEqual(valeursRetenues(entree), bon);
-  assert.equal(entree.tirages.length, 2);
-  assert.equal(entree.relanceAutorisee, false);
-
-  ({ entree, garde } = appliquerTirage(autoriserRelance(entree), [18, 16, 15, 14, 12, 10], "Thrall"));
+  assert.equal(entree.relancesRestantes, 1);
+  ({ entree, garde } = appliquerTirage(entree, [18, 16, 15, 14, 12, 10], "Thrall"));
   assert.equal(garde, "nouveau");
   assert.equal(totalTirage(valeursRetenues(entree)), 85);
+  assert.equal(entree.tirages.length, 4);
   assert.throws(() => autoriserRelance(null), /pas encore tire/);
 });
 

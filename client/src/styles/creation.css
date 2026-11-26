@@ -624,3 +624,70 @@
 .caracs__attente {
   color: var(--texte-doux);
 }
+
+/* --- Animation du tirage aux des (memes des que la fenetre de resolution) --------- */
+.tirage-anim {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.65);
+}
+.tirage-anim__cadre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 28px;
+  font-family: var(--police-lecture);
+  font-size: 17px;
+}
+.tirage-anim__titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 24px;
+}
+.tirage-anim__regle {
+  margin: 0 0 6px;
+  color: var(--texte-doux);
+}
+.tirage-anim__ligne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tirage-anim__de .d20 {
+  width: 54px;
+  height: 54px;
+}
+.tirage-anim__de .d20__valeur {
+  font-size: 20px;
+}
+.tirage-anim__de--ecarte {
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+.tirage-anim__score {
+  min-width: 48px;
+  color: var(--or);
+  font-family: var(--police-chiffres);
+  font-size: 28px;
+  font-weight: bold;
+  text-align: right;
+}
+.tirage-anim__bilan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 92px;
+  text-align: center;
+}
+.tirage-anim__bilan p {
+  margin: 0;
+}
+.tirage-anim__bilan b {
+  color: var(--or);
+  font-size: 22px;
+}

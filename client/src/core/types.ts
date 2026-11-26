@@ -17,7 +17,7 @@ export type TirageCreation = {
   pseudo: string;
   tirages: number[][]; // chaque tirage : 6 scores
   retenu: number; // index du tirage garde (le meilleur total)
-  relanceAutorisee: boolean;
+  relancesRestantes: number; // 2 offertes, plus celles accordees par le MJ
 };
 
 /** Annonce d'un tirage, vue par toute la table. */

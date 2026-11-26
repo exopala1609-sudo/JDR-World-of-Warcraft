@@ -15,8 +15,9 @@ const total = (v: number[]) => v.reduce((a, b) => a + b, 0);
 /**
  * La fenetre "Creation" du MJ (outil de sa barre) :
  *  - les methodes de caracteristiques permises a cette table ;
- *  - les tirages aux des des joueurs qui creent leur personnage, avec le
- *    bouton qui leur autorise une relance (ils gardent le meilleur tirage).
+ *  - les tirages aux des des joueurs qui creent leur personnage (2 relances
+ *    offertes), avec le bouton qui en accorde une de plus (le meilleur
+ *    tirage est toujours garde).
  */
 export function FenetreCreationMJ({ position }: { position: { x: number; y: number } }) {
   const table = useJeu((e) => e.table);
@@ -34,7 +35,7 @@ export function FenetreCreationMJ({ position }: { position: { x: number; y: numb
   };
   const autoriser = async (pseudo: string) => {
     const r = await jeu.demander(EVENEMENTS.CREATION_AUTORISER_RELANCE, { pseudo });
-    jeu.journaliser(r.ok ? `${pseudo} peut relancer ses des : le meilleur des deux tirages sera garde.` : (r.erreur ?? "Refus du serveur."), r.ok ? "systeme" : "erreur");
+    jeu.journaliser(r.ok ? `${pseudo} a une relance de plus : son meilleur tirage sera garde.` : (r.erreur ?? "Refus du serveur."), r.ok ? "systeme" : "erreur");
   };
   const tirages = Object.values(table.tirages ?? {});
 
@@ -59,8 +60,11 @@ export function FenetreCreationMJ({ position }: { position: { x: number; y: numb
                 <b>{t.pseudo}</b> : {[...garde].sort((a, b) => b - a).join(", ")} (total {total(garde)})
                 {t.tirages.length > 1 && <span className="creation-mj__vide"> - {t.tirages.length} tirages, le meilleur est garde</span>}
               </div>
-              <button type="button" className="bouton" disabled={t.relanceAutorisee} onClick={() => autoriser(t.pseudo)}>
-                {t.relanceAutorisee ? "Relance autorisee" : "Autoriser une relance"}
+              <span className="creation-mj__vide">
+                {t.relancesRestantes} relance{t.relancesRestantes > 1 ? "s" : ""} restante{t.relancesRestantes > 1 ? "s" : ""}
+              </span>
+              <button type="button" className="bouton" onClick={() => autoriser(t.pseudo)}>
+                Accorder une relance
               </button>
             </div>
           );
