@@ -120,10 +120,18 @@ Dans DSM, **Panneau de configuration** :
 3. Copie-colle ces commandes, **une par une** (clic droit pour coller dans
    PowerShell). `sudo` redemande ton mot de passe la premiere fois.
 
-   Telecharger la table depuis GitHub :
+   Trouver ou Git Server a range la commande `git` (elle n'est pas toujours
+   connue de `sudo`) ; la reponse ressemble a `/var/packages/Git/target/bin/git` :
 
    ```
-   sudo git clone -b deploiement https://github.com/exopala1609-sudo/JDR-World-of-Warcraft.git /volume1/vtt/table
+   find /var/packages -maxdepth 5 -type f -name git 2>/dev/null
+   ```
+
+   Telecharger la table depuis GitHub, en remplacant le debut par le chemin
+   affiche juste au-dessus :
+
+   ```
+   sudo /var/packages/Git/target/bin/git clone -b deploiement https://github.com/exopala1609-sudo/JDR-World-of-Warcraft.git /volume1/vtt/table
    ```
 
    La confier a l'utilisateur `vtt` :
