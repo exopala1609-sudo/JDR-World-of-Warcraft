@@ -19,7 +19,7 @@ fi
 echo "  [ OK ] Node.js $("$NODE" --version)"
 
 command -v git >/dev/null 2>&1 || { echo "  !! git introuvable : installe Git Server depuis le Centre de paquets."; exit 1; }
-echo "  [ OK ] git"
+echo "  [ OK ] git ($(command -v git))"
 command -v curl >/dev/null 2>&1 || { echo "  !! curl introuvable."; exit 1; }
 
 if [ ! -f client/dist/index.html ]; then

@@ -9,6 +9,19 @@ NPM=/var/packages/Node.js_v22/target/usr/local/bin/npm
 [ -x "$NODE" ] || NODE="$(command -v node)"
 [ -x "$NPM" ] || NPM="$(command -v npm)"
 PATH="$(dirname "$NODE"):$PATH"
+
+# git (paquet Git Server) : selon les versions de DSM, il n'est pas toujours
+# dans le PATH, surtout sous sudo ou dans le Planificateur de taches. On le
+# cherche aux endroits connus, puis dans les paquets installes.
+if ! command -v git >/dev/null 2>&1; then
+  for candidat in /usr/local/bin/git /var/packages/Git/target/bin/git /var/packages/Git/target/usr/bin/git \
+    $(find /var/packages -maxdepth 5 -type f -name git 2>/dev/null); do
+    if [ -x "$candidat" ]; then
+      PATH="$(dirname "$candidat"):$PATH"
+      break
+    fi
+  done
+fi
 export PATH
 
 # Tout ce que npm et l'outil de tunnel telechargent reste dans le dossier de la
