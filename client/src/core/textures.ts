@@ -176,6 +176,7 @@ const RACES_WOW: Record<string, string[]> = {
   "tauren-haut-roc": ["HighmountainTauren", "Tauren"],
   "troll-zandalari": ["ZandalariTroll", "Troll"],
   terrestre: ["EarthenDwarf", "Dwarf"],
+  "nain-sombrefer": ["DarkIronDwarf", "Dwarf"],
   vulperin: ["Vulpera"],
   haranir: ["Haranir"],
 };
@@ -577,6 +578,7 @@ const ICONES_DE_RACE: Record<string, string[]> = {
   "tauren-haut-roc": ["HighmountainTauren"],
   "troll-zandalari": ["ZandalariTroll"],
   terrestre: ["EarthenDwarf"],
+  "nain-sombrefer": ["DarkIronDwarf", "Dwarf"],
   vulperin: ["Vulpera"],
   haranir: ["Haranir"],
 };
