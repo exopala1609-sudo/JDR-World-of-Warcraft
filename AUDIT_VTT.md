@@ -669,3 +669,24 @@ Leçons de l'installation réelle :
   - le tunnel réessaie de plus en plus espacé avec un jeton invalide.
 
 Le vrai tunnel n'a pas pu être essayé ici (pas de vrai jeton).
+
+---
+
+# Suivi — lot 6 en service (26 novembre 2026)
+
+La table est **en ligne à `https://table.exopala.org`**, derrière Cloudflare Access : code par e-mail (One-time PIN), policy `joueurs`. Vérifié par l'utilisateur en navigation privée : le code arrive et la connexion à la table fonctionne.
+
+Leçons, reportées dans le guide :
+- Le domaine acheté est en `.org` : le script ne propose plus d'adresse par défaut.
+- « Failed to add published application » : erreur sans cause affichée (pistes : `/` final dans l'URL, route ou enregistrement DNS déjà présent).
+- One-time PIN doit d'abord être ajouté comme méthode de connexion du compte, sinon seule « Cloudflare » est proposée.
+- Une ligne « Private IP » vide ou l'isolation activée empêche d'enregistrer l'application.
+- Le navigateur habituel garde un accès en mémoire : toujours vérifier en navigation privée.
+
+**Reste à vérifier** :
+- une vraie partie par l'adresse publique (cookies `secure` et temps réel derrière Cloudflare) ;
+- la mémoire avec `cloudflared` ;
+- le redémarrage du NAS avec le tunnel ;
+- la suppression de la tâche Cloud Sync ;
+- `icones (1)` renommé en `icones` ;
+- le premier résultat d'Hyper Backup.

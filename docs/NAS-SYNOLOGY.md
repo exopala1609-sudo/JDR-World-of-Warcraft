@@ -261,6 +261,10 @@ correspond pas, fais une capture et demande avant de cliquer ailleurs.
 On installe le filtre d'abord : quand le tunnel s'ouvrira, la table sera deja
 protegee.
 
+0. **Une seule fois pour ton compte** : **Settings** > **Authentication** (ou
+   **Integrations** > **Identity providers**) > **Login methods** > **Add new**
+   > **One-time PIN**, enregistre. Sans cela, Cloudflare ne propose que
+   « Sign in with Cloudflare », qui obligerait chaque joueur a creer un compte.
 1. Sur https://one.dash.cloudflare.com (Zero Trust), va dans **Access** (ou
    **Access controls**) > **Applications** > **Add an application** >
    **Self-hosted**.
@@ -271,9 +275,17 @@ protegee.
 4. **Policies** > **Add a policy** : nom `Joueurs`, action **Allow**,
    regle **Include** > **Emails** : ajoute ton adresse et celle de chaque
    joueur (une par ligne).
-5. **Login methods** : garde **One-time PIN** (un code envoye par e-mail ; pas
-   besoin de compte chez Cloudflare pour tes joueurs).
-6. Enregistre.
+5. **Login methods** : coche **One-time PIN** et decoche **Cloudflare** (un
+   code envoye par e-mail ; pas besoin de compte chez Cloudflare pour tes
+   joueurs). Si l'option **Instant Auth** existe, active-la : le champ e-mail
+   s'affiche directement.
+6. N'ajoute **aucune** « Private IP » ni « private hostname », et laisse
+   desactivees les options d'isolation (*Browser Isolation*, *Clientless*) :
+   sinon Cloudflare refuse d'enregistrer (« ...can only be enabled for apps
+   with private destinations »).
+7. Enregistre, puis verifie dans une **fenetre de navigation privee** : la page
+   Cloudflare doit demander une adresse e-mail. (Ton navigateur habituel peut
+   avoir garde un acces en memoire et ne rien demander.)
 
 Pour ajouter ou retirer un joueur plus tard : meme endroit, modifie la liste
 des e-mails de la politique `Joueurs`.
