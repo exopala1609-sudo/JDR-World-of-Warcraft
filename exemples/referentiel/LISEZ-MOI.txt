@@ -9,6 +9,8 @@ Ce dossier contient les règles que l'écran « Créer un personnage » utilise 
   classes.json      Les classes : dé de vie, spécialisations, lore, ressources
   historiques.json  Les historiques : bonus de caractéristiques, don d'origine
   dons.json         Les dons (d'origine, généraux...)
+  langues.json      Les langues : table de faction, langues rares
+  renommees.json    Les factions de renommée (Forgefer, Kirin Tor...)
   ressources.json   Les jauges et compteurs : Mana, Rage, Énergie...
   creation.json     Tableau standard et achat de points
 
